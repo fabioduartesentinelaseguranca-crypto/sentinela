@@ -68,10 +68,17 @@ export default function CitizenOccurrenceChat({ occurrence, open, onOpenChange }
           )}
           {messages.map((m) => {
             const mine = m.sender_id === user?.id;
+            // Cidadão vê: sua própria mensagem à direita em verde, agente à esquerda em azul
+            const bubbleClass = mine
+              ? "bg-emerald-600/30 text-emerald-100 border border-emerald-500/30"
+              : "bg-primary/20 text-primary border border-primary/30";
+            const role = mine ? "Você" : "Agente";
             return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  {!mine && <div className="text-[10px] font-semibold mb-0.5 opacity-80">{m.sender_name || "Agente"}</div>}
+              <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                <span className="text-[10px] text-muted-foreground mb-1 px-1">
+                  {mine ? "Você" : (m.sender_name || "Agente")}
+                </span>
+                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${bubbleClass}`}>
                   <div className="text-sm">{m.content}</div>
                   <div className="text-[10px] opacity-60 mt-0.5 font-mono">
                     {format(new Date(m.created_date), "HH:mm")}

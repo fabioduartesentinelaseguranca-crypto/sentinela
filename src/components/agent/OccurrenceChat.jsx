@@ -65,10 +65,18 @@ export default function OccurrenceChat({ occurrence, open, onOpenChange }) {
           )}
           {messages.map((m) => {
             const mine = m.sender_id === user?.id;
+            // Agente vê: sua própria mensagem (agente) à direita em azul, cidadão à esquerda em âmbar
+            const bubbleClass = mine
+              ? "bg-primary text-primary-foreground"
+              : "bg-amber-500/20 text-amber-200 border border-amber-500/30";
+            const role = mine ? "Agente" : "Cidadão";
             return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  {!mine && <div className="text-[10px] font-semibold mb-0.5 opacity-80">{m.sender_name}</div>}
+              <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                <span className="text-[10px] text-muted-foreground mb-1 px-1">
+                  {m.sender_name || role}
+                  {mine && <span className="ml-1 text-primary/70">(você)</span>}
+                </span>
+                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${bubbleClass}`}>
                   <div className="text-sm">{m.content}</div>
                   <div className="text-[10px] opacity-60 mt-0.5 font-mono">
                     {format(new Date(m.created_date), "HH:mm")}
