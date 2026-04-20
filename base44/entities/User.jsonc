@@ -2,14 +2,6 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "cpf": {
-      "type": "string",
-      "description": "CPF do usu\u00e1rio"
-    },
-    "phone": {
-      "type": "string",
-      "description": "Telefone do usu\u00e1rio"
-    },
     "role": {
       "type": "string",
       "enum": [
@@ -18,7 +10,16 @@
         "admin"
       ],
       "default": "citizen",
-      "description": "Perfil: Cidad\u00e3o, Agente, Admin"
+      "description": "Perfil do usu\u00e1rio na plataforma"
+    },
+    "points": {
+      "type": "number",
+      "default": 0,
+      "description": "Pontos acumulados por reportes de Defesa Civil confirmados"
+    },
+    "agent_badge": {
+      "type": "string",
+      "description": "Identifica\u00e7\u00e3o do agente (matr\u00edcula / prefixo)"
     },
     "protective_measure_status": {
       "type": "string",
@@ -33,19 +34,11 @@
     },
     "protective_measure_doc_url": {
       "type": "string",
-      "description": "URL do documento de medida protetiva"
-    },
-    "agent_badge": {
-      "type": "string",
-      "description": "Matr\u00edcula/Identifica\u00e7\u00e3o do agente"
-    },
-    "points": {
-      "type": "number",
-      "default": 0,
-      "description": "Pontos de gamifica\u00e7\u00e3o"
+      "description": "URL do documento de medida protetiva enviado"
     },
     "last_location": {
       "type": "object",
+      "description": "\u00daltima localiza\u00e7\u00e3o registrada (agentes e modo disfar\u00e7ado)",
       "properties": {
         "lat": {
           "type": "number"
@@ -58,6 +51,5 @@
         }
       }
     }
-  },
-  "required": []
+  }
 }
