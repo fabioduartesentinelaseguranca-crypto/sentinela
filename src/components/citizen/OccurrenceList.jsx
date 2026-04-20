@@ -1,11 +1,12 @@
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MapPin } from "lucide-react";
+import { MapPin, MessageSquare } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
 import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default function OccurrenceList({ items }) {
+export default function OccurrenceList({ items, onOpenChat }) {
   if (!items?.length) {
     return <EmptyState icon={FileText} title="Nenhuma ocorrência" description="Suas ocorrências aparecerão aqui." />;
   }
@@ -38,9 +39,16 @@ export default function OccurrenceList({ items }) {
                   </div>
                 </div>
               </div>
-              {o.awarded_points > 0 && o.status === "resolved" && (
-                <div className="text-[11px] text-success font-bold">+{o.awarded_points} pts</div>
-              )}
+              <div className="flex items-center gap-2">
+                {o.awarded_points > 0 && o.status === "resolved" && (
+                  <div className="text-[11px] text-success font-bold">+{o.awarded_points} pts</div>
+                )}
+                {onOpenChat && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenChat(o)}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         );

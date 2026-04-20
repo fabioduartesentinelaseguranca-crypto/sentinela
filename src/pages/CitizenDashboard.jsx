@@ -10,6 +10,7 @@ import ProtectiveMeasureCard from "@/components/citizen/ProtectiveMeasureCard";
 import EmergencyContactsManager from "@/components/citizen/EmergencyContactsManager";
 import FirstAidGuide from "@/components/citizen/FirstAidGuide";
 import OccurrenceList from "@/components/citizen/OccurrenceList";
+import CitizenOccurrenceChat from "@/components/citizen/OccurrenceChat";
 import StatCard from "@/components/shared/StatCard";
 import { FileText, Shield, Trophy } from "lucide-react";
 
@@ -19,6 +20,8 @@ export default function CitizenDashboard() {
   const [defaultType, setDefaultType] = useState("crime");
   const [occurrences, setOccurrences] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [chatOccurrence, setChatOccurrence] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const loadOccurrences = async () => {
     if (!user?.id) return;
@@ -87,7 +90,7 @@ export default function CitizenDashboard() {
               <Award className="w-3 h-3" /> Ver ranking
             </Link>
           </div>
-          <OccurrenceList items={occurrences} />
+          <OccurrenceList items={occurrences} onOpenChat={(o) => { setChatOccurrence(o); setChatOpen(true); }} />
         </div>
 
         <div className="space-y-4">
@@ -120,6 +123,8 @@ export default function CitizenDashboard() {
           </Link>
         </div>
       </div>
+
+      <CitizenOccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
 
       <RegisterOccurrenceDialog
         open={openDialog}
