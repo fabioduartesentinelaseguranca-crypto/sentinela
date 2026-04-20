@@ -1,0 +1,23 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "occurrence_id": {
+      "type": "string",
+      "description": "ID da ocorr\u00eancia relacionada"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "occurrence_id",
+    "content"
+  ]
+}

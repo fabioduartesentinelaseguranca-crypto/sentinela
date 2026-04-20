@@ -1,0 +1,24 @@
+{
+  "name": "EmergencyContact",
+  "type": "object",
+  "properties": {
+    "owner_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio dono do contato"
+    },
+    "name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "relation": {
+      "type": "string",
+      "description": "Rela\u00e7\u00e3o (m\u00e3e, irm\u00e3o, amigo)"
+    }
+  },
+  "required": [
+    "name",
+    "phone"
+  ]
+}

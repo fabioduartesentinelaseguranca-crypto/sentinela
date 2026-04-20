@@ -1,0 +1,80 @@
+{
+  "name": "Occurrence",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "crime",
+        "traffic",
+        "civil_defense",
+        "health",
+        "panic"
+      ],
+      "description": "Tipo principal da ocorr\u00eancia"
+    },
+    "subtype": {
+      "type": "string",
+      "description": "Subtipo espec\u00edfico (ex: roubo, acidente, enchente, SAMU)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "resolved",
+        "canceled"
+      ],
+      "default": "open"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da ocorr\u00eancia"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "address": {
+      "type": "string"
+    },
+    "media_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs de fotos, v\u00eddeos, \u00e1udios ou PDFs"
+    },
+    "reporter_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio que reportou"
+    },
+    "assigned_agent_id": {
+      "type": "string",
+      "description": "ID do agente atendendo"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "resolution_notes": {
+      "type": "string"
+    },
+    "awarded_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Pontos concedidos ao cidad\u00e3o quando resolvida"
+    }
+  },
+  "required": [
+    "type"
+  ]
+}

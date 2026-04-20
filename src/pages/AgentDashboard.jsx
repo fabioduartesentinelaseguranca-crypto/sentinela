@@ -1,0 +1,173 @@
+import { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { getCurrentLocation } from "@/lib/geo";
+import { TYPE_META } from "@/lib/occurrenceMeta";
+import StatCard from "@/components/shared/StatCard";
+import ShiftManager from "@/components/agent/ShiftManager";
+import OccurrenceRow from "@/components/agent/OccurrenceRow";
+import OccurrenceChat from "@/components/agent/OccurrenceChat";
+import LiveMap from "@/components/agent/LiveMap";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren } from "lucide-react";
+import { toast } from "sonner";
+
+export default function AgentDashboard() {
+  const { user } = useAuth();
+  const [occurrences, setOccurrences] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [center, setCenter] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [heatmap, setHeatmap] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [chatOccurrence, setChatOccurrence] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const load = async () => {
+    const [occs, allAgents] = await Promise.all([
+      base44.entities.Occurrence.filter({}, "-created_date", 100),
+      base44.entities.User.filter({ role: "agent" }),
+    ]);
+    setOccurrences(occs);
+    setAgents(allAgents);
+  };
+
+  useEffect(() => {
+    load();
+    (async () => {
+      const loc = await getCurrentLocation();
+      setCenter(loc);
+      if (user?.id) {
+        base44.auth.updateMe({ last_location: { ...loc, updated_at: new Date().toISOString() } }).catch(() => {});
+      }
+    })();
+  }, [user?.id]);
+
+  const openOccurrences = occurrences.filter((o) => o.status === "open");
+  const panicOccurrences = occurrences.filter((o) => o.type === "panic" && o.status !== "resolved");
+  const myActive = occurrences.filter((o) => o.assigned_agent_id === user?.id && o.status === "in_progress");
+
+  const filtered = occurrences.filter((o) => {
+    if (filter === "all") return o.status !== "resolved";
+    if (filter === "mine") return o.assigned_agent_id === user?.id;
+    return o.type === filter;
+  });
+
+  const assign = async (o) => {
+    await base44.entities.Occurrence.update(o.id, { assigned_agent_id: user.id, status: "in_progress" });
+    toast.success("Ocorrência assumida");
+    load();
+  };
+
+  const resolve = async (o) => {
+    await base44.entities.Occurrence.update(o.id, { status: "resolved" });
+    // Gamificação: conceder pontos ao cidadão reportante se aplicável
+    if (o.awarded_points && o.reporter_id) {
+      const reporter = await base44.entities.User.filter({ id: o.reporter_id });
+      const current = reporter[0];
+      if (current) {
+        await base44.entities.User.update(current.id, { points: (current.points || 0) + o.awarded_points });
+        await base44.entities.PointsLog.create({
+          user_id: current.id,
+          user_name: current.full_name,
+          points: o.awarded_points,
+          reason: "Defesa Civil resolvida",
+          occurrence_id: o.id,
+        });
+      }
+    }
+    toast.success("Ocorrência resolvida");
+    load();
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Central do Agente</h1>
+        <p className="text-sm text-muted-foreground mt-1">Ocorrências ativas, viatura e comunicação tática.</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <StatCard label="Abertas" value={openOccurrences.length} icon={AlertTriangle} accent="warning" />
+        <StatCard label="Pânico Ativo" value={panicOccurrences.length} icon={Siren} accent="emergency" />
+        <StatCard label="Meus atendimentos" value={myActive.length} icon={MapIcon} />
+        <StatCard label="Agentes em serviço" value={agents.filter((a) => a.last_location).length} icon={Users} accent="success" />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h2 className="text-lg font-semibold">Ocorrências</h2>
+            <div className="flex items-center gap-2">
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas ativas</SelectItem>
+                  <SelectItem value="mine">Minhas</SelectItem>
+                  {Object.entries(TYPE_META).map(([k, m]) => (
+                    <SelectItem key={k} value={k}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant={showMap ? "default" : "outline"} size="sm" onClick={() => setShowMap(!showMap)}>
+                <MapIcon className="w-4 h-4 mr-1.5" /> {showMap ? "Ocultar" : "Mapa"}
+              </Button>
+              {showMap && (
+                <Button variant={heatmap ? "default" : "outline"} size="sm" onClick={() => setHeatmap(!heatmap)}>
+                  <Flame className="w-4 h-4 mr-1.5" /> Calor
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {showMap && <LiveMap occurrences={filtered} agents={agents} center={center} heatmap={heatmap} />}
+
+          <div className="space-y-2">
+            {filtered.length === 0 ? (
+              <div className="text-sm text-muted-foreground p-6 text-center border border-dashed rounded-xl">
+                Nenhuma ocorrência com este filtro.
+              </div>
+            ) : (
+              filtered.map((o) => (
+                <OccurrenceRow
+                  key={o.id}
+                  occurrence={o}
+                  currentAgentId={user?.id}
+                  onOpenChat={(occ) => { setChatOccurrence(occ); setChatOpen(true); }}
+                  onAssign={assign}
+                  onResolve={resolve}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <ShiftManager userId={user?.id} />
+
+          <div className="rounded-2xl border border-border/60 bg-card p-5">
+            <h3 className="font-semibold flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-primary" />
+              Agentes ativos
+            </h3>
+            <div className="space-y-2">
+              {agents.filter((a) => a.last_location).slice(0, 6).map((a) => (
+                <div key={a.id} className="flex items-center gap-3 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <span className="flex-1 truncate">{a.full_name}</span>
+                  <span className="text-[11px] text-muted-foreground font-mono">{a.agent_badge}</span>
+                </div>
+              ))}
+              {agents.filter((a) => a.last_location).length === 0 && (
+                <div className="text-xs text-muted-foreground">Nenhum agente com localização registrada.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <OccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
+    </div>
+  );
+}

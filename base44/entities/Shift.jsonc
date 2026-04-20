@@ -1,0 +1,40 @@
+{
+  "name": "Shift",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "description": "ID do agente"
+    },
+    "vehicle_plate": {
+      "type": "string",
+      "description": "Placa da viatura"
+    },
+    "vehicle_prefix": {
+      "type": "string",
+      "description": "Prefixo da viatura"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "ended"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "vehicle_prefix"
+  ]
+}
