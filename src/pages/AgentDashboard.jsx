@@ -10,8 +10,10 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
+import { useAgentAlerts } from "@/hooks/useAgentAlerts";
+import { sortByUrgency } from "@/lib/urgencyScore";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -26,6 +28,7 @@ export default function AgentDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const [cameras, setCameras] = useState([]);
   const [selectedOccurrence, setSelectedOccurrence] = useState(null);
+  const { permissionGranted, askPermission } = useAgentAlerts(true);
 
   const load = async () => {
     const [occs, allAgents, cams] = await Promise.all([
@@ -53,11 +56,14 @@ export default function AgentDashboard() {
   const panicOccurrences = occurrences.filter((o) => o.type === "panic" && o.status !== "resolved");
   const myActive = occurrences.filter((o) => o.assigned_agent_id === user?.id && o.status === "in_progress");
 
-  const filtered = occurrences.filter((o) => {
+  const rawFiltered = occurrences.filter((o) => {
     if (filter === "all") return o.status !== "resolved";
     if (filter === "mine") return o.assigned_agent_id === user?.id;
     return o.type === filter;
   });
+
+  // Sort by urgency score (critical/panic first, then time decay + reporter credibility)
+  const filtered = sortByUrgency(rawFiltered, occurrences);
 
   const assign = async (o) => {
     await base44.entities.Occurrence.update(o.id, { assigned_agent_id: user.id, status: "in_progress" });
@@ -99,6 +105,19 @@ export default function AgentDashboard() {
         <StatCard label="Meus atendimentos" value={myActive.length} icon={MapIcon} />
         <StatCard label="Agentes em serviço" value={agents.filter((a) => a.last_location).length} icon={Users} accent="success" />
       </div>
+
+      {/* Notification permission banner */}
+      {!permissionGranted && (
+        <div className="flex items-center justify-between p-3 rounded-xl border border-warning/40 bg-warning/5 text-sm">
+          <span className="flex items-center gap-2 text-warning">
+            <BellOff className="w-4 h-4" />
+            Ative as notificações para receber alertas de pânico e ocorrências críticas.
+          </span>
+          <Button size="sm" variant="outline" onClick={askPermission}>
+            <Bell className="w-3.5 h-3.5 mr-1" /> Ativar alertas
+          </Button>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">

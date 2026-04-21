@@ -2,15 +2,18 @@ import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, CheckCircle2, Play, MapPin, Camera } from "lucide-react";
 import { format } from "date-fns";
+import { urgencyLabel } from "@/lib/urgencyScore";
 
 export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, onSelect, currentAgentId }) {
   const tm = TYPE_META[occurrence.type] || TYPE_META.crime;
   const sm = STATUS_META[occurrence.status || "open"];
   const Icon = tm.icon;
   const isMine = occurrence.assigned_agent_id === currentAgentId;
+  const score = occurrence._urgencyScore ?? 0;
+  const urg = urgencyLabel(score);
 
   return (
-    <div className="p-4 rounded-xl border border-border/60 bg-card flex items-start gap-3">
+    <div className={`p-4 rounded-xl border bg-card flex items-start gap-3 ${score >= 160 ? "border-emergency/60" : "border-border/60"}`}>
       <div className={`w-9 h-9 rounded-lg ${tm.bg} ${tm.color} flex items-center justify-center flex-shrink-0`}>
         <Icon className="w-4 h-4" />
       </div>
@@ -18,6 +21,11 @@ export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onReso
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold">{occurrence.subtype || tm.label}</span>
           <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${sm.bg} ${sm.color} font-medium`}>{sm.label}</span>
+          {score > 0 && (
+            <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-bold ${urg.cls}`}>
+              {urg.label} {score}
+            </span>
+          )}
           {occurrence.priority === "critical" && (
             <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-emergency text-white font-bold">CRÍTICO</span>
           )}
