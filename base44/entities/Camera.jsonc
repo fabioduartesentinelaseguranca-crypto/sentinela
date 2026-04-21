@@ -1,0 +1,50 @@
+{
+  "name": "Camera",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome/identificador da c\u00e2mera"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "dome",
+        "ptz"
+      ],
+      "default": "fixed",
+      "description": "Tipo da c\u00e2mera"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Longitude"
+    },
+    "address": {
+      "type": "string",
+      "description": "Endere\u00e7o da c\u00e2mera"
+    },
+    "stream_url": {
+      "type": "string",
+      "description": "URL do stream externo (HLS/WebRTC fornecida pela prefeitura)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "C\u00e2mera ativa"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "name",
+    "lat",
+    "lng"
+  ]
+}

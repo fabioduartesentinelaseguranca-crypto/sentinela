@@ -1,9 +1,9 @@
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, CheckCircle2, Play, MapPin } from "lucide-react";
+import { MessageSquare, CheckCircle2, Play, MapPin, Camera } from "lucide-react";
 import { format } from "date-fns";
 
-export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, currentAgentId }) {
+export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, onSelect, currentAgentId }) {
   const tm = TYPE_META[occurrence.type] || TYPE_META.crime;
   const sm = STATUS_META[occurrence.status || "open"];
   const Icon = tm.icon;
@@ -43,6 +43,11 @@ export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onReso
           <Button size="sm" variant="ghost" onClick={() => onOpenChat(occurrence)}>
             <MessageSquare className="w-3 h-3 mr-1" /> Chat
           </Button>
+          {occurrence.lat && onSelect && (
+            <Button size="sm" variant="ghost" onClick={() => onSelect(occurrence)}>
+              <Camera className="w-3 h-3 mr-1" /> Câmeras
+            </Button>
+          )}
         </div>
       </div>
     </div>

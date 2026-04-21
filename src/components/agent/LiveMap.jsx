@@ -20,7 +20,14 @@ const typeColors = {
   panic: "#dc2626",
 };
 
-export default function LiveMap({ occurrences = [], agents = [], heatmap = false, center }) {
+const cameraIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:20px;height:20px;background:#38bdf8;border:2px solid #0ea5e9;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;">📷</div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+export default function LiveMap({ occurrences = [], agents = [], cameras = [], heatmap = false, center }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
 
@@ -66,6 +73,23 @@ export default function LiveMap({ occurrences = [], agents = [], heatmap = false
               <div className="text-xs">
                 <div className="font-semibold">{a.full_name}</div>
                 <div className="text-gray-500">{a.agent_badge || "Agente"}</div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        {cameras.filter((c) => c.active && c.lat && c.lng).map((c) => (
+          <Marker key={c.id} position={[c.lat, c.lng]} icon={cameraIcon}>
+            <Popup>
+              <div className="text-xs">
+                <div className="font-semibold">📷 {c.name}</div>
+                <div className="text-gray-500">{c.type === "dome" ? "Dome" : c.type === "ptz" ? "PTZ" : "Fixa"}</div>
+                {c.address && <div className="text-gray-500 mt-0.5">{c.address}</div>}
+                {c.stream_url ? (
+                  <a href={c.stream_url} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline mt-1 block">▶ Ver stream</a>
+                ) : (
+                  <div className="text-gray-400 mt-1">Stream não configurado</div>
+                )}
               </div>
             </Popup>
           </Marker>

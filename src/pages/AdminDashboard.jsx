@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/shared/StatCard";
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Users, FileText, ShieldCheck, Trophy, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import CameraManager from "@/components/admin/CameraManager";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -141,6 +142,9 @@ export default function AdminDashboard() {
           </table>
         </div>
       </div>
+
+      {/* Camera management */}
+      <CameraManager />
 
       {/* Recent occurrences */}
       <div>

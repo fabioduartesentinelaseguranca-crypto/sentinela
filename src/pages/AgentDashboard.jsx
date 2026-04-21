@@ -11,6 +11,7 @@ import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Map as MapIcon, Flame, Users, Siren } from "lucide-react";
+import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -23,14 +24,18 @@ export default function AgentDashboard() {
   const [filter, setFilter] = useState("all");
   const [chatOccurrence, setChatOccurrence] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [cameras, setCameras] = useState([]);
+  const [selectedOccurrence, setSelectedOccurrence] = useState(null);
 
   const load = async () => {
-    const [occs, allAgents] = await Promise.all([
+    const [occs, allAgents, cams] = await Promise.all([
       base44.entities.Occurrence.filter({}, "-created_date", 100),
       base44.entities.User.filter({ role: "agent" }),
+      base44.entities.Camera.list("-created_date", 500),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
+    setCameras(cams);
   };
 
   useEffect(() => {
@@ -121,7 +126,7 @@ export default function AgentDashboard() {
             </div>
           </div>
 
-          {showMap && <LiveMap occurrences={filtered} agents={agents} center={center} heatmap={heatmap} />}
+          {showMap && <LiveMap occurrences={filtered} agents={agents} cameras={cameras} center={center} heatmap={heatmap} />}
 
           <div className="space-y-2">
             {filtered.length === 0 ? (
@@ -129,16 +134,26 @@ export default function AgentDashboard() {
                 Nenhuma ocorrência com este filtro.
               </div>
             ) : (
-              filtered.map((o) => (
-                <OccurrenceRow
-                  key={o.id}
-                  occurrence={o}
-                  currentAgentId={user?.id}
-                  onOpenChat={(occ) => { setChatOccurrence(occ); setChatOpen(true); }}
-                  onAssign={assign}
-                  onResolve={resolve}
-                />
-              ))
+              filtered.map((o) => {
+                const nearbyCams = findNearbyCameras(cameras, o.lat, o.lng);
+                return (
+                  <div key={o.id}>
+                    <OccurrenceRow
+                      occurrence={o}
+                      currentAgentId={user?.id}
+                      onOpenChat={(occ) => { setChatOccurrence(occ); setChatOpen(true); }}
+                      onAssign={assign}
+                      onResolve={resolve}
+                      onSelect={() => setSelectedOccurrence(selectedOccurrence?.id === o.id ? null : o)}
+                    />
+                    {selectedOccurrence?.id === o.id && nearbyCams.length > 0 && (
+                      <div className="mt-1 ml-2">
+                        <NearCamerasAlert cameras={nearbyCams} onClose={() => setSelectedOccurrence(null)} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
