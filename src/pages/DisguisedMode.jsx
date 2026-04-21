@@ -27,6 +27,8 @@ export default function DisguisedMode() {
 
   const triggerSilentSOS = async () => {
     if (sosTriggered) return;
+    // Só permite pânico se a medida protetiva estiver ativa
+    if (user?.protective_measure_status !== "active") return;
     setSosTriggered(true);
     const loc = await getCurrentLocation();
     await base44.entities.Occurrence.create({
