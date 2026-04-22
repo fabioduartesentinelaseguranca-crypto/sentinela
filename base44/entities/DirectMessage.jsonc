@@ -1,0 +1,33 @@
+{
+  "name": "DirectMessage",
+  "type": "object",
+  "properties": {
+    "thread_id": {
+      "type": "string",
+      "description": "ID do thread (DM ou grupo)"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_role": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "read_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos usu\u00e1rios que leram"
+    }
+  },
+  "required": [
+    "thread_id",
+    "content"
+  ]
+}

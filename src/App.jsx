@@ -18,6 +18,7 @@ import AgentDashboard from './pages/AgentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Ranking from './pages/Ranking';
 import DisguisedMode from './pages/DisguisedMode';
+import MessagingCenter from './pages/MessagingCenter';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,11 +49,13 @@ const AuthenticatedApp = () => {
       {/* Agent routes */}
       <Route element={<AgentLayout />}>
         <Route path="/agent" element={<AgentDashboard />} />
+        <Route path="/messages" element={<MessagingCenter />} />
       </Route>
 
       {/* Admin routes */}
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/messages" element={<MessagingCenter />} />
       </Route>
 
       {/* Disguised mode — no layout */}

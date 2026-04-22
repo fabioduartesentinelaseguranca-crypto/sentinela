@@ -5,6 +5,7 @@ import Logo from "./Logo";
 import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import MessagingBadge from "./MessagingBadge";
 
 export default function AppLayout({ navItems = [], roleLabel }) {
   const { user } = useAuth();
@@ -47,6 +48,8 @@ export default function AppLayout({ navItems = [], roleLabel }) {
             ))}
           </nav>
 
+          <div className="flex items-center gap-1">
+          <MessagingBadge />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
@@ -71,6 +74,7 @@ export default function AppLayout({ navItems = [], roleLabel }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         {/* Mobile nav */}

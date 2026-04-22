@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
+import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
 import { sortByUrgency } from "@/lib/urgencyScore";
+import BiometricCheckIn from "@/components/agent/BiometricCheckIn";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -28,17 +30,28 @@ export default function AgentDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const [cameras, setCameras] = useState([]);
   const [selectedOccurrence, setSelectedOccurrence] = useState(null);
+  const [activeShift, setActiveShift] = useState(null);
+  const [boundaryAlert, setBoundaryAlert] = useState(null);
   const { permissionGranted, askPermission } = useAgentAlerts(true);
 
+  usePatrolZoneBoundary({
+    userId: user?.id,
+    userName: user?.full_name,
+    currentLocation: center,
+    onBoundaryAlert: (info) => setBoundaryAlert(info),
+  });
+
   const load = async () => {
-    const [occs, allAgents, cams] = await Promise.all([
+    const [occs, allAgents, cams, shifts] = await Promise.all([
       base44.entities.Occurrence.filter({}, "-created_date", 100),
       base44.entities.User.filter({ role: "agent" }),
       base44.entities.Camera.list("-created_date", 500),
+      user?.id ? base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1) : Promise.resolve([]),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
     setCameras(cams);
+    setActiveShift(shifts[0] || null);
   };
 
   useEffect(() => {
@@ -105,6 +118,26 @@ export default function AgentDashboard() {
         <StatCard label="Meus atendimentos" value={myActive.length} icon={MapIcon} />
         <StatCard label="Agentes em serviço" value={agents.filter((a) => a.last_location).length} icon={Users} accent="success" />
       </div>
+
+      {/* Biometric check-in (shown only when no active shift) */}
+      {!activeShift && (
+        <BiometricCheckIn
+          userId={user?.id}
+          userName={user?.full_name}
+          activeShift={activeShift}
+          onVerified={load}
+        />
+      )}
+
+      {/* Patrol zone boundary alert */}
+      {boundaryAlert && (
+        <div className="flex items-center justify-between p-3 rounded-xl border border-warning/50 bg-warning/5 text-sm">
+          <span className="text-warning font-medium">
+            ⚠ Você está {boundaryAlert.distanceM?.toFixed(0)}m fora da zona "{boundaryAlert.zone?.name}"
+          </span>
+          <button onClick={() => setBoundaryAlert(null)} className="text-xs text-muted-foreground hover:text-foreground ml-4">✕</button>
+        </div>
+      )}
 
       {/* Notification permission banner */}
       {!permissionGranted && (
