@@ -7,6 +7,8 @@ import CameraManager from "@/components/admin/CameraManager";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import PdfReportGenerator from "@/components/admin/PdfReportGenerator";
 import PatrolScheduler from "@/components/admin/PatrolScheduler";
+import VehicleManager from "@/components/admin/VehicleManager";
+import ManagerDashboard from "@/components/admin/ManagerDashboard";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -16,15 +18,18 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [pendingDocs, setPendingDocs] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
 
   const load = async () => {
-    const [occs, allUsers] = await Promise.all([
+    const [occs, allUsers, vehs] = await Promise.all([
       base44.entities.Occurrence.list("-created_date", 500),
       base44.entities.User.list("-created_date", 200),
+      base44.entities.Vehicle.list("-created_date", 100),
     ]);
     setOccurrences(occs);
     setUsers(allUsers);
+    setVehicles(vehs);
     setPendingDocs(allUsers.filter((u) => u.protective_measure_status === "pending"));
     setAgents(allUsers.filter((u) => u.role === "agent"));
   };
@@ -56,7 +61,9 @@ export default function AdminDashboard() {
 
   const TABS = [
     { id: "overview", label: "Visão Geral" },
+    { id: "manager", label: "Dashboard Gestor" },
     { id: "analytics", label: "Analítico" },
+    { id: "vehicles", label: "Viaturas" },
     { id: "patrol", label: "Escalas e Patrulha" },
     { id: "report", label: "Relatório PDF" },
     { id: "cameras", label: "Câmeras" },
@@ -197,6 +204,16 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── MANAGER DASHBOARD TAB ─────────────────────────── */}
+      {activeTab === "manager" && (
+        <ManagerDashboard occurrences={occurrences} vehicles={vehicles} />
+      )}
+
+      {/* ── VEHICLES TAB ──────────────────────────────────── */}
+      {activeTab === "vehicles" && (
+        <VehicleManager agents={agents} />
       )}
 
       {/* ── ANALYTICS TAB ─────────────────────────────────── */}

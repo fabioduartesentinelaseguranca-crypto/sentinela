@@ -1,0 +1,60 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "prefix": {
+      "type": "string",
+      "description": "Prefixo da viatura (ex: RP-01)"
+    },
+    "plate": {
+      "type": "string",
+      "description": "Placa"
+    },
+    "model": {
+      "type": "string",
+      "description": "Modelo do ve\u00edculo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "on_patrol",
+        "maintenance",
+        "inactive"
+      ],
+      "default": "available"
+    },
+    "odometer_km": {
+      "type": "number",
+      "default": 0,
+      "description": "KM total registrado"
+    },
+    "daily_km": {
+      "type": "number",
+      "default": 0,
+      "description": "KM rodados hoje"
+    },
+    "last_maintenance_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_maintenance_km": {
+      "type": "number",
+      "description": "KM para pr\u00f3xima revis\u00e3o"
+    },
+    "assigned_agent_id": {
+      "type": "string",
+      "description": "Agente atualmente atribu\u00eddo"
+    },
+    "assigned_agent_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "prefix",
+    "plate"
+  ]
+}

@@ -18,6 +18,8 @@ import { sortByUrgency } from "@/lib/urgencyScore";
 import BiometricCheckIn from "@/components/agent/BiometricCheckIn";
 import CameraStreamViewer from "@/components/agent/CameraStreamViewer";
 import ShiftReport from "@/components/agent/ShiftReport";
+import CriticalAlert from "@/components/agent/CriticalAlert";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -37,6 +39,13 @@ export default function AgentDashboard() {
   const [streamCamera, setStreamCamera] = useState(null);
   const [streamOpen, setStreamOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [criticalOcc, setCriticalOcc] = useState(null);
+
+  usePushNotifications({
+    enabled: permissionGranted,
+    agentId: user?.id,
+    onCritical: (occ) => setCriticalOcc(occ),
+  });
   const { permissionGranted, askPermission } = useAgentAlerts(true);
 
   usePatrolZoneBoundary({
@@ -257,6 +266,14 @@ export default function AgentDashboard() {
 
       <OccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
       <CameraStreamViewer camera={streamCamera} open={streamOpen} onOpenChange={setStreamOpen} />
+      {criticalOcc && (
+        <CriticalAlert
+          occurrence={criticalOcc}
+          agentId={user?.id}
+          onAccept={(occ) => { setCriticalOcc(null); load(); }}
+          onDismiss={() => setCriticalOcc(null)}
+        />
+      )}
       <ShiftReport
         shift={activeShift}
         agentName={user?.full_name}
