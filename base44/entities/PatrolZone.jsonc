@@ -1,0 +1,41 @@
+{
+  "name": "PatrolZone",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da zona / bairro"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Latitude central da zona"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Longitude central da zona"
+    },
+    "shift_type": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "night",
+        "24h"
+      ],
+      "default": "morning",
+      "description": "Turno preferencial"
+    },
+    "assigned_agent_id": {
+      "type": "string",
+      "description": "Agente titular da zona"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "lat",
+    "lng"
+  ]
+}
