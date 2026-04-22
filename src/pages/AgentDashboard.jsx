@@ -10,12 +10,14 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
 import { sortByUrgency } from "@/lib/urgencyScore";
 import BiometricCheckIn from "@/components/agent/BiometricCheckIn";
+import CameraStreamViewer from "@/components/agent/CameraStreamViewer";
+import ShiftReport from "@/components/agent/ShiftReport";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -32,6 +34,9 @@ export default function AgentDashboard() {
   const [selectedOccurrence, setSelectedOccurrence] = useState(null);
   const [activeShift, setActiveShift] = useState(null);
   const [boundaryAlert, setBoundaryAlert] = useState(null);
+  const [streamCamera, setStreamCamera] = useState(null);
+  const [streamOpen, setStreamOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const { permissionGranted, askPermission } = useAgentAlerts(true);
 
   usePatrolZoneBoundary({
@@ -107,9 +112,16 @@ export default function AgentDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Central do Agente</h1>
-        <p className="text-sm text-muted-foreground mt-1">Ocorrências ativas, viatura e comunicação tática.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Central do Agente</h1>
+          <p className="text-sm text-muted-foreground mt-1">Ocorrências ativas, viatura e comunicação tática.</p>
+        </div>
+        {activeShift && (
+          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+            <FileText className="w-4 h-4 mr-1.5" /> Relatório de Turno
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -178,7 +190,16 @@ export default function AgentDashboard() {
             </div>
           </div>
 
-          {showMap && <LiveMap occurrences={filtered} agents={agents} cameras={cameras} center={center} heatmap={heatmap} />}
+          {showMap && (
+            <LiveMap
+              occurrences={filtered}
+              agents={agents}
+              cameras={cameras}
+              center={center}
+              heatmap={heatmap}
+              onCameraClick={(cam) => { setStreamCamera(cam); setStreamOpen(true); }}
+            />
+          )}
 
           <div className="space-y-2">
             {filtered.length === 0 ? (
@@ -235,6 +256,13 @@ export default function AgentDashboard() {
       </div>
 
       <OccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
+      <CameraStreamViewer camera={streamCamera} open={streamOpen} onOpenChange={setStreamOpen} />
+      <ShiftReport
+        shift={activeShift}
+        agentName={user?.full_name}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
     </div>
   );
 }

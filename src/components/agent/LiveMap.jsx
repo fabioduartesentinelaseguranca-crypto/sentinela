@@ -27,7 +27,7 @@ const cameraIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-export default function LiveMap({ occurrences = [], agents = [], cameras = [], heatmap = false, center }) {
+export default function LiveMap({ occurrences = [], agents = [], cameras = [], heatmap = false, center, onCameraClick }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
 
@@ -78,15 +78,22 @@ export default function LiveMap({ occurrences = [], agents = [], cameras = [], h
           </Marker>
         ))}
         {cameras.filter((c) => c.active && c.lat && c.lng).map((c) => (
-          <Marker key={c.id} position={[c.lat, c.lng]} icon={cameraIcon}>
+          <Marker
+            key={c.id}
+            position={[c.lat, c.lng]}
+            icon={cameraIcon}
+            eventHandlers={onCameraClick ? { click: () => onCameraClick(c) } : {}}
+          >
             <Popup>
               <div className="text-xs">
                 <div className="font-semibold">📷 {c.name}</div>
                 <div className="text-gray-500">{c.type === "dome" ? "Dome" : c.type === "ptz" ? "PTZ" : "Fixa"}</div>
                 {c.address && <div className="text-gray-500 mt-0.5">{c.address}</div>}
                 {c.stream_url ? (
-                  <a href={c.stream_url} target="_blank" rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline mt-1 block">▶ Ver stream</a>
+                  <button
+                    onClick={() => onCameraClick?.(c)}
+                    className="text-blue-600 hover:underline mt-1 block text-left"
+                  >▶ Ver ao vivo</button>
                 ) : (
                   <div className="text-gray-400 mt-1">Stream não configurado</div>
                 )}
