@@ -1,9 +1,10 @@
 import AppLayout from "./AppLayout";
-import { Map, MessageSquare } from "lucide-react";
+import { Map, MessageSquare, BookOpen } from "lucide-react";
 
 const NAV = [
   { to: "/agent", end: true, label: "Central", icon: Map },
   { to: "/messages", label: "Mensagens", icon: MessageSquare },
+  { to: "/training", label: "Capacitação", icon: BookOpen },
 ];
 
 export default function AgentLayout() {

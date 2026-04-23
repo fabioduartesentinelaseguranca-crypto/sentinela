@@ -20,6 +20,8 @@ import CameraStreamViewer from "@/components/agent/CameraStreamViewer";
 import ShiftReport from "@/components/agent/ShiftReport";
 import CriticalAlert from "@/components/agent/CriticalAlert";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
+import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -41,12 +43,29 @@ export default function AgentDashboard() {
   const [reportOpen, setReportOpen] = useState(false);
   const [criticalOcc, setCriticalOcc] = useState(null);
 
+  // Must be declared BEFORE usePushNotifications
+  const { permissionGranted, askPermission } = useAgentAlerts(true);
+
   usePushNotifications({
     enabled: permissionGranted,
     agentId: user?.id,
     onCritical: (occ) => setCriticalOcc(occ),
   });
-  const { permissionGranted, askPermission } = useAgentAlerts(true);
+
+  // Breadcrumb: record route during shift
+  useShiftBreadcrumb({
+    shiftId: activeShift?.id,
+    agentId: user?.id,
+    agentName: user?.full_name,
+    enabled: !!activeShift,
+  });
+
+  // Telemetria: push GPS to Vehicle + User every 15s
+  useVehicleTelemetry({
+    agentId: user?.id,
+    vehicleId: activeShift?.vehicle_id,
+    enabled: !!activeShift,
+  });
 
   usePatrolZoneBoundary({
     userId: user?.id,
@@ -206,6 +225,7 @@ export default function AgentDashboard() {
               cameras={cameras}
               center={center}
               heatmap={heatmap}
+              shiftId={activeShift?.id}
               onCameraClick={(cam) => { setStreamCamera(cam); setStreamOpen(true); }}
             />
           )}

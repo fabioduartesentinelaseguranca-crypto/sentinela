@@ -1,0 +1,60 @@
+{
+  "name": "TrainingModule",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "URL do v\u00eddeo (YouTube embed ou direto)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "protocols",
+        "legislation",
+        "first_aid",
+        "communication",
+        "tactical"
+      ],
+      "default": "protocols"
+    },
+    "quiz": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct": {
+            "type": "number",
+            "description": "\u00cdndice da resposta correta"
+          }
+        }
+      }
+    },
+    "passing_score": {
+      "type": "number",
+      "default": 70,
+      "description": "% m\u00ednima para aprova\u00e7\u00e3o"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

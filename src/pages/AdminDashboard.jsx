@@ -9,6 +9,7 @@ import PdfReportGenerator from "@/components/admin/PdfReportGenerator";
 import PatrolScheduler from "@/components/admin/PatrolScheduler";
 import VehicleManager from "@/components/admin/VehicleManager";
 import ManagerDashboard from "@/components/admin/ManagerDashboard";
+import TrainingManager from "@/components/admin/TrainingManager";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -65,6 +66,7 @@ export default function AdminDashboard() {
     { id: "analytics", label: "Analítico" },
     { id: "vehicles", label: "Viaturas" },
     { id: "patrol", label: "Escalas e Patrulha" },
+    { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
     { id: "cameras", label: "Câmeras" },
   ];
@@ -239,6 +241,9 @@ export default function AdminDashboard() {
       {activeTab === "report" && (
         <PdfReportGenerator occurrences={occurrences} users={users} />
       )}
+
+      {/* ── TRAINING TAB ──────────────────────────────────── */}
+      {activeTab === "training" && <TrainingManager />}
 
       {/* ── CAMERAS TAB ─────────────────────────────────── */}
       {activeTab === "cameras" && <CameraManager />}

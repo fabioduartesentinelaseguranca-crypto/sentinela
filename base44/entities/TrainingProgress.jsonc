@@ -1,0 +1,45 @@
+{
+  "name": "TrainingProgress",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "module_id": {
+      "type": "string"
+    },
+    "module_title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "watching",
+        "quiz",
+        "passed",
+        "failed"
+      ],
+      "default": "not_started"
+    },
+    "score": {
+      "type": "number",
+      "description": "% obtida no quiz"
+    },
+    "attempts": {
+      "type": "number",
+      "default": 0
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "agent_id",
+    "module_id"
+  ]
+}

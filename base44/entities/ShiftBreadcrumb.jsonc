@@ -1,0 +1,37 @@
+{
+  "name": "ShiftBreadcrumb",
+  "type": "object",
+  "properties": {
+    "shift_id": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "ts": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Array de coordenadas GPS coletadas durante o turno"
+    }
+  },
+  "required": [
+    "shift_id",
+    "agent_id"
+  ]
+}

@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaf
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { TYPE_META } from "@/lib/occurrenceMeta";
+import BreadcrumbMapLayer from "@/components/agent/BreadcrumbMapLayer";
 
 // Fix default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,7 +28,7 @@ const cameraIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-export default function LiveMap({ occurrences = [], agents = [], cameras = [], heatmap = false, center, onCameraClick }) {
+export default function LiveMap({ occurrences = [], agents = [], cameras = [], heatmap = false, center, shiftId, onCameraClick }) {
   const [ready, setReady] = useState(false);
   useEffect(() => { setReady(true); }, []);
 
@@ -77,6 +78,9 @@ export default function LiveMap({ occurrences = [], agents = [], cameras = [], h
             </Popup>
           </Marker>
         ))}
+        {/* Breadcrumb trail for active shift */}
+        {shiftId && <BreadcrumbMapLayer shiftId={shiftId} />}
+
         {cameras.filter((c) => c.active && c.lat && c.lng).map((c) => (
           <Marker
             key={c.id}
