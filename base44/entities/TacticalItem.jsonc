@@ -1,0 +1,66 @@
+{
+  "name": "TacticalItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do equipamento"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "vest",
+        "radio",
+        "flashlight",
+        "handcuff",
+        "first_aid",
+        "other"
+      ],
+      "default": "other"
+    },
+    "serial_number": {
+      "type": "string"
+    },
+    "total_quantity": {
+      "type": "number",
+      "default": 0
+    },
+    "available_quantity": {
+      "type": "number",
+      "default": 0
+    },
+    "min_quantity": {
+      "type": "number",
+      "default": 2,
+      "description": "N\u00edvel m\u00ednimo para alerta"
+    },
+    "maintenance_interval_days": {
+      "type": "number",
+      "description": "Intervalo de manuten\u00e7\u00e3o em dias"
+    },
+    "last_maintenance_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_maintenance_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "low_stock",
+        "maintenance_due",
+        "inactive"
+      ],
+      "default": "ok"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

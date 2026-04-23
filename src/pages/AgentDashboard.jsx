@@ -17,8 +17,10 @@ import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
 import { sortByUrgency } from "@/lib/urgencyScore";
 import BiometricCheckIn from "@/components/agent/BiometricCheckIn";
 import CameraStreamViewer from "@/components/agent/CameraStreamViewer";
+import PredictivePatrol from "@/components/admin/PredictivePatrol";
 import ShiftReport from "@/components/agent/ShiftReport";
 import CriticalAlert from "@/components/agent/CriticalAlert";
+import ResolveOccurrenceDialog from "@/components/agent/ResolveOccurrenceDialog";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -42,6 +44,8 @@ export default function AgentDashboard() {
   const [streamOpen, setStreamOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [criticalOcc, setCriticalOcc] = useState(null);
+  const [resolveOcc, setResolveOcc] = useState(null);
+  const [resolveOpen, setResolveOpen] = useState(false);
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -117,10 +121,14 @@ export default function AgentDashboard() {
     load();
   };
 
-  const resolve = async (o) => {
-    await base44.entities.Occurrence.update(o.id, { status: "resolved" });
+  const openResolve = (o) => {
+    setResolveOcc(o);
+    setResolveOpen(true);
+  };
+
+  const afterResolved = async (o) => {
     // Gamificação: conceder pontos ao cidadão reportante se aplicável
-    if (o.awarded_points && o.reporter_id) {
+    if (o?.awarded_points && o?.reporter_id) {
       const reporter = await base44.entities.User.filter({ id: o.reporter_id });
       const current = reporter[0];
       if (current) {
@@ -129,12 +137,11 @@ export default function AgentDashboard() {
           user_id: current.id,
           user_name: current.full_name,
           points: o.awarded_points,
-          reason: "Defesa Civil resolvida",
+          reason: "Ocorrência resolvida",
           occurrence_id: o.id,
         });
       }
     }
-    toast.success("Ocorrência resolvida");
     load();
   };
 
@@ -245,7 +252,7 @@ export default function AgentDashboard() {
                       currentAgentId={user?.id}
                       onOpenChat={(occ) => { setChatOccurrence(occ); setChatOpen(true); }}
                       onAssign={assign}
-                      onResolve={resolve}
+                      onResolve={openResolve}
                       onSelect={() => setSelectedOccurrence(selectedOccurrence?.id === o.id ? null : o)}
                     />
                     {selectedOccurrence?.id === o.id && nearbyCams.length > 0 && (
@@ -262,6 +269,10 @@ export default function AgentDashboard() {
 
         <div className="space-y-4">
           <ShiftManager userId={user?.id} />
+
+          <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <PredictivePatrol occurrences={occurrences} />
+          </div>
 
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <h3 className="font-semibold flex items-center gap-2 mb-3">
@@ -284,6 +295,12 @@ export default function AgentDashboard() {
         </div>
       </div>
 
+      <ResolveOccurrenceDialog
+        occurrence={resolveOcc}
+        open={resolveOpen}
+        onOpenChange={setResolveOpen}
+        onResolved={() => afterResolved(resolveOcc)}
+      />
       <OccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
       <CameraStreamViewer camera={streamCamera} open={streamOpen} onOpenChange={setStreamOpen} />
       {criticalOcc && (

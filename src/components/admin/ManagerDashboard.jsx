@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from "recharts";
 import { TYPE_META } from "@/lib/occurrenceMeta";
 import { differenceInMinutes } from "date-fns";
 import { Clock, Zap, Car, TrendingUp } from "lucide-react";
+import PredictivePatrol from "@/components/admin/PredictivePatrol";
 
 const COLORS = ["#38bdf8", "#ef4444", "#f59e0b", "#22c55e", "#a855f7"];
 
@@ -162,6 +163,11 @@ export default function ManagerDashboard({ occurrences = [], vehicles = [] }) {
             </ResponsiveContainer>
           )}
         </div>
+      </div>
+
+      {/* Predictive patrol */}
+      <div className="p-5 rounded-2xl border border-border/60 bg-card">
+        <PredictivePatrol occurrences={occurrences} />
       </div>
 
       {/* Occurrences by type */}

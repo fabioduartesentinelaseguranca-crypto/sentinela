@@ -1,0 +1,41 @@
+{
+  "name": "StockMovement",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string"
+    },
+    "item_name": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "checkout",
+        "return"
+      ],
+      "description": "checkout = retirada, return = devolu\u00e7\u00e3o"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "shift_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "item_id",
+    "type",
+    "quantity"
+  ]
+}
