@@ -10,7 +10,7 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
@@ -21,6 +21,8 @@ import PredictivePatrol from "@/components/admin/PredictivePatrol";
 import ShiftReport from "@/components/agent/ShiftReport";
 import CriticalAlert from "@/components/agent/CriticalAlert";
 import ResolveOccurrenceDialog from "@/components/agent/ResolveOccurrenceDialog";
+import AgentMedalCard from "@/components/agent/AgentMedalCard";
+import MaintenanceTicketDialog from "@/components/agent/MaintenanceTicketDialog";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -46,6 +48,8 @@ export default function AgentDashboard() {
   const [criticalOcc, setCriticalOcc] = useState(null);
   const [resolveOcc, setResolveOcc] = useState(null);
   const [resolveOpen, setResolveOpen] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -79,16 +83,18 @@ export default function AgentDashboard() {
   });
 
   const load = async () => {
-    const [occs, allAgents, cams, shifts] = await Promise.all([
+    const [occs, allAgents, cams, shifts, fbs] = await Promise.all([
       base44.entities.Occurrence.filter({}, "-created_date", 100),
       base44.entities.User.filter({ role: "agent" }),
       base44.entities.Camera.list("-created_date", 500),
       user?.id ? base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1) : Promise.resolve([]),
+      base44.entities.CitizenFeedback.list("-created_date", 200),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
     setCameras(cams);
     setActiveShift(shifts[0] || null);
+    setFeedbacks(fbs);
   };
 
   useEffect(() => {
@@ -152,11 +158,16 @@ export default function AgentDashboard() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Central do Agente</h1>
           <p className="text-sm text-muted-foreground mt-1">Ocorrências ativas, viatura e comunicação tática.</p>
         </div>
-        {activeShift && (
-          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
-            <FileText className="w-4 h-4 mr-1.5" /> Relatório de Turno
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setMaintenanceOpen(true)}>
+            <Wrench className="w-4 h-4 mr-1.5" /> Manutenção
           </Button>
-        )}
+          {activeShift && (
+            <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+              <FileText className="w-4 h-4 mr-1.5" /> Relatório de Turno
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -274,6 +285,10 @@ export default function AgentDashboard() {
             <PredictivePatrol occurrences={occurrences} />
           </div>
 
+          {user?.id && (
+            <AgentMedalCard agentId={user.id} occurrences={occurrences} feedbacks={feedbacks} />
+          )}
+
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <h3 className="font-semibold flex items-center gap-2 mb-3">
               <Users className="w-4 h-4 text-primary" />
@@ -295,6 +310,12 @@ export default function AgentDashboard() {
         </div>
       </div>
 
+      <MaintenanceTicketDialog
+        open={maintenanceOpen}
+        onOpenChange={setMaintenanceOpen}
+        agentId={user?.id}
+        agentName={user?.full_name}
+      />
       <ResolveOccurrenceDialog
         occurrence={resolveOcc}
         open={resolveOpen}

@@ -1,0 +1,65 @@
+{
+  "name": "MaintenanceTicket",
+  "type": "object",
+  "properties": {
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "vehicle",
+        "tactical_item"
+      ],
+      "description": "Tipo do item com falha"
+    },
+    "item_id": {
+      "type": "string"
+    },
+    "item_name": {
+      "type": "string"
+    },
+    "reported_by_id": {
+      "type": "string"
+    },
+    "reported_by_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da falha"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "approved",
+        "in_repair",
+        "resolved",
+        "rejected"
+      ],
+      "default": "open"
+    },
+    "manager_notes": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    }
+  },
+  "required": [
+    "item_type",
+    "item_name",
+    "description"
+  ]
+}

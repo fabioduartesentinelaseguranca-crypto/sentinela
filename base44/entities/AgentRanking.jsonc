@@ -1,0 +1,43 @@
+{
+  "name": "AgentRanking",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "resolved_count": {
+      "type": "number",
+      "default": 0
+    },
+    "avg_response_min": {
+      "type": "number",
+      "default": 0
+    },
+    "positive_feedbacks": {
+      "type": "number",
+      "default": 0
+    },
+    "score": {
+      "type": "number",
+      "default": 0,
+      "description": "Score composto para ranking"
+    },
+    "medals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de medalhas conquistadas"
+    },
+    "period": {
+      "type": "string",
+      "description": "Ex: 2026-04 (ano-mes)"
+    }
+  },
+  "required": [
+    "agent_id"
+  ]
+}

@@ -11,6 +11,9 @@ import VehicleManager from "@/components/admin/VehicleManager";
 import ManagerDashboard from "@/components/admin/ManagerDashboard";
 import TrainingManager from "@/components/admin/TrainingManager";
 import InventoryManager from "@/components/admin/InventoryManager";
+import AgentLeaderboard from "@/components/admin/AgentLeaderboard";
+import MaintenanceManager from "@/components/admin/MaintenanceManager";
+import GeofenceAlertBanner from "@/components/admin/GeofenceAlertBanner";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -68,6 +71,8 @@ export default function AdminDashboard() {
     { id: "vehicles", label: "Viaturas" },
     { id: "patrol", label: "Escalas e Patrulha" },
     { id: "inventory", label: "Estoque Tático" },
+    { id: "maintenance", label: "Manutenção" },
+    { id: "ranking", label: "Ranking Agentes" },
     { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
     { id: "cameras", label: "Câmeras" },
@@ -96,6 +101,9 @@ export default function AdminDashboard() {
           </button>
         ))}
       </div>
+
+      {/* ── GEOFENCE ALERTS (always visible) ─────────────── */}
+      <GeofenceAlertBanner />
 
       {/* ── OVERVIEW TAB ─────────────────────────────────── */}
       {activeTab === "overview" && (
@@ -246,6 +254,12 @@ export default function AdminDashboard() {
 
       {/* ── INVENTORY TAB ─────────────────────────────────── */}
       {activeTab === "inventory" && <InventoryManager agents={agents} />}
+
+      {/* ── MAINTENANCE TAB ───────────────────────────────── */}
+      {activeTab === "maintenance" && <MaintenanceManager />}
+
+      {/* ── RANKING TAB ───────────────────────────────────── */}
+      {activeTab === "ranking" && <AgentLeaderboard agents={agents} occurrences={occurrences} />}
 
       {/* ── TRAINING TAB ──────────────────────────────────── */}
       {activeTab === "training" && <TrainingManager />}

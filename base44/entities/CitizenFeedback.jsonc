@@ -1,0 +1,29 @@
+{
+  "name": "CitizenFeedback",
+  "type": "object",
+  "properties": {
+    "occurrence_id": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "1-5 estrelas"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "reporter_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "occurrence_id",
+    "rating"
+  ]
+}
