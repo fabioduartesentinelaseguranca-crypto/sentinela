@@ -11,6 +11,7 @@ import EmergencyContactsManager from "@/components/citizen/EmergencyContactsMana
 import FirstAidGuide from "@/components/citizen/FirstAidGuide";
 import OccurrenceList from "@/components/citizen/OccurrenceList";
 import CitizenOccurrenceChat from "@/components/citizen/OccurrenceChat";
+import AnonymousTipForm from "@/components/citizen/AnonymousTipForm";
 import StatCard from "@/components/shared/StatCard";
 import { FileText, Shield, Trophy } from "lucide-react";
 
@@ -109,6 +110,10 @@ export default function CitizenDashboard() {
           <ProtectiveMeasureCard user={user} onUpdated={refreshUser} />
           <EmergencyContactsManager userId={user?.id} onChange={setContacts} />
           <FirstAidGuide />
+
+          <div className="rounded-2xl border border-border/60 bg-card p-5">
+            <AnonymousTipForm />
+          </div>
 
           <Link to="/disguise" className="block rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors">
             <div className="flex items-center gap-3">

@@ -1,0 +1,58 @@
+{
+  "name": "ScheduledShift",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "vehicle_name": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "zone_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da escala (YYYY-MM-DD)"
+    },
+    "shift_type": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "night"
+      ],
+      "default": "morning"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "HH:MM"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "HH:MM"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "alert_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "agent_id",
+    "date",
+    "shift_type"
+  ]
+}

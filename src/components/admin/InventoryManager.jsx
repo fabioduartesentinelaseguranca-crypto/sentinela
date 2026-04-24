@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { isAfter, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,13 +39,24 @@ export default function InventoryManager({ agents = [] }) {
   const [form, setForm] = useState(EMPTY_ITEM);
   const [moveForm, setMoveForm] = useState({ type: "checkout", quantity: 1, agent_id: "", notes: "" });
 
+  const [certs, setCerts] = useState([]);
+
   const load = async () => {
-    const [its, movs] = await Promise.all([
+    const [its, movs, cs] = await Promise.all([
       base44.entities.TacticalItem.list("created_date", 200),
       base44.entities.StockMovement.list("-created_date", 100),
+      base44.entities.CertificateRecord.list("-issued_at", 500),
     ]);
     setItems(its);
     setMovements(movs);
+    setCerts(cs);
+  };
+
+  const isAgentCertBlocked = (agentId) => {
+    const agentCerts = certs.filter((c) => c.agent_id === agentId);
+    if (agentCerts.length === 0) return false; // no cert required — not blocked
+    // Block if any certificate is expired
+    return agentCerts.some((c) => c.expires_at && !isAfter(parseISO(c.expires_at), new Date()));
   };
 
   useEffect(() => { load(); }, []);
@@ -67,6 +79,10 @@ export default function InventoryManager({ agents = [] }) {
 
   const saveMovement = async () => {
     if (!moveForm.agent_id) { toast.error("Selecione o agente"); return; }
+    if (moveForm.type === "checkout" && isAgentCertBlocked(moveForm.agent_id)) {
+      toast.error("🔒 Agente possui certificação vencida. Retirada de equipamento bloqueada.");
+      return;
+    }
     const agent = agents.find((a) => a.id === moveForm.agent_id);
     const qty = Number(moveForm.quantity);
     const item = moveDialog;

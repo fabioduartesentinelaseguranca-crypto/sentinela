@@ -1,0 +1,38 @@
+{
+  "name": "CertificateRecord",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "module_id": {
+      "type": "string"
+    },
+    "module_title": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Validade do certificado"
+    },
+    "score": {
+      "type": "number"
+    },
+    "valid": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "agent_id",
+    "module_id"
+  ]
+}

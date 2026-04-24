@@ -1,0 +1,51 @@
+{
+  "name": "AnonymousTip",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "address": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "drug_traffic",
+        "suspicious_activity",
+        "vandalism",
+        "abandoned_vehicle",
+        "risk_area",
+        "other"
+      ],
+      "default": "other"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "manager_notes": {
+      "type": "string"
+    },
+    "media_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "description"
+  ]
+}

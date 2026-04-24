@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { BookOpen, CheckCircle2, Play, RotateCcw, Trophy } from "lucide-react";
+import { BookOpen, CheckCircle2, Play, RotateCcw, Trophy, Award } from "lucide-react";
 import { toast } from "sonner";
+import { addMonths } from "date-fns";
 import TrainingQuiz from "@/components/training/TrainingQuiz";
+import CertificatePanel from "@/components/training/CertificatePanel";
 
 const CATEGORY_LABELS = {
   protocols: "Protocolos",
@@ -59,11 +61,12 @@ export default function TrainingCenter() {
     const prog = getProgress(selected.id);
     const passing = selected.passing_score ?? 70;
     const passed = score >= passing;
+    const now = new Date();
     const updates = {
       score,
       status: passed ? "passed" : "failed",
       attempts: (prog?.attempts || 0) + 1,
-      completed_at: new Date().toISOString(),
+      completed_at: now.toISOString(),
     };
     if (prog) {
       await base44.entities.TrainingProgress.update(prog.id, updates);
@@ -76,8 +79,34 @@ export default function TrainingCenter() {
         ...updates,
       });
     }
+
+    // Emit certificate if passed
+    if (passed) {
+      const expiresAt = addMonths(now, 12); // 1 year validity
+      const existing = await base44.entities.CertificateRecord.filter({ agent_id: user.id, module_id: selected.id });
+      if (existing.length > 0) {
+        await base44.entities.CertificateRecord.update(existing[0].id, {
+          issued_at: now.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          score,
+          valid: true,
+        });
+      } else {
+        await base44.entities.CertificateRecord.create({
+          agent_id: user.id,
+          agent_name: user.full_name,
+          module_id: selected.id,
+          module_title: selected.title,
+          issued_at: now.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          score,
+          valid: true,
+        });
+      }
+    }
+
     toast[passed ? "success" : "error"](
-      passed ? `Aprovado! Nota: ${score}%` : `Reprovado. Nota: ${score}%. Tente novamente.`
+      passed ? `Aprovado! Nota: ${score}% — Certificado emitido por 1 ano` : `Reprovado. Nota: ${score}%. Tente novamente.`
     );
     setQuizOpen(false);
     load();
@@ -110,6 +139,8 @@ export default function TrainingCenter() {
           Nenhum módulo disponível no momento.
         </div>
       )}
+
+      <CertificatePanel agentId={user?.id} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {modules.map((mod) => {

@@ -14,6 +14,8 @@ import InventoryManager from "@/components/admin/InventoryManager";
 import AgentLeaderboard from "@/components/admin/AgentLeaderboard";
 import MaintenanceManager from "@/components/admin/MaintenanceManager";
 import GeofenceAlertBanner from "@/components/admin/GeofenceAlertBanner";
+import TipModerationPanel from "@/components/admin/TipModerationPanel";
+import ShiftCalendar from "@/components/admin/ShiftCalendar";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -73,6 +75,8 @@ export default function AdminDashboard() {
     { id: "inventory", label: "Estoque Tático" },
     { id: "maintenance", label: "Manutenção" },
     { id: "ranking", label: "Ranking Agentes" },
+    { id: "tips", label: "Denúncias" },
+    { id: "schedule", label: "Escalas" },
     { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
     { id: "cameras", label: "Câmeras" },
@@ -260,6 +264,12 @@ export default function AdminDashboard() {
 
       {/* ── RANKING TAB ───────────────────────────────────── */}
       {activeTab === "ranking" && <AgentLeaderboard agents={agents} occurrences={occurrences} />}
+
+      {/* ── TIPS MODERATION TAB ───────────────────────────── */}
+      {activeTab === "tips" && <TipModerationPanel />}
+
+      {/* ── SHIFT CALENDAR TAB ────────────────────────────── */}
+      {activeTab === "schedule" && <ShiftCalendar agents={agents} />}
 
       {/* ── TRAINING TAB ──────────────────────────────────── */}
       {activeTab === "training" && <TrainingManager />}
