@@ -21,6 +21,7 @@ import DisguisedMode from './pages/DisguisedMode';
 import MessagingCenter from './pages/MessagingCenter';
 import TrainingCenter from './pages/TrainingCenter';
 import AgentProfile from './pages/AgentProfile';
+import TeamAchievements from './pages/TeamAchievements';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/messages" element={<MessagingCenter />} />
         <Route path="/training" element={<TrainingCenter />} />
         <Route path="/profile" element={<AgentProfile />} />
+        <Route path="/achievements" element={<TeamAchievements />} />
       </Route>
 
       {/* Admin routes */}

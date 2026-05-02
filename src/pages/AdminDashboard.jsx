@@ -18,6 +18,7 @@ import TipModerationPanel from "@/components/admin/TipModerationPanel";
 import ShiftCalendar from "@/components/admin/ShiftCalendar";
 import PsychPanel from "@/components/admin/PsychPanel";
 import HeatmapPatrolDashboard from "@/components/admin/HeatmapPatrolDashboard";
+import TeamAchievements from "@/pages/TeamAchievements";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
     { id: "psych", label: "Psicológico" },
     { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
+    { id: "achievements", label: "Conquistas da Equipe" },
     { id: "cameras", label: "Câmeras" },
   ];
 
@@ -283,6 +285,9 @@ export default function AdminDashboard() {
 
       {/* ── TRAINING TAB ──────────────────────────────────── */}
       {activeTab === "training" && <TrainingManager />}
+
+      {/* ── ACHIEVEMENTS TAB ──────────────────────────────── */}
+      {activeTab === "achievements" && <TeamAchievements />}
 
       {/* ── CAMERAS TAB ─────────────────────────────────── */}
       {activeTab === "cameras" && <CameraManager />}

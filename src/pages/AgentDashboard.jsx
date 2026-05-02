@@ -10,7 +10,7 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
@@ -26,6 +26,9 @@ import MaintenanceTicketDialog from "@/components/agent/MaintenanceTicketDialog"
 import VehicleChecklistDialog from "@/components/agent/VehicleChecklistDialog";
 import PsychSelfEvalForm from "@/components/agent/PsychSelfEvalForm";
 import OfflineRadio from "@/components/agent/OfflineRadio";
+import VirtualPatrolMode from "@/components/agent/VirtualPatrolMode";
+import FatigueMonitor from "@/components/agent/FatigueMonitor";
+import ShiftMissions from "@/components/agent/ShiftMissions";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -55,6 +58,8 @@ export default function AgentDashboard() {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [psychOpen, setPsychOpen] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [virtualPatrolOpen, setVirtualPatrolOpen] = useState(false);
+  const [virtualPatrolTarget, setVirtualPatrolTarget] = useState(null);
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -128,7 +133,9 @@ export default function AgentDashboard() {
 
   const assign = async (o) => {
     await base44.entities.Occurrence.update(o.id, { assigned_agent_id: user.id, status: "in_progress" });
-    toast.success("Ocorrência assumida");
+    toast.success("Ocorrência assumida — ativar Patrulha Virtual?", {
+      action: { label: "Ativar", onClick: () => { setVirtualPatrolTarget(o); setVirtualPatrolOpen(true); } },
+    });
     load();
   };
 
@@ -178,6 +185,10 @@ export default function AgentDashboard() {
               <FileText className="w-4 h-4 mr-1.5" /> Relatório de Turno
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={() => { setVirtualPatrolTarget(null); setVirtualPatrolOpen(true); }}
+            className="border-primary/40 text-primary hover:bg-primary/10">
+            <Video className="w-4 h-4 mr-1.5" /> Patrulha Virtual
+          </Button>
         </div>
       </div>
 
@@ -207,6 +218,14 @@ export default function AgentDashboard() {
           <button onClick={() => setBoundaryAlert(null)} className="text-xs text-muted-foreground hover:text-foreground ml-4">✕</button>
         </div>
       )}
+
+      {/* Fatigue Monitor */}
+      <FatigueMonitor
+        agentId={user?.id}
+        agentName={user?.full_name}
+        activeShift={activeShift}
+        onOpenPsych={() => setPsychOpen(true)}
+      />
 
       {/* Notification permission banner */}
       {!permissionGranted && (
@@ -300,6 +319,13 @@ export default function AgentDashboard() {
             <AgentMedalCard agentId={user.id} occurrences={occurrences} feedbacks={feedbacks} />
           )}
 
+          <ShiftMissions
+            agentId={user?.id}
+            agentName={user?.full_name}
+            shiftId={activeShift?.id}
+            occurrences={occurrences}
+          />
+
           <OfflineRadio agentId={user?.id} agentName={user?.full_name} />
 
           <div className="rounded-2xl border border-border/60 bg-card p-5">
@@ -372,6 +398,14 @@ export default function AgentDashboard() {
         open={reportOpen}
         onOpenChange={setReportOpen}
       />
+
+      {virtualPatrolOpen && (
+        <VirtualPatrolMode
+          agentLocation={center}
+          targetOccurrence={virtualPatrolTarget}
+          onClose={() => { setVirtualPatrolOpen(false); setVirtualPatrolTarget(null); }}
+        />
+      )}
     </div>
   );
 }

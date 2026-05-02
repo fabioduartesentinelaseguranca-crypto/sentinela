@@ -1,0 +1,68 @@
+{
+  "name": "ShiftMission",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "mission_key": {
+      "type": "string",
+      "description": "chave \u00fanica da miss\u00e3o (ex: resolve_3)"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "resolve",
+        "checklist",
+        "patrol_zone",
+        "response_time",
+        "feedback"
+      ],
+      "default": "resolve"
+    },
+    "target": {
+      "type": "number",
+      "description": "meta num\u00e9rica (ex: 3 ocorr\u00eancias)"
+    },
+    "progress": {
+      "type": "number",
+      "default": 0
+    },
+    "reward_points": {
+      "type": "number",
+      "default": 50
+    },
+    "reward_badge": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "shift_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent_id",
+    "mission_key",
+    "title"
+  ]
+}

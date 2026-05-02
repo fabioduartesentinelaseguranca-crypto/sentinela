@@ -1,0 +1,58 @@
+{
+  "name": "TeamAchievement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "resolutions",
+        "response_time",
+        "checklists",
+        "training",
+        "community"
+      ],
+      "default": "resolutions"
+    },
+    "target": {
+      "type": "number"
+    },
+    "current": {
+      "type": "number",
+      "default": 0
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reward_description": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum"
+      ],
+      "default": "bronze"
+    }
+  },
+  "required": [
+    "title",
+    "target"
+  ]
+}
