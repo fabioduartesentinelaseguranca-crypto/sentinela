@@ -17,6 +17,7 @@ import GeofenceAlertBanner from "@/components/admin/GeofenceAlertBanner";
 import TipModerationPanel from "@/components/admin/TipModerationPanel";
 import ShiftCalendar from "@/components/admin/ShiftCalendar";
 import PsychPanel from "@/components/admin/PsychPanel";
+import HeatmapPatrolDashboard from "@/components/admin/HeatmapPatrolDashboard";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -78,6 +79,7 @@ export default function AdminDashboard() {
     { id: "ranking", label: "Ranking Agentes" },
     { id: "tips", label: "Denúncias" },
     { id: "schedule", label: "Escalas" },
+    { id: "heatmap", label: "Mapa Preditivo" },
     { id: "psych", label: "Psicológico" },
     { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
@@ -272,6 +274,9 @@ export default function AdminDashboard() {
 
       {/* ── SHIFT CALENDAR TAB ────────────────────────────── */}
       {activeTab === "schedule" && <ShiftCalendar agents={agents} />}
+
+      {/* ── HEATMAP TAB ───────────────────────────────────── */}
+      {activeTab === "heatmap" && <HeatmapPatrolDashboard />}
 
       {/* ── PSYCH TAB ─────────────────────────────────────── */}
       {activeTab === "psych" && <PsychPanel />}

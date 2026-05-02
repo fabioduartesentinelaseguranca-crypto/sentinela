@@ -11,6 +11,7 @@ const MEDALS = [
   { id: "top_rated", label: "Mais Bem Avaliado", icon: "⭐", desc: "Média ≥ 4.5 estrelas", color: "text-amber-400" },
   { id: "faithful", label: "Dedicado", icon: "🎖️", desc: "50+ ocorrências resolvidas", color: "text-green-400" },
   { id: "first_responder", label: "Primeiro a Responder", icon: "🚀", desc: "10+ ocorrências assumidas", color: "text-purple-400" },
+  { id: "checklist_hero", label: "Viatura Impecável", icon: "🚗", desc: "10+ checklists aprovados", color: "text-teal-400" },
 ];
 
 function calcMedals(stats) {
@@ -31,12 +32,15 @@ function calcScore(stats) {
 const RANK_COLORS = ["text-yellow-400", "text-slate-300", "text-amber-600"];
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-export default function AgentLeaderboard({ agents = [], occurrences = [] }) {
+export default function AgentLeaderboard({ agents = [], occurrences = [], highlightId = null }) {
   const [feedbacks, setFeedbacks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [checklists, setChecklists] = useState([]);
 
   useEffect(() => {
-    base44.entities.CitizenFeedback.list("-created_date", 500).then(setFeedbacks);
+    Promise.all([
+      base44.entities.CitizenFeedback.list("-created_date", 500),
+      base44.entities.VehicleChecklist.filter({ status: "approved" }, "-created_date", 200),
+    ]).then(([fbs, cls]) => { setFeedbacks(fbs); setChecklists(cls); });
   }, []);
 
   const leaderboard = useMemo(() => {
@@ -64,13 +68,16 @@ export default function AgentLeaderboard({ agents = [], occurrences = [] }) {
         avg_rating: avgRating,
         positive_feedbacks: positiveFeedbacks,
       };
-      const medals = calcMedals(stats);
+      const approvedChecklists = checklists.filter((c) => c.agent_id === agent.id).length;
+      const statsWithChecklist = { ...stats, approved_checklists: approvedChecklists };
+      const medals = calcMedals(statsWithChecklist);
+      if (approvedChecklists >= 10) medals.push("checklist_hero");
       const score = calcScore(stats);
 
-      return { agent, ...stats, medals, score };
+      return { agent, ...statsWithChecklist, medals, score };
     })
       .sort((a, b) => b.score - a.score);
-  }, [agents, occurrences, feedbacks]);
+  }, [agents, occurrences, feedbacks, checklists]);
 
   return (
     <div className="space-y-4">
@@ -95,7 +102,7 @@ export default function AgentLeaderboard({ agents = [], occurrences = [] }) {
           </thead>
           <tbody>
             {leaderboard.map((row, idx) => (
-              <tr key={row.agent.id} className={`border-b border-border/40 transition-colors hover:bg-muted/20 ${idx === 0 ? "bg-yellow-500/5" : ""}`}>
+              <tr key={row.agent.id} className={`border-b border-border/40 transition-colors hover:bg-muted/20 ${idx === 0 ? "bg-yellow-500/5" : ""} ${highlightId && row.agent.id === highlightId ? "ring-1 ring-inset ring-primary/40 bg-primary/5" : ""}`}>
                 <td className="px-4 py-3">
                   <span className={`text-lg ${RANK_COLORS[idx] || "text-muted-foreground"}`}>
                     {RANK_ICONS[idx] || `${idx + 1}`}
