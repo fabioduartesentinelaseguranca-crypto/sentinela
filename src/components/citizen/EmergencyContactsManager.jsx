@@ -20,16 +20,19 @@ export default function EmergencyContactsManager({ userId, onChange }) {
 
   const add = async () => {
     if (!form.name || !form.phone) return toast.error("Nome e telefone obrigatórios");
+    if (!userId) return toast.error("Usuário não identificado. Tente recarregar a página.");
     if (contacts.length >= 3) return toast.error("Máximo de 3 contatos");
     setLoading(true);
     await base44.entities.EmergencyContact.create({ ...form, owner_id: userId });
     setForm({ name: "", phone: "", relation: "" });
     await load();
     setLoading(false);
+    toast.success("Contato adicionado!");
   };
 
   const remove = async (id) => {
     await base44.entities.EmergencyContact.delete(id);
+    toast.success("Contato removido");
     await load();
   };
 

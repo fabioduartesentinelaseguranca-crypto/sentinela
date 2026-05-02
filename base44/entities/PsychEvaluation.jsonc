@@ -1,0 +1,62 @@
+{
+  "name": "PsychEvaluation",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "stress_level": {
+      "type": "number",
+      "description": "0-10"
+    },
+    "fatigue_level": {
+      "type": "number",
+      "description": "0-10"
+    },
+    "panic_triggers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Gatilhos selecionados"
+    },
+    "sleep_hours": {
+      "type": "number"
+    },
+    "mood": {
+      "type": "string",
+      "enum": [
+        "great",
+        "good",
+        "neutral",
+        "bad",
+        "critical"
+      ],
+      "default": "neutral"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Relato livre (opcional)"
+    },
+    "is_critical": {
+      "type": "boolean",
+      "default": false
+    },
+    "hr_alert_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "ID do psic\u00f3logo que revisou"
+    }
+  },
+  "required": [
+    "agent_id",
+    "stress_level",
+    "fatigue_level"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "OfflineMessage",
+  "type": "object",
+  "properties": {
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string",
+      "description": "Canal/grupo local: ex patrol-zone-1"
+    },
+    "content": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "is_emergency": {
+      "type": "boolean",
+      "default": false
+    },
+    "synced": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "sender_id",
+    "content",
+    "channel"
+  ]
+}

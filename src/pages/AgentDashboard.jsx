@@ -10,7 +10,7 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio } from "lucide-react";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
@@ -23,6 +23,9 @@ import CriticalAlert from "@/components/agent/CriticalAlert";
 import ResolveOccurrenceDialog from "@/components/agent/ResolveOccurrenceDialog";
 import AgentMedalCard from "@/components/agent/AgentMedalCard";
 import MaintenanceTicketDialog from "@/components/agent/MaintenanceTicketDialog";
+import VehicleChecklistDialog from "@/components/agent/VehicleChecklistDialog";
+import PsychSelfEvalForm from "@/components/agent/PsychSelfEvalForm";
+import OfflineRadio from "@/components/agent/OfflineRadio";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -49,6 +52,8 @@ export default function AgentDashboard() {
   const [resolveOcc, setResolveOcc] = useState(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [psychOpen, setPsychOpen] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
 
   // Must be declared BEFORE usePushNotifications
@@ -161,6 +166,12 @@ export default function AgentDashboard() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setMaintenanceOpen(true)}>
             <Wrench className="w-4 h-4 mr-1.5" /> Manutenção
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setChecklistOpen(true)}>
+            <ClipboardList className="w-4 h-4 mr-1.5" /> Checklist
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setPsychOpen(true)}>
+            <Brain className="w-4 h-4 mr-1.5" /> Bem-estar
           </Button>
           {activeShift && (
             <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
@@ -289,6 +300,8 @@ export default function AgentDashboard() {
             <AgentMedalCard agentId={user.id} occurrences={occurrences} feedbacks={feedbacks} />
           )}
 
+          <OfflineRadio agentId={user?.id} agentName={user?.full_name} />
+
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <h3 className="font-semibold flex items-center gap-2 mb-3">
               <Users className="w-4 h-4 text-primary" />
@@ -316,6 +329,27 @@ export default function AgentDashboard() {
         agentId={user?.id}
         agentName={user?.full_name}
       />
+      <VehicleChecklistDialog
+        open={checklistOpen}
+        onOpenChange={setChecklistOpen}
+        agentId={user?.id}
+        agentName={user?.full_name}
+        vehicleId={activeShift?.vehicle_id || ""}
+        vehiclePrefix={activeShift?.vehicle_prefix || "Sem viatura"}
+        onChecklistApproved={load}
+      />
+      {/* Psych self-eval dialog */}
+      {psychOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && setPsychOpen(false)}>
+          <div className="bg-card border border-border/60 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <PsychSelfEvalForm
+              agentId={user?.id}
+              agentName={user?.full_name}
+              onSubmitted={() => setPsychOpen(false)}
+            />
+          </div>
+        </div>
+      )}
       <ResolveOccurrenceDialog
         occurrence={resolveOcc}
         open={resolveOpen}

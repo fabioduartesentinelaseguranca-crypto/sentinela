@@ -3,14 +3,17 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car, LogIn, LogOut, Clock } from "lucide-react";
+import { Car, LogIn, LogOut, Clock, ClipboardList, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import VehicleChecklistDialog from "@/components/agent/VehicleChecklistDialog";
 
 export default function ShiftManager({ userId }) {
   const [active, setActive] = useState(null);
   const [plate, setPlate] = useState("");
   const [prefix, setPrefix] = useState("");
+  const [checklistDone, setChecklistDone] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   const load = async () => {
     if (!userId) return;
@@ -22,6 +25,7 @@ export default function ShiftManager({ userId }) {
 
   const checkIn = async () => {
     if (!prefix) return toast.error("Informe o prefixo");
+    if (!checklistDone) return toast.error("Realize o checklist da viatura antes de iniciar o turno.");
     await base44.entities.Shift.create({
       agent_id: userId,
       vehicle_plate: plate,
@@ -78,11 +82,29 @@ export default function ShiftManager({ userId }) {
             <Label className="text-xs">Placa (opcional)</Label>
             <Input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="ABC1D23" className="font-mono mt-1" />
           </div>
-          <Button onClick={checkIn} className="w-full">
+          {!checklistDone ? (
+            <Button variant="outline" onClick={() => { if (!prefix) { toast.error("Informe o prefixo primeiro"); return; } setChecklistOpen(true); }} className="w-full border-warning/40 text-warning hover:bg-warning/10">
+              <ClipboardList className="w-4 h-4 mr-2" /> Fazer Checklist da Viatura
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 text-success text-xs mb-1">
+              <CheckCircle2 className="w-4 h-4" /> Checklist aprovado
+            </div>
+          )}
+          <Button onClick={checkIn} className="w-full" disabled={!checklistDone}>
             <LogIn className="w-4 h-4 mr-2" /> Check-in
           </Button>
         </div>
       )}
+      <VehicleChecklistDialog
+        open={checklistOpen}
+        onOpenChange={setChecklistOpen}
+        agentId={userId}
+        agentName=""
+        vehicleId={prefix}
+        vehiclePrefix={prefix}
+        onChecklistApproved={() => { setChecklistDone(true); setChecklistOpen(false); }}
+      />
     </div>
   );
 }

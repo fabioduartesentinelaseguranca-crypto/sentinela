@@ -1,0 +1,67 @@
+{
+  "name": "VehicleChecklist",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "vehicle_prefix": {
+      "type": "string"
+    },
+    "shift_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "fuel_ok": {
+      "type": "boolean"
+    },
+    "tires_ok": {
+      "type": "boolean"
+    },
+    "signals_ok": {
+      "type": "boolean"
+    },
+    "fire_extinguisher_ok": {
+      "type": "boolean"
+    },
+    "first_aid_ok": {
+      "type": "boolean"
+    },
+    "lights_ok": {
+      "type": "boolean"
+    },
+    "radio_ok": {
+      "type": "boolean"
+    },
+    "critical_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Itens cr\u00edticos com problema"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "blocked"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "agent_id",
+    "vehicle_id",
+    "shift_date"
+  ]
+}

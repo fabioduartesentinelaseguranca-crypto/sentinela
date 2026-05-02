@@ -16,6 +16,7 @@ import MaintenanceManager from "@/components/admin/MaintenanceManager";
 import GeofenceAlertBanner from "@/components/admin/GeofenceAlertBanner";
 import TipModerationPanel from "@/components/admin/TipModerationPanel";
 import ShiftCalendar from "@/components/admin/ShiftCalendar";
+import PsychPanel from "@/components/admin/PsychPanel";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
     { id: "ranking", label: "Ranking Agentes" },
     { id: "tips", label: "Denúncias" },
     { id: "schedule", label: "Escalas" },
+    { id: "psych", label: "Psicológico" },
     { id: "training", label: "Capacitação" },
     { id: "report", label: "Relatório PDF" },
     { id: "cameras", label: "Câmeras" },
@@ -270,6 +272,9 @@ export default function AdminDashboard() {
 
       {/* ── SHIFT CALENDAR TAB ────────────────────────────── */}
       {activeTab === "schedule" && <ShiftCalendar agents={agents} />}
+
+      {/* ── PSYCH TAB ─────────────────────────────────────── */}
+      {activeTab === "psych" && <PsychPanel />}
 
       {/* ── TRAINING TAB ──────────────────────────────────── */}
       {activeTab === "training" && <TrainingManager />}
