@@ -4,7 +4,11 @@
   "properties": {
     "occurrence_id": {
       "type": "string",
-      "description": "ID da ocorr\u00eancia relacionada"
+      "description": "ID da ocorr\u00eancia relacionada (opcional)"
+    },
+    "channel": {
+      "type": "string",
+      "description": "Canal: general | agents | alerts | occ-{id}"
     },
     "sender_id": {
       "type": "string"
@@ -12,12 +16,41 @@
     "sender_name": {
       "type": "string"
     },
+    "sender_role": {
+      "type": "string",
+      "description": "citizen | agent | admin | psychologist"
+    },
     "content": {
       "type": "string"
+    },
+    "msg_type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "location"
+      ],
+      "default": "text"
+    },
+    "media_url": {
+      "type": "string"
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lng": {
+          "type": "number"
+        }
+      }
     }
   },
   "required": [
-    "occurrence_id",
+    "channel",
     "content"
   ]
 }

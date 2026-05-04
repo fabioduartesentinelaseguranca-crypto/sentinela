@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TYPE_META, SUBTYPES, CIVIL_DEFENSE_GAMIFIED } from "@/lib/occurrenceMeta";
 import { getCurrentLocation } from "@/lib/geo";
-import { Upload, MapPin, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload, MapPin, Loader2, CheckCircle2, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -20,9 +20,51 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
   const [address, setAddress] = useState("");
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
 
   const reset = () => {
     setSubtype(""); setDescription(""); setAddress(""); setFiles([]);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setTranscribing(true);
+        toast.info("Transcrevendo áudio...");
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+          const result = await base44.integrations.Core.InvokeLLM({
+            prompt: "Transcreva este áudio para português. Retorne apenas o texto transcrito, sem comentários.",
+            file_urls: [file_url],
+            response_json_schema: { type: "object", properties: { transcription: { type: "string" } } },
+          });
+          setDescription((prev) => (prev ? prev + " " : "") + (result.transcription || ""));
+          toast.success("Áudio transcrito com sucesso!");
+        } catch {
+          toast.error("Erro na transcrição");
+        }
+        setTranscribing(false);
+      };
+      mr.start();
+      setRecording(true);
+    } catch {
+      toast.error("Permissão de microfone negada");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
   };
 
   const handleFile = (e) => {
@@ -128,7 +170,20 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
 
           <div>
             <Label>Descrição</Label>
-            <Textarea className="mt-2" rows={3} placeholder="Detalhes do ocorrido..." value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div className="relative mt-2">
+              <Textarea rows={3} placeholder="Detalhes do ocorrido..." value={description} onChange={(e) => setDescription(e.target.value)} className="pr-10" />
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                disabled={transcribing}
+                className={`absolute right-2 top-2 p-1.5 rounded-lg transition-colors ${recording ? "bg-destructive text-white animate-pulse" : "bg-muted hover:bg-muted/80 text-muted-foreground"}`}
+                title={recording ? "Parar gravação" : "Gravar áudio e transcrever"}
+              >
+                {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            </div>
+            {recording && <p className="text-[11px] text-destructive mt-1 animate-pulse">⏺ Gravando... clique no microfone para parar e transcrever</p>}
+            {transcribing && <p className="text-[11px] text-primary mt-1">Transcrevendo áudio para texto...</p>}
           </div>
 
           <div>

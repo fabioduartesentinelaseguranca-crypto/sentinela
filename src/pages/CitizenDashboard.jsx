@@ -14,6 +14,8 @@ import CitizenOccurrenceChat from "@/components/citizen/OccurrenceChat";
 import AnonymousTipForm from "@/components/citizen/AnonymousTipForm";
 import StatCard from "@/components/shared/StatCard";
 import SecurityNewsFeed from "@/components/citizen/SecurityNewsFeed";
+import CitizenBadges from "@/components/citizen/CitizenBadges";
+import CitizenRankingPanel from "@/components/citizen/CitizenRankingPanel";
 import { FileText, Shield, Trophy } from "lucide-react";
 
 export default function CitizenDashboard() {
@@ -93,6 +95,9 @@ export default function CitizenDashboard() {
             </Link>
           </div>
           <OccurrenceList items={occurrences} onOpenChat={(o) => { setChatOccurrence(o); setChatOpen(true); }} />
+
+          <CitizenBadges occurrences={occurrences} userPoints={user?.points || 0} />
+          <CitizenRankingPanel currentUserId={user?.id} />
         </div>
 
         <div className="space-y-4">

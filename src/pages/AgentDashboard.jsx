@@ -30,6 +30,7 @@ import OfflineRadio from "@/components/agent/OfflineRadio";
 import VirtualPatrolMode from "@/components/agent/VirtualPatrolMode";
 import FatigueMonitor from "@/components/agent/FatigueMonitor";
 import ShiftMissions from "@/components/agent/ShiftMissions";
+import UnifiedChat from "@/components/agent/UnifiedChat";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
@@ -360,6 +361,8 @@ export default function AgentDashboard() {
             shiftId={activeShift?.id}
             occurrences={occurrences}
           />
+
+          <UnifiedChat />
 
           <OfflineRadio agentId={user?.id} agentName={user?.full_name} />
 

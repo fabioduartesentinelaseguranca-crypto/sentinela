@@ -24,6 +24,7 @@ import OperationalHeatmap from "@/components/admin/OperationalHeatmap";
 import WantedBoard from "@/pages/WantedBoard";
 import VideoAnalysisPanel from "@/components/admin/VideoAnalysisPanel";
 import SmartShiftAllocator from "@/components/admin/SmartShiftAllocator";
+import ForensicIntelligence from "@/components/admin/ForensicIntelligence";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -96,6 +97,7 @@ export default function AdminDashboard() {
     { id: "wanted", label: "Mural de Procurados" },
     { id: "video", label: "Análise de Vídeo" },
     { id: "smartshift", label: "Escala Inteligente" },
+    { id: "forensic", label: "Inteligência Forense" },
   ];
 
   return (
@@ -316,6 +318,9 @@ export default function AdminDashboard() {
 
       {/* ── SMART SHIFT ALLOCATOR TAB ─────────────────────── */}
       {activeTab === "smartshift" && <SmartShiftAllocator agents={agents} />}
+
+      {/* ── FORENSIC INTELLIGENCE TAB ─────────────────────── */}
+      {activeTab === "forensic" && <ForensicIntelligence />}
     </div>
   );
 }
