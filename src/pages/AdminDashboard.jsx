@@ -22,6 +22,8 @@ import TeamAchievements from "@/pages/TeamAchievements";
 import StrategicKPIs from "@/components/admin/StrategicKPIs";
 import OperationalHeatmap from "@/components/admin/OperationalHeatmap";
 import WantedBoard from "@/pages/WantedBoard";
+import VideoAnalysisPanel from "@/components/admin/VideoAnalysisPanel";
+import SmartShiftAllocator from "@/components/admin/SmartShiftAllocator";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -92,6 +94,8 @@ export default function AdminDashboard() {
     { id: "achievements", label: "Conquistas da Equipe" },
     { id: "cameras", label: "Câmeras" },
     { id: "wanted", label: "Mural de Procurados" },
+    { id: "video", label: "Análise de Vídeo" },
+    { id: "smartshift", label: "Escala Inteligente" },
   ];
 
   return (
@@ -306,6 +310,12 @@ export default function AdminDashboard() {
 
       {/* ── WANTED BOARD TAB ──────────────────────────────── */}
       {activeTab === "wanted" && <WantedBoard />}
+
+      {/* ── VIDEO ANALYSIS TAB ────────────────────────────── */}
+      {activeTab === "video" && <VideoAnalysisPanel />}
+
+      {/* ── SMART SHIFT ALLOCATOR TAB ─────────────────────── */}
+      {activeTab === "smartshift" && <SmartShiftAllocator agents={agents} />}
     </div>
   );
 }

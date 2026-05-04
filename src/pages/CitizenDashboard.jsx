@@ -13,6 +13,7 @@ import OccurrenceList from "@/components/citizen/OccurrenceList";
 import CitizenOccurrenceChat from "@/components/citizen/OccurrenceChat";
 import AnonymousTipForm from "@/components/citizen/AnonymousTipForm";
 import StatCard from "@/components/shared/StatCard";
+import SecurityNewsFeed from "@/components/citizen/SecurityNewsFeed";
 import { FileText, Shield, Trophy } from "lucide-react";
 
 export default function CitizenDashboard() {
@@ -110,6 +111,8 @@ export default function CitizenDashboard() {
           <ProtectiveMeasureCard user={user} onUpdated={refreshUser} />
           <EmergencyContactsManager userId={user?.id} onChange={setContacts} />
           <FirstAidGuide />
+
+          <SecurityNewsFeed city="sua região" />
 
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <AnonymousTipForm />

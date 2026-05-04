@@ -31,6 +31,7 @@ import VirtualPatrolMode from "@/components/agent/VirtualPatrolMode";
 import FatigueMonitor from "@/components/agent/FatigueMonitor";
 import ShiftMissions from "@/components/agent/ShiftMissions";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ export default function AgentDashboard() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [virtualPatrolOpen, setVirtualPatrolOpen] = useState(false);
   const [virtualPatrolTarget, setVirtualPatrolTarget] = useState(null);
+  const [proximityAlert, setProximityAlert] = useState(null); // {occ, dist, routeUrl}
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -81,6 +83,14 @@ export default function AgentDashboard() {
   });
 
   // Telemetria: push GPS to Vehicle + User every 15s
+  useProximityAlerts({
+    enabled: !!activeShift && !!center,
+    agentLocation: center,
+    agentId: user?.id,
+    radiusKm: 3,
+    onNearbyAlert: (occ, dist, routeUrl) => setProximityAlert({ occ, dist, routeUrl }),
+  });
+
   useVehicleTelemetry({
     agentId: user?.id,
     vehicleId: activeShift?.vehicle_id,
@@ -221,6 +231,26 @@ export default function AgentDashboard() {
             ⚠ Você está {boundaryAlert.distanceM?.toFixed(0)}m fora da zona "{boundaryAlert.zone?.name}"
           </span>
           <button onClick={() => setBoundaryAlert(null)} className="text-xs text-muted-foreground hover:text-foreground ml-4">✕</button>
+        </div>
+      )}
+
+      {/* Proximity Alert Banner */}
+      {proximityAlert && (
+        <div className="flex items-center justify-between p-4 rounded-2xl border-2 border-destructive bg-destructive/10 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <Siren className="w-6 h-6 text-destructive animate-pulse flex-shrink-0" />
+            <div>
+              <div className="font-bold text-destructive">Ocorrência a {proximityAlert.dist.toFixed(1)}km de você!</div>
+              <div className="text-sm text-muted-foreground">{proximityAlert.occ.subtype || proximityAlert.occ.type} · {proximityAlert.occ.address || ""}</div>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <a href={proximityAlert.routeUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="destructive">🗺 Rota mais rápida</Button>
+            </a>
+            <Button size="sm" variant="outline" onClick={() => { assign(proximityAlert.occ); setProximityAlert(null); }}>Assumir</Button>
+            <Button size="sm" variant="ghost" onClick={() => setProximityAlert(null)}>✕</Button>
+          </div>
         </div>
       )}
 
