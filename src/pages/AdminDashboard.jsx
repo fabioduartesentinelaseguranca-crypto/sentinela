@@ -19,6 +19,9 @@ import ShiftCalendar from "@/components/admin/ShiftCalendar";
 import PsychPanel from "@/components/admin/PsychPanel";
 import HeatmapPatrolDashboard from "@/components/admin/HeatmapPatrolDashboard";
 import TeamAchievements from "@/pages/TeamAchievements";
+import StrategicKPIs from "@/components/admin/StrategicKPIs";
+import OperationalHeatmap from "@/components/admin/OperationalHeatmap";
+import WantedBoard from "@/pages/WantedBoard";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -71,6 +74,8 @@ export default function AdminDashboard() {
 
   const TABS = [
     { id: "overview", label: "Visão Geral" },
+    { id: "kpis", label: "KPIs Estratégicos" },
+    { id: "opheatmap", label: "Mapa de Calor Operacional" },
     { id: "manager", label: "Dashboard Gestor" },
     { id: "analytics", label: "Analítico" },
     { id: "vehicles", label: "Viaturas" },
@@ -86,6 +91,7 @@ export default function AdminDashboard() {
     { id: "report", label: "Relatório PDF" },
     { id: "achievements", label: "Conquistas da Equipe" },
     { id: "cameras", label: "Câmeras" },
+    { id: "wanted", label: "Mural de Procurados" },
   ];
 
   return (
@@ -179,7 +185,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
-                          {["citizen", "agent", "admin"].map((r) => (
+                          {["citizen", "agent", "psychologist", "admin"].map((r) => (
                             <button
                               key={r}
                               onClick={() => setRole(u, r)}
@@ -227,6 +233,12 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── KPIs TAB ──────────────────────────────────────── */}
+      {activeTab === "kpis" && <StrategicKPIs occurrences={occurrences} />}
+
+      {/* ── OPERATIONAL HEATMAP TAB ───────────────────────── */}
+      {activeTab === "opheatmap" && <OperationalHeatmap occurrences={occurrences} />}
 
       {/* ── MANAGER DASHBOARD TAB ─────────────────────────── */}
       {activeTab === "manager" && (
@@ -291,6 +303,9 @@ export default function AdminDashboard() {
 
       {/* ── CAMERAS TAB ─────────────────────────────────── */}
       {activeTab === "cameras" && <CameraManager />}
+
+      {/* ── WANTED BOARD TAB ──────────────────────────────── */}
+      {activeTab === "wanted" && <WantedBoard />}
     </div>
   );
 }

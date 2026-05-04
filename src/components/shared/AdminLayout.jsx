@@ -1,11 +1,13 @@
 import AppLayout from "./AppLayout";
-import { LayoutDashboard, Map, Trophy, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Map, Trophy, MessageSquare, Brain, Shield } from "lucide-react";
 
 const NAV = [
   { to: "/admin", end: true, label: "Painel", icon: LayoutDashboard },
   { to: "/agent", label: "Central Ops", icon: Map },
   { to: "/ranking", label: "Ranking", icon: Trophy },
   { to: "/messages", label: "Mensagens", icon: MessageSquare },
+  { to: "/psych", label: "Psicólogo", icon: Brain },
+  { to: "/wanted", label: "Procurados", icon: Shield },
 ];
 
 export default function AdminLayout() {

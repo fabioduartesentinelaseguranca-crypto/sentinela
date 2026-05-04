@@ -1,0 +1,73 @@
+{
+  "name": "WantedCriminal",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome completo ou apelido"
+    },
+    "alias": {
+      "type": "string",
+      "description": "Alcunha / apelido"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL da foto ou retrato falado"
+    },
+    "description": {
+      "type": "string",
+      "description": "Caracter\u00edsticas f\u00edsicas e crimes"
+    },
+    "crimes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Crimes cometidos"
+    },
+    "reward": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor da recompensa em R$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "wanted",
+        "captured",
+        "inactive"
+      ],
+      "default": "wanted"
+    },
+    "danger_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "extreme"
+      ],
+      "default": "medium"
+    },
+    "last_seen_location": {
+      "type": "string"
+    },
+    "last_seen_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "warrant_number": {
+      "type": "string",
+      "description": "N\u00famero do mandado"
+    },
+    "age_approx": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

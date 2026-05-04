@@ -24,6 +24,7 @@ import ResolveOccurrenceDialog from "@/components/agent/ResolveOccurrenceDialog"
 import AgentMedalCard from "@/components/agent/AgentMedalCard";
 import MaintenanceTicketDialog from "@/components/agent/MaintenanceTicketDialog";
 import VehicleChecklistDialog from "@/components/agent/VehicleChecklistDialog";
+import EquipmentChecklistDialog from "@/components/agent/EquipmentChecklistDialog";
 import PsychSelfEvalForm from "@/components/agent/PsychSelfEvalForm";
 import OfflineRadio from "@/components/agent/OfflineRadio";
 import VirtualPatrolMode from "@/components/agent/VirtualPatrolMode";
@@ -57,6 +58,7 @@ export default function AgentDashboard() {
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [psychOpen, setPsychOpen] = useState(false);
+  const [equipmentOpen, setEquipmentOpen] = useState(false);
   const [feedbacks, setFeedbacks] = useState([]);
   const [virtualPatrolOpen, setVirtualPatrolOpen] = useState(false);
   const [virtualPatrolTarget, setVirtualPatrolTarget] = useState(null);
@@ -176,6 +178,9 @@ export default function AgentDashboard() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setChecklistOpen(true)}>
             <ClipboardList className="w-4 h-4 mr-1.5" /> Checklist
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setEquipmentOpen(true)}>
+            <Wrench className="w-4 h-4 mr-1.5" /> Equipamentos
           </Button>
           <Button variant="outline" size="sm" onClick={() => setPsychOpen(true)}>
             <Brain className="w-4 h-4 mr-1.5" /> Bem-estar
@@ -349,6 +354,13 @@ export default function AgentDashboard() {
         </div>
       </div>
 
+      <EquipmentChecklistDialog
+        open={equipmentOpen}
+        onOpenChange={setEquipmentOpen}
+        agentId={user?.id}
+        agentName={user?.full_name}
+        shiftId={activeShift?.id}
+      />
       <MaintenanceTicketDialog
         open={maintenanceOpen}
         onOpenChange={setMaintenanceOpen}

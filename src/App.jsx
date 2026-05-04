@@ -22,6 +22,8 @@ import MessagingCenter from './pages/MessagingCenter';
 import TrainingCenter from './pages/TrainingCenter';
 import AgentProfile from './pages/AgentProfile';
 import TeamAchievements from './pages/TeamAchievements';
+import PsychologistDashboard from './pages/PsychologistDashboard';
+import WantedBoard from './pages/WantedBoard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -62,6 +64,12 @@ const AuthenticatedApp = () => {
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/messages" element={<MessagingCenter />} />
+        <Route path="/wanted" element={<WantedBoard />} />
+      </Route>
+
+      {/* Psych routes */}
+      <Route element={<AdminLayout />}>
+        <Route path="/psych" element={<PsychologistDashboard />} />
       </Route>
 
       {/* Disguised mode — no layout */}

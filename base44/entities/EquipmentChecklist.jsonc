@@ -1,0 +1,100 @@
+{
+  "name": "EquipmentChecklist",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "shift_id": {
+      "type": "string"
+    },
+    "shift_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "radio_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "weapon_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "medical_kit_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "vest_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "handcuff_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "flashlight_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "baton_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "inoperante",
+        "ausente"
+      ],
+      "default": "ok"
+    },
+    "inoperante_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Itens marcados como inoperantes"
+    },
+    "maintenance_alert_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent_id",
+    "shift_date"
+  ]
+}
