@@ -24,6 +24,8 @@ import AgentProfile from './pages/AgentProfile';
 import TeamAchievements from './pages/TeamAchievements';
 import PsychologistDashboard from './pages/PsychologistDashboard';
 import WantedBoard from './pages/WantedBoard';
+import AccessDeniedPage from './pages/AccessDenied';
+import RoleGuard from '@/components/shared/RoleGuard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,35 +46,35 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/403" element={<AccessDeniedPage />} />
 
-      {/* Citizen routes */}
+      {/* Citizen routes — role: citizen */}
       <Route element={<CitizenLayout />}>
-        <Route path="/citizen" element={<CitizenDashboard />} />
-        <Route path="/ranking" element={<Ranking />} />
+        <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
+        <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
       </Route>
 
-      {/* Agent routes */}
+      {/* Agent routes — role: agent */}
       <Route element={<AgentLayout />}>
-        <Route path="/agent" element={<AgentDashboard />} />
-        <Route path="/messages" element={<MessagingCenter />} />
-        <Route path="/training" element={<TrainingCenter />} />
-        <Route path="/profile" element={<AgentProfile />} />
-        <Route path="/achievements" element={<TeamAchievements />} />
+        <Route path="/agent" element={<RoleGuard allow={["agent"]}><AgentDashboard /></RoleGuard>} />
+        <Route path="/messages" element={<RoleGuard allow={["agent", "admin"]}><MessagingCenter /></RoleGuard>} />
+        <Route path="/training" element={<RoleGuard allow={["agent"]}><TrainingCenter /></RoleGuard>} />
+        <Route path="/profile" element={<RoleGuard allow={["agent"]}><AgentProfile /></RoleGuard>} />
+        <Route path="/achievements" element={<RoleGuard allow={["agent"]}><TeamAchievements /></RoleGuard>} />
       </Route>
 
-      {/* Admin routes */}
+      {/* Admin routes — role: admin */}
       <Route element={<AdminLayout />}>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/messages" element={<MessagingCenter />} />
-        <Route path="/wanted" element={<WantedBoard />} />
+        <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
+        <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
       </Route>
 
-      {/* Psych routes */}
+      {/* Psych routes — role: psychologist */}
       <Route element={<AdminLayout />}>
-        <Route path="/psych" element={<PsychologistDashboard />} />
+        <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
       </Route>
 
-      {/* Disguised mode — no layout */}
+      {/* Disguised mode — no layout, no role restriction */}
       <Route path="/disguise" element={<DisguisedMode />} />
 
       <Route path="*" element={<PageNotFound />} />

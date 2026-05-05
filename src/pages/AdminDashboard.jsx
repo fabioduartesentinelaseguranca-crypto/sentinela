@@ -25,6 +25,9 @@ import WantedBoard from "@/pages/WantedBoard";
 import VideoAnalysisPanel from "@/components/admin/VideoAnalysisPanel";
 import SmartShiftAllocator from "@/components/admin/SmartShiftAllocator";
 import ForensicIntelligence from "@/components/admin/ForensicIntelligence";
+import TacticalStockManager from "@/components/admin/TacticalStockManager";
+import PsychAppointmentManager from "@/components/admin/PsychAppointmentManager";
+import FleetMaintenanceManager from "@/components/admin/FleetMaintenanceManager";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -98,6 +101,9 @@ export default function AdminDashboard() {
     { id: "video", label: "Análise de Vídeo" },
     { id: "smartshift", label: "Escala Inteligente" },
     { id: "forensic", label: "Inteligência Forense" },
+    { id: "tactical_stock", label: "Estoque Tático QR" },
+    { id: "psych_appointments", label: "Consultas Psicológicas" },
+    { id: "fleet_maintenance", label: "Manutenção Frota" },
   ];
 
   return (
@@ -321,6 +327,15 @@ export default function AdminDashboard() {
 
       {/* ── FORENSIC INTELLIGENCE TAB ─────────────────────── */}
       {activeTab === "forensic" && <ForensicIntelligence />}
+
+      {/* ── TACTICAL STOCK QR TAB ─────────────────────────── */}
+      {activeTab === "tactical_stock" && <TacticalStockManager />}
+
+      {/* ── PSYCH APPOINTMENTS TAB ────────────────────────── */}
+      {activeTab === "psych_appointments" && <PsychAppointmentManager />}
+
+      {/* ── FLEET MAINTENANCE TAB ─────────────────────────── */}
+      {activeTab === "fleet_maintenance" && <FleetMaintenanceManager />}
     </div>
   );
 }

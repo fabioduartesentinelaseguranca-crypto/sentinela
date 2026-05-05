@@ -1,0 +1,73 @@
+{
+  "name": "VehicleMaintenance",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string"
+    },
+    "vehicle_prefix": {
+      "type": "string"
+    },
+    "vehicle_plate": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "preventive",
+        "corrective",
+        "inspection",
+        "tire",
+        "oil_change"
+      ],
+      "default": "preventive"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "odometer_at_service": {
+      "type": "number"
+    },
+    "next_service_km": {
+      "type": "number",
+      "description": "KM para pr\u00f3xima manuten\u00e7\u00e3o"
+    },
+    "next_service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "workshop": {
+      "type": "string"
+    },
+    "cost": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "overdue"
+      ],
+      "default": "scheduled"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "alert_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "vehicle_id",
+    "type"
+  ]
+}

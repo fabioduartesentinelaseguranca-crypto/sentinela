@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { Trophy, Star, Clock, CheckCircle2, Shield, Medal, TrendingUp, History, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { differenceInMinutes, format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useAppRole } from "@/lib/useCurrentUser";
+import { Trophy, Star, Clock, CheckCircle2, Shield, Medal, TrendingUp, History } from "lucide-react";
+import { differenceInMinutes } from "date-fns";
 import AgentLeaderboard from "@/components/admin/AgentLeaderboard";
 import PatrolHistoryViewer from "@/components/agent/PatrolHistoryViewer";
+import { AccessDenied } from "@/components/shared/RoleGuard";
 
 const MEDALS = [
   { id: "speed_demon", label: "Velocista", icon: "⚡", desc: "Tempo médio < 10 min", color: "from-yellow-500/20 to-yellow-600/10 border-yellow-500/40" },
@@ -19,6 +19,8 @@ const MEDALS = [
 
 export default function AgentProfile() {
   const { user } = useAuth();
+  const role = useAppRole();
+
   const [occurrences, setOccurrences] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [agents, setAgents] = useState([]);
@@ -56,11 +58,8 @@ export default function AgentProfile() {
       .filter((t) => t > 0 && t < 600);
     const avgTime = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
     const myFeedbacks = feedbacks.filter((f) => f.agent_id === user.id);
-    const avgRating = myFeedbacks.length
-      ? myFeedbacks.reduce((a, b) => a + (b.rating || 0), 0) / myFeedbacks.length
-      : 0;
+    const avgRating = myFeedbacks.length ? myFeedbacks.reduce((a, b) => a + (b.rating || 0), 0) / myFeedbacks.length : 0;
     const approvedChecklists = checklists.filter((c) => c.status === "approved").length;
-
     const medals = [];
     if (avgTime > 0 && avgTime < 10) medals.push("speed_demon");
     if (resolved.length >= 100) medals.push("centurion");
@@ -68,9 +67,7 @@ export default function AgentProfile() {
     if (avgRating >= 4.5) medals.push("top_rated");
     if (assigned.length >= 10) medals.push("first_responder");
     if (approvedChecklists >= 10) medals.push("checklist_hero");
-
     const score = (resolved.length * 10) + (avgTime > 0 ? Math.max(0, 60 - avgTime) * 2 : 0) + (myFeedbacks.filter(f => f.rating >= 4).length * 5) + (avgRating * 10);
-
     return { resolved: resolved.length, assigned: assigned.length, avgTime, avgRating, medals, score, approvedChecklists, totalFeedbacks: myFeedbacks.length };
   }, [user?.id, occurrences, feedbacks, checklists]);
 
@@ -97,6 +94,9 @@ export default function AgentProfile() {
     { id: "history", label: "Histórico de Patrulhas", icon: History },
   ];
 
+  // RBAC: only agents can access this page
+  if (role && role !== "agent") return <AccessDenied role={role} />;
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
@@ -105,7 +105,6 @@ export default function AgentProfile() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-      {/* Header */}
       <div className="rounded-2xl border border-border/60 bg-card p-6 flex flex-col sm:flex-row gap-5 items-start sm:items-center">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center text-2xl font-bold text-primary">
           {user?.full_name?.[0]?.toUpperCase() || "A"}
@@ -117,12 +116,8 @@ export default function AgentProfile() {
             <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
               <Shield className="w-3 h-3" /> Agente de Campo
             </span>
-            {myRank && myRank <= 3 && (
-              <span className="text-lg">{["🥇","🥈","🥉"][myRank-1]}</span>
-            )}
-            {myRank && (
-              <span className="text-xs text-muted-foreground">#{myRank} no ranking</span>
-            )}
+            {myRank && myRank <= 3 && <span className="text-lg">{["🥇","🥈","🥉"][myRank-1]}</span>}
+            {myRank && <span className="text-xs text-muted-foreground">#{myRank} no ranking</span>}
           </div>
         </div>
         <div className="text-right">
@@ -131,7 +126,6 @@ export default function AgentProfile() {
         </div>
       </div>
 
-      {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { icon: CheckCircle2, label: "Resolvidas", value: stats.resolved || 0, color: "text-success" },
@@ -147,21 +141,16 @@ export default function AgentProfile() {
         ))}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-muted/40 rounded-xl p-1">
         {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${tab === t.id ? "bg-card shadow border border-border/60 text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-          >
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${tab === t.id ? "bg-card shadow border border-border/60 text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
             <t.icon className="w-4 h-4" />
             <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Tab: Medals */}
       {tab === "medals" && (
         <div className="space-y-4">
           <h2 className="font-semibold text-lg">Medalhas conquistadas</h2>
@@ -169,10 +158,7 @@ export default function AgentProfile() {
             {MEDALS.map((m) => {
               const earned = stats.medals?.includes(m.id);
               return (
-                <div
-                  key={m.id}
-                  className={`rounded-2xl border bg-gradient-to-br p-5 transition-all ${earned ? m.color : "border-border/30 bg-muted/20 opacity-40 grayscale"}`}
-                >
+                <div key={m.id} className={`rounded-2xl border bg-gradient-to-br p-5 transition-all ${earned ? m.color : "border-border/30 bg-muted/20 opacity-40 grayscale"}`}>
                   <div className="text-4xl mb-3">{m.icon}</div>
                   <div className="font-semibold text-sm">{m.label}</div>
                   <div className="text-xs text-muted-foreground mt-1">{m.desc}</div>
@@ -184,12 +170,10 @@ export default function AgentProfile() {
         </div>
       )}
 
-      {/* Tab: Leaderboard */}
       {tab === "ranking" && (
         <AgentLeaderboard agents={agents} occurrences={occurrences} highlightId={user?.id} />
       )}
 
-      {/* Tab: Patrol History */}
       {tab === "history" && (
         <PatrolHistoryViewer agentId={user?.id} agentName={user?.full_name} shifts={shifts} />
       )}

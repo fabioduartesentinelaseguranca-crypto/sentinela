@@ -1,0 +1,65 @@
+{
+  "name": "PsychAppointment",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "psychologist_id": {
+      "type": "string"
+    },
+    "psychologist_name": {
+      "type": "string"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_min": {
+      "type": "number",
+      "default": 50
+    },
+    "modality": {
+      "type": "string",
+      "enum": [
+        "in_person",
+        "online"
+      ],
+      "default": "in_person"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "confirmed",
+        "completed",
+        "cancelled",
+        "no_show"
+      ],
+      "default": "scheduled"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Motivo (confidencial)"
+    },
+    "notes_confidential": {
+      "type": "string",
+      "description": "Anota\u00e7\u00f5es confidenciais do psic\u00f3logo"
+    },
+    "is_urgent": {
+      "type": "boolean",
+      "default": false
+    },
+    "alert_sent_to_manager": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "agent_id",
+    "scheduled_at"
+  ]
+}

@@ -1,15 +1,26 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useAppRole } from "@/lib/useCurrentUser";
 import Logo from "./Logo";
 import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import MessagingBadge from "./MessagingBadge";
 
+// Map role → their profile/home route
+const ROLE_PROFILE_ROUTE = {
+  agent: "/profile",
+  admin: "/admin",
+  psychologist: "/psych",
+  citizen: "/citizen",
+};
+
 export default function AppLayout({ navItems = [], roleLabel }) {
   const { user } = useAuth();
+  const role = useAppRole();
   const navigate = useNavigate();
+  const profileRoute = ROLE_PROFILE_ROUTE[role] || "/citizen";
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -66,9 +77,11 @@ export default function AppLayout({ navItems = [], roleLabel }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/profile")}>
-                <UserIcon className="w-4 h-4 mr-2" /> Meu Perfil
-              </DropdownMenuItem>
+              {role === "agent" && (
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <UserIcon className="w-4 h-4 mr-2" /> Meu Perfil
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <LogOut className="w-4 h-4 mr-2" /> Sair
               </DropdownMenuItem>

@@ -1,0 +1,75 @@
+{
+  "name": "TacticalStock",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do item (ex: Colete Bal\u00edstico N\u00edvel III)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "weapon",
+        "vest",
+        "ammo",
+        "radio",
+        "flashlight",
+        "handcuff",
+        "medical",
+        "other"
+      ],
+      "default": "other"
+    },
+    "serial_number": {
+      "type": "string"
+    },
+    "qr_code": {
+      "type": "string",
+      "description": "C\u00f3digo QR \u00fanico do item"
+    },
+    "total_qty": {
+      "type": "number",
+      "default": 0
+    },
+    "available_qty": {
+      "type": "number",
+      "default": 0
+    },
+    "min_qty": {
+      "type": "number",
+      "default": 2,
+      "description": "N\u00edvel m\u00ednimo para alerta de reposi\u00e7\u00e3o"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de vencimento (ex: muni\u00e7\u00e3o, kit m\u00e9dico)"
+    },
+    "last_inspection_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_inspection_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "low_stock",
+        "expiring_soon",
+        "expired",
+        "inactive"
+      ],
+      "default": "ok"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "category"
+  ]
+}
