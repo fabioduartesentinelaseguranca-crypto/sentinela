@@ -26,6 +26,7 @@ import PsychologistDashboard from './pages/PsychologistDashboard';
 import WantedBoard from './pages/WantedBoard';
 import AccessDeniedPage from './pages/AccessDenied';
 import RoleGuard from '@/components/shared/RoleGuard';
+import UserManual from './pages/UserManual';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +74,9 @@ const AuthenticatedApp = () => {
       <Route element={<AdminLayout />}>
         <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
       </Route>
+
+      {/* Manual — accessible to all logged in users */}
+      <Route path="/manual" element={<UserManual />} />
 
       {/* Disguised mode — no layout, no role restriction */}
       <Route path="/disguise" element={<DisguisedMode />} />

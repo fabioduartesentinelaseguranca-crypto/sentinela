@@ -28,6 +28,7 @@ import ForensicIntelligence from "@/components/admin/ForensicIntelligence";
 import TacticalStockManager from "@/components/admin/TacticalStockManager";
 import PsychAppointmentManager from "@/components/admin/PsychAppointmentManager";
 import FleetMaintenanceManager from "@/components/admin/FleetMaintenanceManager";
+import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -78,34 +79,6 @@ export default function AdminDashboard() {
   const citizenCount = users.filter((u) => u.role === "citizen" || !u.role).length;
   const agentCount = users.filter((u) => u.role === "agent").length;
 
-  const TABS = [
-    { id: "overview", label: "Visão Geral" },
-    { id: "kpis", label: "KPIs Estratégicos" },
-    { id: "opheatmap", label: "Mapa de Calor Operacional" },
-    { id: "manager", label: "Dashboard Gestor" },
-    { id: "analytics", label: "Analítico" },
-    { id: "vehicles", label: "Viaturas" },
-    { id: "patrol", label: "Escalas e Patrulha" },
-    { id: "inventory", label: "Estoque Tático" },
-    { id: "maintenance", label: "Manutenção" },
-    { id: "ranking", label: "Ranking Agentes" },
-    { id: "tips", label: "Denúncias" },
-    { id: "schedule", label: "Escalas" },
-    { id: "heatmap", label: "Mapa Preditivo" },
-    { id: "psych", label: "Psicológico" },
-    { id: "training", label: "Capacitação" },
-    { id: "report", label: "Relatório PDF" },
-    { id: "achievements", label: "Conquistas da Equipe" },
-    { id: "cameras", label: "Câmeras" },
-    { id: "wanted", label: "Mural de Procurados" },
-    { id: "video", label: "Análise de Vídeo" },
-    { id: "smartshift", label: "Escala Inteligente" },
-    { id: "forensic", label: "Inteligência Forense" },
-    { id: "tactical_stock", label: "Estoque Tático QR" },
-    { id: "psych_appointments", label: "Consultas Psicológicas" },
-    { id: "fleet_maintenance", label: "Manutenção Frota" },
-  ];
-
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
       <div>
@@ -113,22 +86,7 @@ export default function AdminDashboard() {
         <p className="text-sm text-muted-foreground mt-1">Visão geral da plataforma Sentinela.</p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 flex-wrap border-b border-border/60 pb-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${
-              activeTab === t.id
-                ? "bg-primary text-primary-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <AdminTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ── GEOFENCE ALERTS (always visible) ─────────────── */}
       <GeofenceAlertBanner />
