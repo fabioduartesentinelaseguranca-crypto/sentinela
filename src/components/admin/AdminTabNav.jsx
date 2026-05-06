@@ -53,6 +53,7 @@ const GROUPS = [
   {
     label: "🧠 Saúde & RH",
     tabs: [
+      { id: "fatigue_risk", label: "Risco de Fadiga 🔴" },
       { id: "psych", label: "Avaliações Psicológicas" },
       { id: "psych_appointments", label: "Consultas Agendadas" },
     ],

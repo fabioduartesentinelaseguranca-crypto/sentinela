@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TYPE_META, SUBTYPES, CIVIL_DEFENSE_GAMIFIED } from "@/lib/occurrenceMeta";
 import { getCurrentLocation } from "@/lib/geo";
-import { Upload, MapPin, Loader2, CheckCircle2, Mic, MicOff } from "lucide-react";
+import { Upload, MapPin, Loader2, CheckCircle2, Mic, MicOff, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
+import { useOfflineOccurrences } from "@/hooks/useOfflineOccurrences";
 
 export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultType, onCreated }) {
   const { user } = useAuth();
+  const { submitOccurrence, pendingCount } = useOfflineOccurrences();
   const [type, setType] = useState(defaultType || "crime");
   const [subtype, setSubtype] = useState("");
   const [description, setDescription] = useState("");
@@ -74,39 +76,45 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
   const handleSubmit = async () => {
     if (!subtype) return toast.error("Selecione um subtipo");
     setLoading(true);
-    try {
-      const location = await getCurrentLocation();
 
-      const mediaUrls = [];
+    // Capture location (best effort — don't block if offline)
+    let location = { lat: null, lng: null };
+    try { location = await getCurrentLocation(); } catch { /* use null coords */ }
+
+    // Upload media only if online
+    const mediaUrls = [];
+    if (navigator.onLine) {
       for (const f of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
-        mediaUrls.push(file_url);
+        try {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
+          mediaUrls.push(file_url);
+        } catch { /* skip file upload if fails */ }
       }
-
-      const isGamified = type === "civil_defense" && CIVIL_DEFENSE_GAMIFIED.includes(subtype);
-
-      await base44.entities.Occurrence.create({
-        type,
-        subtype,
-        description,
-        address,
-        lat: location.lat,
-        lng: location.lng,
-        media_urls: mediaUrls,
-        reporter_id: user?.id,
-        priority: type === "panic" ? "critical" : "medium",
-        awarded_points: isGamified ? 10 : 0,
-      });
-
-      toast.success("Ocorrência registrada com sucesso", {
-        icon: <CheckCircle2 className="w-4 h-4" />,
-      });
-      reset();
-      onOpenChange(false);
-      onCreated?.();
-    } catch (err) {
-      toast.error("Erro ao registrar: " + err.message);
     }
+
+    const isGamified = type === "civil_defense" && CIVIL_DEFENSE_GAMIFIED.includes(subtype);
+
+    const occData = {
+      type,
+      subtype,
+      description,
+      address,
+      lat: location.lat,
+      lng: location.lng,
+      media_urls: mediaUrls,
+      reporter_id: user?.id,
+      priority: type === "panic" ? "critical" : "medium",
+      awarded_points: isGamified ? 10 : 0,
+    };
+
+    const { offline } = await submitOccurrence(occData);
+
+    if (!offline) {
+      toast.success("Ocorrência registrada com sucesso", { icon: <CheckCircle2 className="w-4 h-4" /> });
+    }
+    reset();
+    onOpenChange(false);
+    onCreated?.();
     setLoading(false);
   };
 
@@ -120,8 +128,18 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
             {TypeIcon && <TypeIcon className="w-5 h-5 text-primary" />}
             Registrar Ocorrência
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex items-center gap-2 flex-wrap">
             Sua localização será registrada automaticamente.
+            {!navigator.onLine && (
+              <span className="inline-flex items-center gap-1 text-warning text-xs font-medium">
+                <WifiOff className="w-3 h-3" /> Modo offline — será sincronizado automaticamente
+              </span>
+            )}
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-warning text-xs font-medium">
+                <WifiOff className="w-3 h-3" /> {pendingCount} ocorrência(s) aguardando sincronização
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 

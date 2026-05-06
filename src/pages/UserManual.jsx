@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useAppRole } from "@/lib/useCurrentUser";
 import {
   Shield, Users, UserCheck, Brain, ChevronDown, ChevronRight,
   AlertTriangle, MapPin, Radio, BookOpen, Star, Camera,
-  Truck, Package, Calendar, FileText, Phone, Eye, Lock
+  Truck, Package, Calendar, FileText, Phone, Eye, Lock,
+  Download, Loader2
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// ─── Profile data ─────────────────────────────────────────────────────────────
 
 const PROFILES = [
   {
@@ -23,6 +28,7 @@ const PROFILES = [
           "Escolha a categoria: Crime, Acidente, Emergência Médica, Incêndio, etc.",
           "Adicione descrição, fotos ou vídeos. A localização é capturada automaticamente.",
           "Você pode usar o microfone para transcrição por voz.",
+          "Sem internet? O formulário funciona offline — o envio é feito automaticamente quando a conexão voltar.",
           "Acompanhe o status da sua ocorrência em 'Minhas Ocorrências'.",
         ],
       },
@@ -95,6 +101,16 @@ const PROFILES = [
           "Antes de confirmar, preencha o Checklist de Viatura obrigatório.",
           "O checklist verifica: combustível, pneus, sinalizadores, extintor, rádio e kit de primeiros socorros.",
           "Viaturas com falhas críticas ficam bloqueadas até resolução.",
+        ],
+      },
+      {
+        title: "Notificações Push de Alta Prioridade",
+        icon: AlertTriangle,
+        items: [
+          "Permita notificações do navegador para receber alertas instantâneos.",
+          "Você será notificado mesmo com o aplicativo minimizado ou em segundo plano.",
+          "Ocorrências de pânico e prioridade crítica disparam alerta imediato com vibração.",
+          "Clique na notificação para abrir diretamente a ocorrência.",
         ],
       },
       {
@@ -242,6 +258,17 @@ const PROFILES = [
         ],
       },
       {
+        title: "Painel de Risco de Fadiga",
+        icon: Brain,
+        items: [
+          "Acesse em Saúde & RH → 'Risco de Fadiga'.",
+          "O painel cruza automaticamente o tempo de turno de cada agente com sua última avaliação psicológica.",
+          "Agentes críticos: tempo de turno ≥ 14h ou fadiga/estresse ≥ 8/10 — pausa obrigatória recomendada.",
+          "Agentes em atenção: fatores intermediários — monitorar de perto.",
+          "O painel se atualiza automaticamente a cada 5 minutos.",
+        ],
+      },
+      {
         title: "Inteligência & Mapas",
         icon: MapPin,
         items: [
@@ -288,6 +315,7 @@ const PROFILES = [
         title: "Saúde & RH",
         icon: Brain,
         items: [
+          "Painel de Fadiga: cruzamento automático de turno + dados psicológicos.",
           "Avaliações Psicológicas: veja o painel de bem-estar de toda a equipe.",
           "Consultas Agendadas: acompanhe as sessões psicológicas agendadas.",
           "Alertas de urgência são enviados automaticamente para consultas críticas.",
@@ -297,6 +325,7 @@ const PROFILES = [
   },
 ];
 
+// ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ section }) {
   const [open, setOpen] = useState(false);
   const Icon = section.icon;
@@ -328,41 +357,80 @@ function Section({ section }) {
   );
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function UserManual() {
-  const [activeProfile, setActiveProfile] = useState("citizen");
-  const profile = PROFILES.find((p) => p.id === activeProfile);
+  const role = useAppRole();
+  const isAdmin = role === "admin";
+
+  // Admins can see all profiles; others see only their own
+  const availableProfiles = isAdmin ? PROFILES : PROFILES.filter((p) => p.id === role || p.id === (role === "psychologist" ? "psychologist" : role));
+  const defaultProfile = availableProfiles[0]?.id || "citizen";
+
+  const [activeProfile, setActiveProfile] = useState(defaultProfile);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const contentRef = useRef(null);
+
+  const profile = PROFILES.find((p) => p.id === activeProfile) || PROFILES[0];
   const Icon = profile.icon;
 
+  const handlePrintPdf = async () => {
+    setGeneratingPdf(true);
+    // Open all sections first for printing
+    setTimeout(() => {
+      window.print();
+      setGeneratingPdf(false);
+    }, 300);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <BookOpen className="w-7 h-7 text-primary" /> Manual do Sentinela
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Guia completo de uso da plataforma por perfil de acesso.
-        </p>
+    <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8" ref={contentRef}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <BookOpen className="w-7 h-7 text-primary" /> Manual do Sentinela
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Guia completo de uso da plataforma por perfil de acesso.
+            {!isAdmin && <span className="ml-1 text-primary">· Exibindo manual do perfil: <strong>{profile.label}</strong></span>}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePrintPdf}
+          disabled={generatingPdf}
+          className="flex-shrink-0"
+        >
+          {generatingPdf
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : <Download className="w-3.5 h-3.5" />
+          }
+          <span className="hidden sm:inline ml-1.5">Gerar PDF</span>
+        </Button>
       </div>
 
-      {/* Profile Selector */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {PROFILES.map((p) => {
-          const PIcon = p.icon;
-          const isActive = activeProfile === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setActiveProfile(p.id)}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                isActive ? p.bg + " " + p.color : "border-border/60 bg-card text-muted-foreground hover:bg-muted/40"
-              }`}
-            >
-              <PIcon className="w-6 h-6" />
-              <span className="text-sm font-medium">{p.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Profile Selector — only for admins */}
+      {isAdmin && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {PROFILES.map((p) => {
+            const PIcon = p.icon;
+            const isActive = activeProfile === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setActiveProfile(p.id)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  isActive ? `${p.bg} ${p.color}` : "border-border/60 bg-card text-muted-foreground hover:bg-muted/40"
+                }`}
+              >
+                <PIcon className="w-6 h-6" />
+                <span className="text-sm font-medium">{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Profile Content */}
       <div className="space-y-4">
@@ -384,8 +452,18 @@ export default function UserManual() {
       </div>
 
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/40">
-        Sentinela — Plataforma de Segurança Cidadã · Manual v1.0
+        Sentinela — Plataforma de Segurança Cidadã · Manual v2.0
       </div>
+
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          body { background: white; color: black; }
+          header, nav, button, .no-print { display: none !important; }
+          .border { border-color: #ddd !important; }
+          * { color: black !important; }
+        }
+      `}</style>
     </div>
   );
 }

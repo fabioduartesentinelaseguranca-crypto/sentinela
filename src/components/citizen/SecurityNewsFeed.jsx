@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Newspaper, RefreshCw, AlertTriangle, Shield, TrendingUp, Clock, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import NewsArticleModal from "./NewsArticleModal";
 
 const CATEGORY_STYLE = {
   alerta: "bg-destructive/10 text-destructive border-destructive/20",
@@ -22,6 +23,7 @@ export default function SecurityNewsFeed({ city = "sua região" }) {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState(null);
 
   const fetchNews = async () => {
     setLoading(true);
@@ -103,7 +105,11 @@ Retorne no formato JSON solicitado.`,
             const Icon = CATEGORY_ICON[n.category] || Newspaper;
             const style = CATEGORY_STYLE[n.category] || "bg-muted/20 text-muted-foreground border-border/40";
             return (
-              <div key={i} className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1.5 hover:border-border/70 transition-colors">
+              <button
+                key={i}
+                onClick={() => setSelectedArticle(n)}
+                className="w-full text-left rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1.5 hover:border-primary/40 hover:bg-muted/40 transition-colors group"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${style}`}>
@@ -112,8 +118,9 @@ Retorne no formato JSON solicitado.`,
                     </span>
                     {n.time && <span className="text-[10px] text-muted-foreground">{n.time}</span>}
                   </div>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
                 </div>
-                <h4 className="text-sm font-semibold leading-snug">{n.title}</h4>
+                <h4 className="text-sm font-semibold leading-snug group-hover:text-primary transition-colors">{n.title}</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">{n.summary}</p>
                 {n.tip && (
                   <div className="flex items-start gap-1.5 mt-1 p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-primary">
@@ -121,10 +128,14 @@ Retorne no formato JSON solicitado.`,
                     <span>{n.tip}</span>
                   </div>
                 )}
-              </div>
+                <p className="text-[10px] text-primary group-hover:underline">Ler artigo completo →</p>
+              </button>
             );
           })}
         </div>
+      )}
+      {selectedArticle && (
+        <NewsArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
       )}
     </div>
   );
