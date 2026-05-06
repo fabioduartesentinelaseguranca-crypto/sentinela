@@ -27,6 +27,7 @@ import WantedBoard from './pages/WantedBoard';
 import AccessDeniedPage from './pages/AccessDenied';
 import RoleGuard from '@/components/shared/RoleGuard';
 import UserManual from './pages/UserManual';
+import NotificationPreferences from './pages/NotificationPreferences';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
       <Route element={<CitizenLayout />}>
         <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
         <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
       {/* Agent routes — role: agent */}
@@ -62,18 +64,21 @@ const AuthenticatedApp = () => {
         <Route path="/training" element={<RoleGuard allow={["agent", "admin"]}><TrainingCenter /></RoleGuard>} />
         <Route path="/profile" element={<RoleGuard allow={["agent", "admin"]}><AgentProfile /></RoleGuard>} />
         <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
-      {/* Citizen routes via AdminLayout for admin */}
+      {/* Admin — acesso completo a TODOS os painéis */}
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
         <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
         <Route path="/citizen" element={<RoleGuard allow={["citizen", "admin"]}><CitizenDashboard /></RoleGuard>} />
         <Route path="/ranking" element={<RoleGuard allow={["citizen", "admin"]}><Ranking /></RoleGuard>} />
-      </Route>
-
-      {/* Psych routes — role: psychologist */}
-      <Route element={<AdminLayout />}>
+        <Route path="/agent" element={<RoleGuard allow={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
+        <Route path="/messages" element={<RoleGuard allow={["agent", "admin"]}><MessagingCenter /></RoleGuard>} />
+        <Route path="/training" element={<RoleGuard allow={["agent", "admin"]}><TrainingCenter /></RoleGuard>} />
+        <Route path="/profile" element={<RoleGuard allow={["agent", "admin"]}><AgentProfile /></RoleGuard>} />
+        <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
         <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
       </Route>
 

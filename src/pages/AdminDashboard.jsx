@@ -29,6 +29,7 @@ import TacticalStockManager from "@/components/admin/TacticalStockManager";
 import PsychAppointmentManager from "@/components/admin/PsychAppointmentManager";
 import FleetMaintenanceManager from "@/components/admin/FleetMaintenanceManager";
 import FatigueRiskPanel from "@/components/admin/FatigueRiskPanel";
+import ProductivityReport from "@/components/admin/ProductivityReport";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -298,6 +299,9 @@ export default function AdminDashboard() {
 
       {/* ── FATIGUE RISK PANEL TAB ────────────────────────── */}
       {activeTab === "fatigue_risk" && <FatigueRiskPanel />}
+
+      {/* ── PRODUCTIVITY REPORT TAB ───────────────────────── */}
+      {activeTab === "productivity" && <ProductivityReport />}
     </div>
   );
 }

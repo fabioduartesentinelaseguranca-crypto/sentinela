@@ -58,6 +58,12 @@ const GROUPS = [
       { id: "psych_appointments", label: "Consultas Agendadas" },
     ],
   },
+  {
+    label: "📈 Relatórios",
+    tabs: [
+      { id: "productivity", label: "Produtividade Mensal" },
+    ],
+  },
 ];
 
 export default function AdminTabNav({ activeTab, onTabChange }) {

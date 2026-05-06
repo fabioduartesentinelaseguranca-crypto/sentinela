@@ -10,7 +10,8 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video, PlusCircle } from "lucide-react";
+import RegisterOccurrenceDialog from "@/components/citizen/RegisterOccurrenceDialog";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 import { usePatrolZoneBoundary } from "@/hooks/usePatrolZoneBoundary";
@@ -65,6 +66,7 @@ export default function AgentDashboard() {
   const [virtualPatrolOpen, setVirtualPatrolOpen] = useState(false);
   const [virtualPatrolTarget, setVirtualPatrolTarget] = useState(null);
   const [proximityAlert, setProximityAlert] = useState(null); // {occ, dist, routeUrl}
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -184,6 +186,9 @@ export default function AgentDashboard() {
           <p className="text-sm text-muted-foreground mt-1">Ocorrências ativas, viatura e comunicação tática.</p>
         </div>
         <div className="flex gap-2">
+          <Button size="sm" onClick={() => setRegisterOpen(true)} className="border-primary bg-primary/10 text-primary hover:bg-primary/20">
+            <PlusCircle className="w-4 h-4 mr-1.5" /> Registrar Ocorrência
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setMaintenanceOpen(true)}>
             <Wrench className="w-4 h-4 mr-1.5" /> Manutenção
           </Button>
@@ -451,6 +456,12 @@ export default function AgentDashboard() {
           onClose={() => { setVirtualPatrolOpen(false); setVirtualPatrolTarget(null); }}
         />
       )}
+
+      <RegisterOccurrenceDialog
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+        onCreated={load}
+      />
     </div>
   );
 }

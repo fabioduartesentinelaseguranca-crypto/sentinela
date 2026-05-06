@@ -1,5 +1,5 @@
 import AppLayout from "./AppLayout";
-import { LayoutDashboard, Map, Trophy, MessageSquare, Brain, Shield, HelpCircle, UserCircle, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, Map, Trophy, MessageSquare, Brain, Shield, HelpCircle, UserCircle, BookOpen, Users, Bell } from "lucide-react";
 
 const NAV = [
   { to: "/admin", end: true, label: "Painel Admin", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/messages", label: "Mensagens", icon: MessageSquare },
   { to: "/psych", label: "Psicólogo", icon: Brain },
   { to: "/wanted", label: "Procurados", icon: Shield },
+  { to: "/notifications", label: "Notificações", icon: Bell },
   { to: "/manual", label: "Manual", icon: HelpCircle },
 ];
 
