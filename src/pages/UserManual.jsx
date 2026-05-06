@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppRole } from "@/lib/useCurrentUser";
 import {
   Shield, Users, UserCheck, Brain, ChevronDown, ChevronRight,
   AlertTriangle, MapPin, Radio, BookOpen, Star, Camera,
   Truck, Package, Calendar, FileText, Phone, Eye, Lock,
-  Download, Loader2
+  Download, Loader2, CheckCircle2, Search, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { jsPDF } from "jspdf";
 
 // ─── Profile data ─────────────────────────────────────────────────────────────
-
 const PROFILES = [
   {
     id: "citizen",
@@ -326,31 +325,69 @@ const PROFILES = [
   },
 ];
 
+const STORAGE_KEY = "sentinela_manual_read";
+
+function loadReadSections() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+}
+
 // ─── Section accordion ────────────────────────────────────────────────────────
-function Section({ section }) {
+function Section({ section, profileId, isRead, onToggleRead, searchQuery, forceOpen }) {
   const [open, setOpen] = useState(false);
   const Icon = section.icon;
+
+  const isHighlighted = searchQuery && (
+    section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    section.items.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
+
+  const key = `${profileId}::${section.title}`;
+
   return (
-    <div className="border border-border/60 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left"
-      >
-        <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-primary flex-shrink-0" />
-          <span className="font-medium text-sm">{section.title}</span>
-        </div>
-        {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-      </button>
+    <div className={`border rounded-xl overflow-hidden transition-all ${
+      isRead ? "border-success/40 bg-success/5" : 
+      isHighlighted ? "border-primary/50 bg-primary/5" : "border-border/60"
+    }`}>
+      <div className="flex items-center">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Icon className={`w-4 h-4 flex-shrink-0 ${isRead ? "text-success" : "text-primary"}`} />
+            <span className={`font-medium text-sm ${isRead ? "line-through text-muted-foreground" : ""}`}>
+              {section.title}
+            </span>
+            {isHighlighted && !isRead && (
+              <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-medium">match</span>
+            )}
+          </div>
+          {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+        </button>
+        <button
+          onClick={() => onToggleRead(key)}
+          title={isRead ? "Marcar como não lido" : "Marcar como lido"}
+          className={`px-3 py-3 transition-colors ${isRead ? "text-success hover:text-muted-foreground" : "text-muted-foreground hover:text-success"}`}
+        >
+          <CheckCircle2 className="w-4 h-4" />
+        </button>
+      </div>
       {open && (
         <div className="px-4 pb-4 pt-1 bg-muted/20">
           <ul className="space-y-2">
-            {section.items.map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-muted-foreground">
-                <span className="text-primary font-bold mt-0.5 flex-shrink-0">•</span>
-                <span>{item}</span>
-              </li>
-            ))}
+            {section.items.map((item, i) => {
+              const itemMatch = searchQuery && item.toLowerCase().includes(searchQuery.toLowerCase());
+              return (
+                <li key={i} className="flex gap-2 text-sm text-muted-foreground">
+                  <span className="text-primary font-bold mt-0.5 flex-shrink-0">•</span>
+                  <span className={itemMatch ? "text-foreground bg-primary/10 rounded px-1" : ""}>{item}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -363,14 +400,52 @@ export default function UserManual() {
   const role = useAppRole();
   const isAdmin = role === "admin";
 
-  const availableProfiles = isAdmin ? PROFILES : PROFILES.filter((p) => p.id === role || p.id === (role === "psychologist" ? "psychologist" : role));
-  const defaultProfile = availableProfiles[0]?.id || "citizen";
+  // Parse URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramProfile = urlParams.get("profile");
+  const paramSection = urlParams.get("section");
+  const paramQ = urlParams.get("q");
+
+  const availableProfiles = isAdmin ? PROFILES : PROFILES.filter((p) => p.id === role);
+  const defaultProfile = (isAdmin && paramProfile) ? paramProfile : (availableProfiles[0]?.id || "citizen");
 
   const [activeProfile, setActiveProfile] = useState(defaultProfile);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [readSections, setReadSections] = useState(loadReadSections);
+  const [searchQuery, setSearchQuery] = useState(paramQ || "");
 
   const profile = PROFILES.find((p) => p.id === activeProfile) || PROFILES[0];
   const Icon = profile.icon;
+
+  // Count read sections for this profile
+  const totalSections = profile.sections.length;
+  const readCount = profile.sections.filter(s => readSections[`${activeProfile}::${s.title}`]).length;
+  const progressPct = totalSections > 0 ? Math.round((readCount / totalSections) * 100) : 0;
+
+  const toggleRead = (key) => {
+    setReadSections(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const markAllRead = () => {
+    setReadSections(prev => {
+      const next = { ...prev };
+      profile.sections.forEach(s => { next[`${activeProfile}::${s.title}`] = true; });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // Filter sections by search
+  const filteredSections = searchQuery.trim()
+    ? profile.sections.filter(s =>
+        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.items.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : profile.sections;
 
   const handleGeneratePdf = async () => {
     setGeneratingPdf(true);
@@ -381,16 +456,9 @@ export default function UserManual() {
       const maxW = pageW - margin * 2;
       let y = 20;
 
-      const addPage = () => {
-        doc.addPage();
-        y = 20;
-      };
+      const addPage = () => { doc.addPage(); y = 20; };
+      const checkY = (needed = 10) => { if (y + needed > 280) addPage(); };
 
-      const checkY = (needed = 10) => {
-        if (y + needed > 280) addPage();
-      };
-
-      // Title
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
       doc.text("Manual do Sentinela", margin, y);
@@ -405,7 +473,6 @@ export default function UserManual() {
       doc.setDrawColor(200);
       doc.line(margin, y, pageW - margin, y);
       y += 8;
-
       doc.setTextColor(0);
 
       profile.sections.forEach((section) => {
@@ -423,7 +490,6 @@ export default function UserManual() {
           doc.text(lines, margin + 2, y);
           y += lines.length * 5 + 1;
         });
-
         y += 5;
       });
 
@@ -431,7 +497,6 @@ export default function UserManual() {
       doc.setFontSize(9);
       doc.setTextColor(150);
       doc.text("Sentinela — Plataforma de Segurança Cidadã · Manual v2.0", margin, y);
-
       doc.save(`manual-sentinela-${profile.id}.pdf`);
     } catch (e) {
       console.error(e);
@@ -449,7 +514,7 @@ export default function UserManual() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Guia completo de uso da plataforma por perfil de acesso.
-            {!isAdmin && <span className="ml-1 text-primary">· Exibindo manual do perfil: <strong>{profile.label}</strong></span>}
+            {!isAdmin && <span className="ml-1 text-primary">· Perfil: <strong>{profile.label}</strong></span>}
           </p>
         </div>
         <Button
@@ -459,12 +524,32 @@ export default function UserManual() {
           disabled={generatingPdf}
           className="flex-shrink-0"
         >
-          {generatingPdf
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Download className="w-3.5 h-3.5" />
-          }
-          <span className="hidden sm:inline ml-1.5">Gerar PDF</span>
+          {generatingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline ml-1.5">Exportar PDF</span>
         </Button>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative">
+        <div className="flex items-center gap-2 bg-muted/60 border border-border/60 rounded-xl px-4 h-11 focus-within:ring-1 focus-within:ring-ring transition-all">
+          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <input
+            className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground"
+            placeholder="Buscar tópicos no manual..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")}>
+              <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <div className="mt-2 text-xs text-muted-foreground px-1">
+            {filteredSections.length} resultado(s) para "{searchQuery}"
+          </div>
+        )}
       </div>
 
       {/* Profile Selector — only for admins */}
@@ -473,6 +558,8 @@ export default function UserManual() {
           {PROFILES.map((p) => {
             const PIcon = p.icon;
             const isActive = activeProfile === p.id;
+            const pRead = p.sections.filter(s => readSections[`${p.id}::${s.title}`]).length;
+            const pPct = p.sections.length > 0 ? Math.round((pRead / p.sections.length) * 100) : 0;
             return (
               <button
                 key={p.id}
@@ -483,6 +570,9 @@ export default function UserManual() {
               >
                 <PIcon className="w-6 h-6" />
                 <span className="text-sm font-medium">{p.label}</span>
+                {pPct > 0 && (
+                  <span className="text-[10px] font-mono">{pPct}% lido</span>
+                )}
               </button>
             );
           })}
@@ -495,24 +585,56 @@ export default function UserManual() {
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile.accent}/20`}>
             <Icon className={`w-5 h-5 ${profile.color}`} />
           </div>
-          <div>
-            <h2 className={`font-semibold text-lg ${profile.color}`}>Perfil: {profile.label}</h2>
+          <div className="flex-1">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className={`font-semibold text-lg ${profile.color}`}>Perfil: {profile.label}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{readCount}/{totalSections} lidos</span>
+                {readCount < totalSections && (
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Marcar todos
+                  </button>
+                )}
+              </div>
+            </div>
             <p className="text-sm text-muted-foreground mt-1">{profile.description}</p>
+            {/* Progress bar */}
+            <div className="mt-3 h-1.5 rounded-full bg-border/60 overflow-hidden">
+              <div
+                className="h-full bg-success transition-all duration-500 rounded-full"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          {profile.sections.map((s) => (
-            <Section key={s.title} section={s} />
-          ))}
+          {filteredSections.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Nenhum tópico encontrado para "{searchQuery}".
+            </div>
+          ) : (
+            filteredSections.map((s) => (
+              <Section
+                key={s.title}
+                section={s}
+                profileId={activeProfile}
+                isRead={!!readSections[`${activeProfile}::${s.title}`]}
+                onToggleRead={toggleRead}
+                searchQuery={searchQuery}
+                forceOpen={paramSection === s.title}
+              />
+            ))
+          )}
         </div>
       </div>
 
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/40">
         Sentinela — Plataforma de Segurança Cidadã · Manual v2.0
       </div>
-
-
     </div>
   );
 }

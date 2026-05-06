@@ -57,17 +57,19 @@ const AuthenticatedApp = () => {
 
       {/* Agent routes — role: agent */}
       <Route element={<AgentLayout />}>
-        <Route path="/agent" element={<RoleGuard allow={["agent"]}><AgentDashboard /></RoleGuard>} />
+        <Route path="/agent" element={<RoleGuard allow={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
         <Route path="/messages" element={<RoleGuard allow={["agent", "admin"]}><MessagingCenter /></RoleGuard>} />
-        <Route path="/training" element={<RoleGuard allow={["agent"]}><TrainingCenter /></RoleGuard>} />
-        <Route path="/profile" element={<RoleGuard allow={["agent"]}><AgentProfile /></RoleGuard>} />
-        <Route path="/achievements" element={<RoleGuard allow={["agent"]}><TeamAchievements /></RoleGuard>} />
+        <Route path="/training" element={<RoleGuard allow={["agent", "admin"]}><TrainingCenter /></RoleGuard>} />
+        <Route path="/profile" element={<RoleGuard allow={["agent", "admin"]}><AgentProfile /></RoleGuard>} />
+        <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
       </Route>
 
-      {/* Admin routes — role: admin */}
+      {/* Citizen routes via AdminLayout for admin */}
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
         <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
+        <Route path="/citizen" element={<RoleGuard allow={["citizen", "admin"]}><CitizenDashboard /></RoleGuard>} />
+        <Route path="/ranking" element={<RoleGuard allow={["citizen", "admin"]}><Ranking /></RoleGuard>} />
       </Route>
 
       {/* Psych routes — role: psychologist */}
