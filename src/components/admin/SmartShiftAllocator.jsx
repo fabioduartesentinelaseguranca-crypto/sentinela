@@ -21,18 +21,36 @@ export default function SmartShiftAllocator({ agents = [] }) {
   const [saving, setSaving] = useState(false);
   const [daysAhead, setDaysAhead] = useState("7");
 
+  const [psychEvals, setPsychEvals] = useState([]);
+  const [activeShifts, setActiveShifts] = useState([]);
+
   const load = async () => {
-    const [occs, zns, shifts] = await Promise.all([
+    const [occs, zns, shifts, evals, actShifts] = await Promise.all([
       base44.entities.Occurrence.filter({ status: "resolved" }, "-created_date", 300),
       base44.entities.PatrolZone.list("created_date", 50),
       base44.entities.ScheduledShift.list("-created_date", 200),
+      base44.entities.PsychEvaluation.list("-created_date", 200),
+      base44.entities.Shift.filter({ status: "active" }, "-created_date", 50),
     ]);
     setOccurrences(occs);
     setZones(zns);
     setExistingShifts(shifts);
+    setPsychEvals(evals);
+    setActiveShifts(actShifts);
   };
 
   useEffect(() => { load(); }, []);
+
+  // Get latest psych eval for agent
+  const getAgentFatigue = (agentId) => {
+    const evals = psychEvals.filter((e) => e.agent_id === agentId).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    if (!evals.length) return { fatigue: 0, stress: 0, mood: "neutral", label: "Sem dados" };
+    const e = evals[0];
+    return { fatigue: e.fatigue_level || 0, stress: e.stress_level || 0, mood: e.mood || "neutral" };
+  };
+
+  // Check if agent is currently on active shift
+  const isActiveShift = (agentId) => activeShifts.some((s) => s.agent_id === agentId);
 
   // Calculate per-agent productivity score
   const calcAgentScore = (agentId) => {
@@ -41,7 +59,9 @@ export default function SmartShiftAllocator({ agents = [] }) {
     const avgMin = timed.length
       ? timed.reduce((a, o) => a + Math.abs(differenceInMinutes(parseISO(o.updated_date), parseISO(o.created_date))), 0) / timed.length
       : 99;
-    return { resolved: resolved.length, avgMin: +avgMin.toFixed(0), score: resolved.length * 10 - Math.min(avgMin, 60) };
+    const { fatigue, stress } = getAgentFatigue(agentId);
+    const fatiguepenalty = ((fatigue + stress) / 2) * 5; // 0-50 penalty
+    return { resolved: resolved.length, avgMin: +avgMin.toFixed(0), score: resolved.length * 10 - Math.min(avgMin, 60) - fatiguepenalty };
   };
 
   // Detect hotspot zones by occurrence density
@@ -66,13 +86,19 @@ export default function SmartShiftAllocator({ agents = [] }) {
     const hotShifts = getHotZoneShift();
 
     try {
+      const agentDetails = agentScores.map((a) => {
+        const f = getAgentFatigue(a.id);
+        const active = isActiveShift(a.id);
+        return `- ${a.full_name}: ${a.resolved} resoluções, tempo médio ${a.avgMin}min, score ${a.score.toFixed(0)}, fadiga ${f.fatigue}/10, estresse ${f.stress}/10, humor ${f.mood}${active ? " [EM TURNO ATIVO - evitar nova escala imediata]" : ""}`;
+      }).join("\n");
+
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Você é um sistema inteligente de alocação de turnos policiais.
+        prompt: `Você é um sistema inteligente de alocação de turnos policiais com foco em bem-estar e eficiência operacional.
 
-AGENTES DISPONÍVEIS (ordenados por produtividade):
-${agentScores.map((a) => `- ${a.full_name}: ${a.resolved} ocorrências resolvidas, tempo médio ${a.avgMin}min, score ${a.score.toFixed(0)}`).join("\n")}
+AGENTES DISPONÍVEIS (com dados de fadiga e produtividade):
+${agentDetails}
 
-TURNOS COM MAIOR DEMANDA (histórico):
+TURNOS COM MAIOR DEMANDA (histórico de ocorrências):
 ${hotShifts.map((s, i) => `${i + 1}º mais crítico: ${s}`).join(", ")}
 
 ZONAS DE PATRULHA:
@@ -82,11 +108,12 @@ PERÍODO SOLICITADO: próximos ${daysAhead} dias
 DATA INICIAL: ${format(new Date(), "yyyy-MM-dd")}
 
 Gere uma escala otimizada para os próximos ${daysAhead} dias que:
-1. Aloca agentes de maior produtividade nos turnos de maior demanda
-2. Distribui os agentes equilibradamente (máx 1 turno/dia por agente)
-3. Cobre as zonas mais críticas
-
-Retorne APENAS um array JSON com objetos de escala:`,
+1. Prioriza agentes mais produtivos nos turnos críticos
+2. EVITA escalar agentes com fadiga ≥ 7/10 ou estresse ≥ 7/10 — recomende descanso para eles
+3. Não escala agentes em turno ativo imediatamente para o próximo turno
+4. Distribui equilibradamente (máx 1 turno/dia por agente)
+5. Aloca agentes mais experientes (mais resoluções) em zonas de maior risco
+6. No campo "reason" explique por que este agente foi escolhido (considerar fadiga, produtividade, competência)`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -168,18 +195,23 @@ Retorne APENAS um array JSON com objetos de escala:`,
       <div className="rounded-2xl border border-border/60 bg-card p-4">
         <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Produtividade dos Agentes</h3>
         <div className="space-y-2">
-          {agents.slice(0, 6).map((a) => {
+          {agents.slice(0, 8).map((a) => {
             const s = calcAgentScore(a.id);
+            const f = getAgentFatigue(a.id);
+            const active = isActiveShift(a.id);
+            const highFatigue = f.fatigue >= 7 || f.stress >= 7;
             return (
               <div key={a.id} className="flex items-center gap-3 text-sm">
-                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${highFatigue ? "bg-destructive/20 text-destructive" : "bg-primary/10 text-primary"}`}>
                   {a.full_name?.charAt(0)}
                 </div>
                 <span className="flex-1 truncate font-medium">{a.full_name}</span>
+                {active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning/20 text-warning border border-warning/30">Em turno</span>}
+                {highFatigue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/30">Fadiga alta</span>}
                 <span className="text-xs text-muted-foreground">{s.resolved} res.</span>
-                <span className="text-xs text-muted-foreground">{s.avgMin}min avg</span>
+                <span className="text-xs text-muted-foreground hidden sm:block">F:{f.fatigue} E:{f.stress}</span>
                 <div className="w-16 h-1.5 bg-muted rounded-full">
-                  <div className="h-1.5 bg-primary rounded-full" style={{ width: `${Math.min(100, (s.score / 200) * 100)}%` }} />
+                  <div className={`h-1.5 rounded-full ${highFatigue ? "bg-destructive" : "bg-primary"}`} style={{ width: `${Math.min(100, Math.max(0, (s.score / 200) * 100))}%` }} />
                 </div>
               </div>
             );

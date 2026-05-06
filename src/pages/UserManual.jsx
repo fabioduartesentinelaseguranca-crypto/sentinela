@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useAppRole } from "@/lib/useCurrentUser";
 import {
   Shield, Users, UserCheck, Brain, ChevronDown, ChevronRight,
@@ -7,6 +7,7 @@ import {
   Download, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { jsPDF } from "jspdf";
 
 // ─── Profile data ─────────────────────────────────────────────────────────────
 
@@ -362,28 +363,84 @@ export default function UserManual() {
   const role = useAppRole();
   const isAdmin = role === "admin";
 
-  // Admins can see all profiles; others see only their own
   const availableProfiles = isAdmin ? PROFILES : PROFILES.filter((p) => p.id === role || p.id === (role === "psychologist" ? "psychologist" : role));
   const defaultProfile = availableProfiles[0]?.id || "citizen";
 
   const [activeProfile, setActiveProfile] = useState(defaultProfile);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const contentRef = useRef(null);
 
   const profile = PROFILES.find((p) => p.id === activeProfile) || PROFILES[0];
   const Icon = profile.icon;
 
-  const handlePrintPdf = async () => {
+  const handleGeneratePdf = async () => {
     setGeneratingPdf(true);
-    // Open all sections first for printing
-    setTimeout(() => {
-      window.print();
-      setGeneratingPdf(false);
-    }, 300);
+    try {
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxW = pageW - margin * 2;
+      let y = 20;
+
+      const addPage = () => {
+        doc.addPage();
+        y = 20;
+      };
+
+      const checkY = (needed = 10) => {
+        if (y + needed > 280) addPage();
+      };
+
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("Manual do Sentinela", margin, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(120);
+      doc.text(`Perfil: ${profile.label}  ·  ${profile.description}`, margin, y, { maxWidth: maxW });
+      y += 10;
+
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageW - margin, y);
+      y += 8;
+
+      doc.setTextColor(0);
+
+      profile.sections.forEach((section) => {
+        checkY(14);
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.text(section.title, margin, y);
+        y += 6;
+
+        section.items.forEach((item) => {
+          const lines = doc.splitTextToSize(`• ${item}`, maxW - 4);
+          checkY(lines.length * 5 + 2);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.text(lines, margin + 2, y);
+          y += lines.length * 5 + 1;
+        });
+
+        y += 5;
+      });
+
+      checkY(10);
+      doc.setFontSize(9);
+      doc.setTextColor(150);
+      doc.text("Sentinela — Plataforma de Segurança Cidadã · Manual v2.0", margin, y);
+
+      doc.save(`manual-sentinela-${profile.id}.pdf`);
+    } catch (e) {
+      console.error(e);
+    }
+    setGeneratingPdf(false);
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8" ref={contentRef}>
+    <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -398,7 +455,7 @@ export default function UserManual() {
         <Button
           variant="outline"
           size="sm"
-          onClick={handlePrintPdf}
+          onClick={handleGeneratePdf}
           disabled={generatingPdf}
           className="flex-shrink-0"
         >
@@ -455,15 +512,7 @@ export default function UserManual() {
         Sentinela — Plataforma de Segurança Cidadã · Manual v2.0
       </div>
 
-      {/* Print styles */}
-      <style>{`
-        @media print {
-          body { background: white; color: black; }
-          header, nav, button, .no-print { display: none !important; }
-          .border { border-color: #ddd !important; }
-          * { color: black !important; }
-        }
-      `}</style>
+
     </div>
   );
 }

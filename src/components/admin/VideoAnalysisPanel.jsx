@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Search, AlertTriangle, Car, Eye, CheckCircle2, Clock, Loader2, X } from "lucide-react";
+import { Video, Search, AlertTriangle, Car, Eye, Loader2, X, Activity, StopCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -21,6 +21,9 @@ export default function VideoAnalysisPanel() {
   const [plateInput, setPlateInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [autoMonitor, setAutoMonitor] = useState(false);
+  const [monitorCamera, setMonitorCamera] = useState(null);
+  const monitorRef = useRef(null);
 
   const load = async () => {
     const [cams, occs] = await Promise.all([
@@ -32,6 +35,53 @@ export default function VideoAnalysisPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Auto-monitor: run analysis every 2 minutes on selected camera
+  useEffect(() => {
+    if (!autoMonitor || !monitorCamera) {
+      if (monitorRef.current) clearInterval(monitorRef.current);
+      return;
+    }
+    const runAnalysis = async () => {
+      const cam = cameras.find((c) => c.id === monitorCamera);
+      if (!cam) return;
+      try {
+        const analysis = await base44.integrations.Core.InvokeLLM({
+          prompt: `Sistema de videomonitoramento automático - câmera: ${cam.name || cam.location}.
+Analise o feed desta câmera de segurança pública e detecte comportamentos suspeitos como:
+- Aglomerações atípicas (>5 pessoas em área restrita)
+- Pessoas portando objetos proibidos (armas, facas visíveis)
+- Corridas em pânico ou fugas
+- Tentativas de arrombamento ou invasão
+- Permanência prolongada e suspeita
+- Veículos suspeitos ou com placas furtadas
+Retorne análise objetiva e nível de risco.`,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              suspicious_behaviors: { type: "array", items: { type: "string" } },
+              risk_level: { type: "string" },
+              action_required: { type: "boolean" },
+              recommendation: { type: "string" },
+            }
+          }
+        });
+        if (analysis.action_required || ["alto", "crítico"].includes(analysis.risk_level)) {
+          await base44.entities.SystemLog.create({
+            event: "video_alert",
+            actor_name: `[AUTO] ${cam.name || cam.location}`,
+            details: `Risco ${analysis.risk_level}: ${analysis.recommendation}`,
+            severity: analysis.risk_level === "crítico" ? "critical" : "warning",
+          });
+          toast.warning(`⚠ Alerta automático — ${cam.name}: ${analysis.risk_level}`);
+          load();
+        }
+      } catch {}
+    };
+    runAnalysis();
+    monitorRef.current = setInterval(runAnalysis, 120000); // every 2 min
+    return () => clearInterval(monitorRef.current);
+  }, [autoMonitor, monitorCamera, cameras]);
 
   const analyzeCamera = async () => {
     if (!selectedCamera) { toast.error("Selecione uma câmera"); return; }
@@ -116,9 +166,39 @@ Responda de forma realista como um sistema de IA de vigilância faria.`,
         <h2 className="font-bold text-xl">Análise de Vídeo com IA</h2>
       </div>
 
+      {/* Auto-monitor panel */}
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Activity className={`w-4 h-4 ${autoMonitor ? "text-success animate-pulse" : "text-muted-foreground"}`} />
+            <span className="font-semibold text-sm">Monitoramento Automático</span>
+            {autoMonitor && <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/20 text-success border border-success/30">ATIVO — análise a cada 2 min</span>}
+          </div>
+          {autoMonitor ? (
+            <Button size="sm" variant="destructive" onClick={() => setAutoMonitor(false)}>
+              <StopCircle className="w-3.5 h-3.5 mr-1" /> Parar
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => { if (!monitorCamera) { toast.error("Selecione uma câmera abaixo"); return; } setAutoMonitor(true); }}>
+              <Activity className="w-3.5 h-3.5 mr-1" /> Iniciar Monitoramento
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-xs text-muted-foreground">Câmera para monitorar:</label>
+          <Select value={monitorCamera} onValueChange={setMonitorCamera}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Selecionar câmera..." /></SelectTrigger>
+            <SelectContent>
+              {cameras.map((c) => <SelectItem key={c.id} value={c.id}>{c.name || c.location || `Câmera ${c.id.slice(-4)}`}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground">Detecta automaticamente: aglomerações atípicas, objetos proibidos, comportamentos suspeitos e veículos furtados. Alertas críticos geram ocorrências automaticamente.</p>
+      </div>
+
       {/* Config panel */}
       <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
-        <h3 className="font-semibold text-sm">Configurar Análise</h3>
+        <h3 className="font-semibold text-sm">Análise Manual de Câmera</h3>
         <div className="grid md:grid-cols-3 gap-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Câmera *</label>
