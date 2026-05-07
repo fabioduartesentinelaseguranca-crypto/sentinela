@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, Plus, CheckCircle2, XCircle, Users, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import AgentTaskReview from "./AgentTaskReview";
 
 const CATEGORIES = {
   protocols: "Protocolos",
@@ -134,6 +135,9 @@ export default function TrainingManager() {
           );
         })}
       </div>
+
+      {/* Task Review */}
+      <AgentTaskReview />
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

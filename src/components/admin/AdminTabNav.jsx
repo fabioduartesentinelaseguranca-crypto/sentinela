@@ -62,6 +62,7 @@ const GROUPS = [
     label: "📈 Relatórios",
     tabs: [
       { id: "productivity", label: "Produtividade Mensal" },
+      { id: "performance_reports", label: "Desempenho & Engajamento" },
     ],
   },
 ];

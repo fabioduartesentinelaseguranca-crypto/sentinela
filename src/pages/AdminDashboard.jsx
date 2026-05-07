@@ -30,6 +30,7 @@ import PsychAppointmentManager from "@/components/admin/PsychAppointmentManager"
 import FleetMaintenanceManager from "@/components/admin/FleetMaintenanceManager";
 import FatigueRiskPanel from "@/components/admin/FatigueRiskPanel";
 import ProductivityReport from "@/components/admin/ProductivityReport";
+import PerformanceReports from "@/components/admin/PerformanceReports";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -302,6 +303,9 @@ export default function AdminDashboard() {
 
       {/* ── PRODUCTIVITY REPORT TAB ───────────────────────── */}
       {activeTab === "productivity" && <ProductivityReport />}
+
+      {/* ── PERFORMANCE REPORTS TAB ───────────────────────── */}
+      {activeTab === "performance_reports" && <PerformanceReports />}
     </div>
   );
 }

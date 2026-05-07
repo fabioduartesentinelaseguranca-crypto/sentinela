@@ -36,6 +36,28 @@
     "completed_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "submitted_task": {
+      "type": "string",
+      "description": "Resposta/exerc\u00edcio submetido pelo agente"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "revision"
+      ],
+      "default": "pending",
+      "description": "Status da revis\u00e3o do admin"
+    },
+    "review_feedback": {
+      "type": "string",
+      "description": "Feedback do administrador"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [
