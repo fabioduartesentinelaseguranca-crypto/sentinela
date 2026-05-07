@@ -50,24 +50,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/403" element={<AccessDeniedPage />} />
 
-      {/* Citizen routes — role: citizen */}
-      <Route element={<CitizenLayout />}>
-        <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
-        <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
-        <Route path="/notifications" element={<NotificationPreferences />} />
-      </Route>
-
-      {/* Agent routes — role: agent */}
-      <Route element={<AgentLayout />}>
-        <Route path="/agent" element={<RoleGuard allow={["agent", "admin"]}><AgentDashboard /></RoleGuard>} />
-        <Route path="/messages" element={<RoleGuard allow={["agent", "admin"]}><MessagingCenter /></RoleGuard>} />
-        <Route path="/training" element={<RoleGuard allow={["agent", "admin"]}><TrainingCenter /></RoleGuard>} />
-        <Route path="/profile" element={<RoleGuard allow={["agent", "admin"]}><AgentProfile /></RoleGuard>} />
-        <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
-        <Route path="/notifications" element={<NotificationPreferences />} />
-      </Route>
-
-      {/* Admin — acesso completo a TODOS os painéis */}
+      {/* Admin — deve vir PRIMEIRO para ter prioridade nos paths duplicados */}
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
         <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
@@ -80,6 +63,23 @@ const AuthenticatedApp = () => {
         <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
         <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
+      </Route>
+
+      {/* Citizen routes — role: citizen */}
+      <Route element={<CitizenLayout />}>
+        <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
+        <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
+      </Route>
+
+      {/* Agent routes — role: agent */}
+      <Route element={<AgentLayout />}>
+        <Route path="/agent" element={<RoleGuard allow={["agent"]}><AgentDashboard /></RoleGuard>} />
+        <Route path="/messages" element={<RoleGuard allow={["agent"]}><MessagingCenter /></RoleGuard>} />
+        <Route path="/training" element={<RoleGuard allow={["agent"]}><TrainingCenter /></RoleGuard>} />
+        <Route path="/profile" element={<RoleGuard allow={["agent"]}><AgentProfile /></RoleGuard>} />
+        <Route path="/achievements" element={<RoleGuard allow={["agent"]}><TeamAchievements /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
       {/* Manual — accessible to all logged in users */}
