@@ -24,8 +24,9 @@ export function AccessDenied({ role }) {
 export default function RoleGuard({ allow, children }) {
   const role = useAppRole();
   if (!role) return null;
-  if (!allow.includes(role)) {
-    return <AccessDenied role={role} />;
+  // Admin sempre tem acesso a todas as telas
+  if (role === "admin" || allow.includes(role)) {
+    return children;
   }
-  return children;
+  return <AccessDenied role={role} />;
 }
