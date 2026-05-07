@@ -3,10 +3,9 @@ import { LayoutDashboard, Map, Trophy, MessageSquare, Brain, Shield, HelpCircle,
 
 const NAV = [
   { to: "/admin", end: true, label: "Painel Admin", icon: LayoutDashboard },
-  { to: "/agent", label: "Central Agente", icon: Map },
+  { to: "/agent", label: "Painel Agente", icon: Map },
   { to: "/citizen", label: "Painel Cidadão", icon: Users },
   { to: "/training", label: "Capacitação", icon: BookOpen },
-  { to: "/profile", label: "Perfil Agente", icon: UserCircle },
   { to: "/achievements", label: "Conquistas", icon: Trophy },
   { to: "/messages", label: "Mensagens", icon: MessageSquare },
   { to: "/psych", label: "Psicólogo", icon: Brain },
