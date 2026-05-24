@@ -76,5 +76,65 @@
   },
   "required": [
     "type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.reporter_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.reporter_id": "{{user.id}}"
+        },
+        {
+          "data.assigned_agent_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.reporter_id": "{{user.id}}",
+          "data.status": "open"
+        },
+        {
+          "data.assigned_agent_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
