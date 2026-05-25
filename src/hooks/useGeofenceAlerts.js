@@ -16,10 +16,15 @@ export function useGeofenceAlerts({ enabled = true, onAlert }) {
     if (!enabled) return;
 
     const check = async () => {
-      const [zones, agents] = await Promise.all([
-        base44.entities.PatrolZone.list("-created_date", 200),
-        base44.entities.User.filter({ role: "agent" }),
-      ]);
+      let zones, agents;
+      try {
+        [zones, agents] = await Promise.all([
+          base44.entities.PatrolZone.list("-created_date", 200),
+          base44.entities.User.filter({ role: "agent" }),
+        ]);
+      } catch {
+        return; // rede indisponível — tenta novamente no próximo ciclo
+      }
 
       for (const zone of zones) {
         if (!zone.assigned_agent_id) continue;
