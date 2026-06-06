@@ -37,6 +37,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { usePriorityAlerts } from "@/hooks/usePriorityAlerts";
 import { toast } from "sonner";
 
 export default function AgentDashboard() {
@@ -74,6 +75,19 @@ export default function AgentDashboard() {
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
+
+  // Alertas sonoros prioritários
+  const rawFiltered2 = occurrences.filter((o) => o.status !== "resolved");
+  usePriorityAlerts({
+    occurrences: rawFiltered2,
+    enabled: permissionGranted,
+    onNewCritical: (occ) => {
+      toast.error(`🚨 OCORRÊNCIA CRÍTICA: ${occ.subtype || occ.type}`, {
+        description: occ.address || "Localização não informada",
+        duration: 10000,
+      });
+    },
+  });
 
   usePushNotifications({
     enabled: permissionGranted,

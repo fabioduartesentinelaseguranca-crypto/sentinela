@@ -32,6 +32,7 @@ import FatigueRiskPanel from "@/components/admin/FatigueRiskPanel";
 import ProductivityReport from "@/components/admin/ProductivityReport";
 import PerformanceReports from "@/components/admin/PerformanceReports";
 import OperationalEfficiencyReport from "@/components/admin/OperationalEfficiencyReport";
+import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -245,7 +246,10 @@ export default function AdminDashboard() {
 
       {/* ── REPORT TAB ─────────────────────────────────── */}
       {activeTab === "report" && (
-        <PdfReportGenerator occurrences={occurrences} users={users} />
+        <div className="space-y-6">
+          <MonthlyOccurrenceReport />
+          <PdfReportGenerator occurrences={occurrences} users={users} />
+        </div>
       )}
 
       {/* ── INVENTORY TAB ─────────────────────────────────── */}
