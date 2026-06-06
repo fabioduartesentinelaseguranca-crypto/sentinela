@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, LogIn, LogOut, Clock, ClipboardList, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+import { nowISO } from "@/lib/deviceTime";
 import { toast } from "sonner";
 import VehicleChecklistDialog from "@/components/agent/VehicleChecklistDialog";
 
@@ -30,7 +31,7 @@ export default function ShiftManager({ userId }) {
       agent_id: userId,
       vehicle_plate: plate,
       vehicle_prefix: prefix,
-      start_time: new Date().toISOString(),
+      start_time: nowISO(),
       status: "active",
     });
     setPlate(""); setPrefix("");
@@ -41,7 +42,7 @@ export default function ShiftManager({ userId }) {
   const checkOut = async () => {
     if (!active) return;
     await base44.entities.Shift.update(active.id, {
-      end_time: new Date().toISOString(),
+      end_time: nowISO(),
       status: "ended",
     });
     load();

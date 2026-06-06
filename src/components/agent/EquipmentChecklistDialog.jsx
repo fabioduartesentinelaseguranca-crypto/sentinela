@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { todayDate } from "@/lib/deviceTime";
 import { CheckCircle2, AlertTriangle, Package, Wrench } from "lucide-react";
 
 const ITEMS = [
@@ -63,7 +64,7 @@ export default function EquipmentChecklistDialog({ open, onOpenChange, agentId, 
       agent_id: agentId,
       agent_name: agentName,
       shift_id: shiftId,
-      shift_date: format(new Date(), "yyyy-MM-dd"),
+      shift_date: todayDate(),
       inoperante_items: inoperante.map((i) => i.label),
       notes,
       maintenance_alert_sent: false,
@@ -85,7 +86,7 @@ export default function EquipmentChecklistDialog({ open, onOpenChange, agentId, 
         await base44.integrations.Core.SendEmail({
           to: "admin@sentinela.gov",
           subject: `⚠ Alerta de Manutenção — Agente ${agentName}`,
-          body: `O agente ${agentName} registrou os seguintes equipamentos inoperantes/ausentes em ${format(new Date(), "dd/MM/yyyy HH:mm")}:\n\n${inoperante.map((i) => `• ${i.label}`).join("\n")}\n\nVerifique e providencie manutenção.`,
+          body: `O agente ${agentName} registrou os seguintes equipamentos inoperantes/ausentes em ${new Date().toLocaleString("pt-BR")}:\n\n${inoperante.map((i) => `• ${i.label}`).join("\n")}\n\nVerifique e providencie manutenção.`,
         });
       } catch (_) {}
       toast.error(`Alerta enviado para manutenção: ${inoperante.map((i) => i.label).join(", ")}`);

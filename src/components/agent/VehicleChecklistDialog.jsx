@@ -7,6 +7,7 @@ import { CheckSquare, XSquare, AlertTriangle, CheckCircle2, ClipboardList } from
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { todayDate, nowISO } from "@/lib/deviceTime";
 
 const CHECKLIST_ITEMS = [
   { key: "fuel_ok", label: "Combustível", critical: true, description: "Nível acima de 1/4" },
@@ -69,7 +70,7 @@ export default function VehicleChecklistDialog({ open, onOpenChange, agentId, ag
       agent_name: agentName,
       vehicle_id: vehicleId,
       vehicle_prefix: vehiclePrefix,
-      shift_date: format(new Date(), "yyyy-MM-dd"),
+      shift_date: todayDate(),
       ...CHECKLIST_ITEMS.reduce((acc, i) => ({ ...acc, [i.key]: checks[i.key] }), {}),
       critical_issues: criticalFails.map((i) => i.label),
       notes,

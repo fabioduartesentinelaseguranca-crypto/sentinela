@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Target, Trophy, Clock, CheckCircle2, Star, Zap, RefreshCw, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { differenceInMinutes, addHours, format, isPast } from "date-fns";
+import { nowISO } from "@/lib/deviceTime";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -86,7 +87,7 @@ export default function ShiftMissions({ agentId, agentName, shiftId, occurrences
         await base44.entities.ShiftMission.update(m.id, {
           progress: newProgress,
           completed,
-          completed_at: completed ? new Date().toISOString() : undefined,
+          completed_at: completed ? nowISO() : undefined,
         });
         if (completed && !m.completed) {
           // Award points
@@ -109,7 +110,7 @@ export default function ShiftMissions({ agentId, agentName, shiftId, occurrences
     if (!agentId || !shiftId) return;
     setGenerating(true);
     const pool = pickRandomMissions(3);
-    const expiresAt = addHours(new Date(), 8).toISOString();
+    const expiresAt = addHours(new Date(), 8).toISOString(); // new Date() usa relógio do dispositivo
     for (const m of pool) {
       await base44.entities.ShiftMission.create({
         agent_id: agentId, agent_name: agentName, shift_id: shiftId,

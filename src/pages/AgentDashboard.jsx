@@ -39,6 +39,7 @@ import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { usePriorityAlerts } from "@/hooks/usePriorityAlerts";
 import { toast } from "sonner";
+import { nowISO } from "@/lib/deviceTime";
 
 export default function AgentDashboard() {
   const { user } = useAuth();
@@ -148,7 +149,7 @@ export default function AgentDashboard() {
       const loc = await getCurrentLocation();
       setCenter(loc);
       if (user?.id) {
-        base44.auth.updateMe({ last_location: { ...loc, updated_at: new Date().toISOString() } }).catch(() => {});
+        base44.auth.updateMe({ last_location: { ...loc, updated_at: nowISO() } }).catch(() => {});
       }
     })();
   }, [user?.id]);

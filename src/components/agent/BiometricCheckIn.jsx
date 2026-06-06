@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
+import { nowISO, nowTimestamp } from "@/lib/deviceTime";
 
 const VERIFY_KEY = "sentinela_biometric_verified";
 const VERIFY_TTL = 8 * 60 * 60 * 1000; // 8 hours
@@ -20,7 +21,7 @@ const VERIFY_TTL = 8 * 60 * 60 * 1000; // 8 hours
 function isCurrentlyVerified() {
   const ts = sessionStorage.getItem(VERIFY_KEY);
   if (!ts) return false;
-  return Date.now() - parseInt(ts) < VERIFY_TTL;
+  return (Date.now() - parseInt(ts)) < VERIFY_TTL;
 }
 
 export default function BiometricCheckIn({ userId, userName, onVerified, activeShift }) {
@@ -55,7 +56,7 @@ export default function BiometricCheckIn({ userId, userName, onVerified, activeS
     setVerifying(true);
     try {
       await authenticateBiometric();
-      sessionStorage.setItem(VERIFY_KEY, Date.now().toString());
+      sessionStorage.setItem(VERIFY_KEY, nowTimestamp().toString());
       setVerified(true);
       toast.success("Identidade verificada via biometria ✓");
       onVerified?.();
@@ -72,7 +73,7 @@ export default function BiometricCheckIn({ userId, userName, onVerified, activeS
       agent_id: userId,
       vehicle_plate: plate,
       vehicle_prefix: prefix,
-      start_time: new Date().toISOString(),
+      start_time: nowISO(),
       status: "active",
     });
     await base44.entities.SystemLog.create({

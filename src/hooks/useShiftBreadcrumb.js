@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { nowISO } from "@/lib/deviceTime";
 
 const INTERVAL_MS = 30_000; // a cada 30s
 const MAX_POINTS = 500;
@@ -15,7 +16,7 @@ export function useShiftBreadcrumb({ shiftId, agentId, agentName, enabled = true
     if (!enabled || !shiftId || !agentId) return;
 
     const append = async (lat, lng) => {
-      const point = { lat, lng, ts: new Date().toISOString() };
+      const point = { lat, lng, ts: nowISO() };
 
       if (!recordId.current) {
         // Find or create breadcrumb for this shift

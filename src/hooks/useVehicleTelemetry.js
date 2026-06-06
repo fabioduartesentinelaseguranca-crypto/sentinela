@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { nowISO } from "@/lib/deviceTime";
 
 const INTERVAL_MS = 15_000; // 15s
 
@@ -18,7 +19,7 @@ export function useVehicleTelemetry({ vehicleId, agentId, enabled = true }) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
-          const ts = new Date().toISOString();
+          const ts = nowISO();
 
           // Update agent location (shown on LiveMap already)
           base44.auth.updateMe({
