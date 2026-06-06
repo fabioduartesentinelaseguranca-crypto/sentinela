@@ -51,5 +51,10 @@
         }
       }
     }
-  }
+  },
+  "required": [
+    "agent_badge",
+    "protective_measure_doc_url",
+    "last_location"
+  ]
 }

@@ -11,6 +11,7 @@ import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video, PlusCircle } from "lucide-react";
+import MapSearchBar from "@/components/agent/MapSearchBar";
 import RegisterOccurrenceDialog from "@/components/citizen/RegisterOccurrenceDialog";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
 import { useAgentAlerts } from "@/hooks/useAgentAlerts";
@@ -45,6 +46,9 @@ export default function AgentDashboard() {
   const [center, setCenter] = useState(null);
   const [showMap, setShowMap] = useState(false);
   const [heatmap, setHeatmap] = useState(false);
+  const [patrolZones, setPatrolZones] = useState([]);
+  const [mapFilteredOccs, setMapFilteredOccs] = useState(null);
+  const [mapFilteredCams, setMapFilteredCams] = useState(null);
   const [filter, setFilter] = useState("all");
   const [chatOccurrence, setChatOccurrence] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -108,18 +112,20 @@ export default function AgentDashboard() {
   });
 
   const load = async () => {
-    const [occs, allAgents, cams, shifts, fbs] = await Promise.all([
+    const [occs, allAgents, cams, shifts, fbs, zones] = await Promise.all([
       base44.entities.Occurrence.filter({}, "-created_date", 100),
       base44.entities.User.filter({ role: "agent" }),
       base44.entities.Camera.list("-created_date", 500),
       user?.id ? base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1) : Promise.resolve([]),
       base44.entities.CitizenFeedback.list("-created_date", 200),
+      base44.entities.PatrolZone.list("-created_date", 100),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
     setCameras(cams);
     setActiveShift(shifts[0] || null);
     setFeedbacks(fbs);
+    setPatrolZones(zones);
   };
 
   useEffect(() => {
@@ -308,10 +314,20 @@ export default function AgentDashboard() {
           </div>
 
           {showMap && (
-            <LiveMap
+            <MapSearchBar
               occurrences={filtered}
-              agents={agents}
               cameras={cameras}
+              patrolZones={patrolZones}
+              userLocation={center}
+              onFilter={(occs, cams) => { setMapFilteredOccs(occs); setMapFilteredCams(cams); }}
+              onClear={() => { setMapFilteredOccs(null); setMapFilteredCams(null); }}
+            />
+          )}
+          {showMap && (
+            <LiveMap
+              occurrences={mapFilteredOccs ?? filtered}
+              agents={agents}
+              cameras={mapFilteredCams ?? cameras}
               center={center}
               heatmap={heatmap}
               shiftId={activeShift?.id}

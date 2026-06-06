@@ -31,6 +31,7 @@ import FleetMaintenanceManager from "@/components/admin/FleetMaintenanceManager"
 import FatigueRiskPanel from "@/components/admin/FatigueRiskPanel";
 import ProductivityReport from "@/components/admin/ProductivityReport";
 import PerformanceReports from "@/components/admin/PerformanceReports";
+import OperationalEfficiencyReport from "@/components/admin/OperationalEfficiencyReport";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -306,6 +307,9 @@ export default function AdminDashboard() {
 
       {/* ── PERFORMANCE REPORTS TAB ───────────────────────── */}
       {activeTab === "performance_reports" && <PerformanceReports />}
+
+      {/* ── OPERATIONAL EFFICIENCY REPORT TAB ────────────── */}
+      {activeTab === "efficiency_report" && <OperationalEfficiencyReport />}
     </div>
   );
 }

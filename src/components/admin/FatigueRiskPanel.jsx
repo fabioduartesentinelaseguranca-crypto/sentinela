@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Brain, Clock, AlertTriangle, CheckCircle2, RefreshCw, Coffee, ShieldAlert } from "lucide-react";
+import { Brain, Clock, AlertTriangle, CheckCircle2, RefreshCw, Coffee, ShieldAlert, BellRing } from "lucide-react";
+import { useFatigueAlerts } from "@/hooks/useFatigueAlerts";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { format, differenceInHours, differenceInMinutes, parseISO } from "date-fns";
 
@@ -51,6 +53,22 @@ export default function FatigueRiskPanel() {
   const [evals, setEvals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [fatigueAlerts, setFatigueAlerts] = useState([]);
+
+  useFatigueAlerts({
+    enabled: true,
+    onAlert: (info) => {
+      setFatigueAlerts((prev) => {
+        if (prev.some((a) => a.agentId === info.agentId)) return prev;
+        return [info, ...prev];
+      });
+      toast.warning(`⚠ Fadiga: ${info.agentName} atingiu ${info.fatiguePercent}% do limite`, {
+        description: `${info.hoursOnDuty}h em turno · Supervisor notificado`,
+        duration: 8000,
+        icon: <BellRing className="w-4 h-4" />,
+      });
+    },
+  });
 
   const load = async () => {
     setLoading(true);
@@ -92,6 +110,25 @@ export default function FatigueRiskPanel() {
 
   return (
     <div className="space-y-4">
+      {/* Fatigue alert banner */}
+      {fatigueAlerts.length > 0 && (
+        <div className="rounded-xl border border-warning/50 bg-warning/5 p-4">
+          <h3 className="text-sm font-semibold text-warning flex items-center gap-2 mb-2">
+            <BellRing className="w-4 h-4" /> Alertas automáticos de fadiga ≥80%
+          </h3>
+          <div className="space-y-1.5">
+            {fatigueAlerts.map((a) => (
+              <div key={a.agentId} className="flex items-center gap-3 text-sm bg-background rounded-lg px-3 py-2 border border-warning/20">
+                <span className="font-medium">{a.agentName}</span>
+                <span className="text-warning text-xs">{a.fatiguePercent}% do limite</span>
+                <span className="text-muted-foreground text-xs">{a.hoursOnDuty}h em turno</span>
+                <button className="ml-auto text-xs text-muted-foreground hover:text-foreground" onClick={() => setFatigueAlerts((p) => p.filter((x) => x.agentId !== a.agentId))}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
