@@ -77,6 +77,8 @@ export function useTacticalRadio({ agentId, agentName }) {
   const [connectedPeers, setConnectedPeers] = useState(0);
   const [error, setError] = useState(null);
   const [volume, setVolume] = useState(1);
+  // { [agentId]: { name, receivedAt } } — quem confirmou recepção
+  const [listeners, setListeners] = useState({});
 
   // Map of peerId → RTCPeerConnection
   const peerConns = useRef({});
@@ -196,6 +198,7 @@ export function useTacticalRadio({ agentId, agentName }) {
       removeLocalTracks(pc);
     }
     setIsTransmitting(false);
+    setListeners({});
     await sendSignal("stop-transmitting", { agentId });
   }, [sendSignal, agentId, removeLocalTracks]);
 
@@ -247,6 +250,9 @@ export function useTacticalRadio({ agentId, agentName }) {
         }
         // ──────────────────────────────────────────────────────────────────
 
+        // Send ACK back to transmitter so they know we received the call
+        await sendSignal("ack", { agentId, agentName, receivedAt: new Date().toISOString() }, peerId);
+
         // Another agent started transmitting — prepare to receive
         const pc = getOrCreatePeer(peerId, false);
         if (localStream.current) addLocalTracks(pc);
@@ -271,8 +277,16 @@ export function useTacticalRadio({ agentId, agentName }) {
         if (pc) {
           try { await pc.addIceCandidate(new RTCIceCandidate(payload)); } catch {}
         }
+      } else if (signalType === "ack") {
+        // Another agent confirmed they received our transmission
+        setListeners((prev) => ({
+          ...prev,
+          [peerId]: { name: payload?.agentName || msg.sender_name || "Agente", receivedAt: payload?.receivedAt },
+        }));
       } else if (signalType === "stop-transmitting") {
         setIsReceiving(false);
+        // Clear listeners after a short delay when transmitter stops
+        setTimeout(() => setListeners({}), 4000);
       }
     };
 
@@ -309,6 +323,7 @@ export function useTacticalRadio({ agentId, agentName }) {
     isTransmitting,
     isReceiving,
     connectedPeers,
+    listeners,
     error,
     volume,
     setVolume,

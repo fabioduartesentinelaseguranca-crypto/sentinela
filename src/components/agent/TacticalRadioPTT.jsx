@@ -5,7 +5,7 @@
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTacticalRadio } from "@/hooks/useTacticalRadio";
-import { Radio, Mic, MicOff, Volume2, VolumeX, Signal, SignalZero, AlertCircle, Waves, BellOff, Bell } from "lucide-react";
+import { Radio, Mic, MicOff, Volume2, VolumeX, Signal, SignalZero, AlertCircle, Waves, BellOff, Bell, Headphones, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
@@ -14,12 +14,15 @@ export default function TacticalRadioPTT({ agentId, agentName }) {
     isTransmitting,
     isReceiving,
     connectedPeers,
+    listeners,
     error,
     volume,
     setVolume,
     startTransmitting,
     stopTransmitting,
   } = useTacticalRadio({ agentId, agentName });
+
+  const listenerList = Object.entries(listeners || {});
 
   const [pttActive, setPttActive] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -168,6 +171,36 @@ export default function TacticalRadioPTT({ agentId, agentName }) {
           Segure o botão ou pressione <kbd className="bg-muted border border-border rounded px-1 py-0.5 font-mono text-[10px]">Espaço</kbd> para falar
         </p>
       </div>
+
+      {/* Listeners panel — shown while transmitting or for 4s after */}
+      {(isTransmitting || listenerList.length > 0) && (
+        <div className="mx-4 mb-4 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border/40 bg-muted/20">
+            <Headphones className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-medium text-foreground">Ouvindo agora</span>
+            <span className="ml-auto text-[10px] text-muted-foreground">{listenerList.length} agente{listenerList.length !== 1 ? "s" : ""}</span>
+          </div>
+          {listenerList.length === 0 ? (
+            <div className="px-3 py-2.5 text-[11px] text-muted-foreground italic">
+              Aguardando confirmação dos agentes...
+            </div>
+          ) : (
+            <div className="divide-y divide-border/30">
+              {listenerList.map(([id, info]) => (
+                <div key={id} className="flex items-center gap-2 px-3 py-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
+                  <span className="text-xs text-foreground flex-1">{info.name}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {info.receivedAt
+                      ? new Date(info.receivedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                      : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Volume slider */}
       <div className="px-4 pb-4 flex items-center gap-3">
