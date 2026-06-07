@@ -147,13 +147,14 @@ export default function AgentDashboard() {
   });
 
   const load = async () => {
+    const safe = (p) => p.catch(() => []);
     const [occs, allAgents, cams, shifts, fbs, zones] = await Promise.all([
-      base44.entities.Occurrence.list("-created_date", 200),
-      base44.entities.User.filter({ role: "agent" }),
-      base44.entities.Camera.list("-created_date", 500),
-      user?.id ? base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1) : Promise.resolve([]),
-      base44.entities.CitizenFeedback.list("-created_date", 200),
-      base44.entities.PatrolZone.list("-created_date", 100),
+      safe(base44.entities.Occurrence.list("-created_date", 200)),
+      safe(base44.entities.User.filter({ role: "agent" })),
+      safe(base44.entities.Camera.list("-created_date", 500)),
+      user?.id ? safe(base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1)) : Promise.resolve([]),
+      safe(base44.entities.CitizenFeedback.list("-created_date", 200)),
+      safe(base44.entities.PatrolZone.list("-created_date", 100)),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
