@@ -126,6 +126,11 @@
         },
         {
           "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
             "role": "admin"
           }
         }
