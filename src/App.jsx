@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import CitizenLayout from '@/components/shared/CitizenLayout';
 import AgentLayout from '@/components/shared/AgentLayout';
 import AdminLayout from '@/components/shared/AdminLayout';
+import PsychologistLayout from '@/components/shared/PsychologistLayout';
 
 // Pages
 import Home from './pages/Home';
@@ -62,6 +63,10 @@ const AuthenticatedApp = () => {
         <Route path="/profile" element={<RoleGuard allow={["agent", "admin"]}><AgentProfile /></RoleGuard>} />
         <Route path="/achievements" element={<RoleGuard allow={["agent", "admin"]}><TeamAchievements /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
+      </Route>
+
+      {/* Psychologist routes */}
+      <Route element={<PsychologistLayout />}>
         <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
       </Route>
 
