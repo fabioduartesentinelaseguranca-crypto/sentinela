@@ -6,6 +6,7 @@ const GROUPS = [
     label: "📊 Visão Geral",
     tabs: [
       { id: "overview", label: "Dashboard" },
+      { id: "tactical", label: "⚡ Comando Tático" },
       { id: "manager", label: "Gestor" },
       { id: "kpis", label: "KPIs Estratégicos" },
       { id: "analytics", label: "Analítico" },

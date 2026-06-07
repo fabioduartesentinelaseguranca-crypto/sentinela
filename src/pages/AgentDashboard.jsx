@@ -10,7 +10,7 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video, PlusCircle } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video, PlusCircle, Navigation } from "lucide-react";
 import MapSearchBar from "@/components/agent/MapSearchBar";
 import RegisterOccurrenceDialog from "@/components/citizen/RegisterOccurrenceDialog";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
@@ -38,6 +38,8 @@ import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { usePriorityAlerts } from "@/hooks/usePriorityAlerts";
+import { useEmergencyProximityAlert } from "@/hooks/useEmergencyProximityAlert";
+import { findNearestUnit } from "@/lib/nearestUnitRouter";
 import { toast } from "sonner";
 import { nowISO } from "@/lib/deviceTime";
 
@@ -77,7 +79,7 @@ export default function AgentDashboard() {
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
 
-  // Alertas sonoros prioritários
+  // Alertas sonoros prioritários (global)
   const rawFiltered2 = occurrences.filter((o) => o.status !== "resolved");
   usePriorityAlerts({
     occurrences: rawFiltered2,
@@ -86,6 +88,24 @@ export default function AgentDashboard() {
       toast.error(`🚨 OCORRÊNCIA CRÍTICA: ${occ.subtype || occ.type}`, {
         description: occ.address || "Localização não informada",
         duration: 10000,
+      });
+    },
+  });
+
+  // Alerta sonoro específico: emergência em até 5km (sirene diferenciada)
+  useEmergencyProximityAlert({
+    occurrences: rawFiltered2,
+    agentLocation: center,
+    enabled: permissionGranted,
+    onNearbyEmergency: ({ occ, dist }) => {
+      const nearest = findNearestUnit({ agents, occurrenceLat: occ.lat, occurrenceLng: occ.lng });
+      toast.error(`🚨 EMERGÊNCIA A ${dist.toFixed(1)}KM: ${occ.subtype || occ.type}`, {
+        description: occ.address || "Endereço não informado",
+        duration: 12000,
+        action: nearest ? {
+          label: "🗺 Ver rota",
+          onClick: () => window.open(nearest.routeUrl, "_blank"),
+        } : undefined,
       });
     },
   });
@@ -181,21 +201,36 @@ export default function AgentDashboard() {
   };
 
   const afterResolved = async (o) => {
-    // Gamificação: conceder pontos ao cidadão reportante se aplicável
-    if (o?.awarded_points && o?.reporter_id) {
-      const reporter = await base44.entities.User.filter({ id: o.reporter_id });
-      const current = reporter[0];
-      if (current) {
-        await base44.entities.User.update(current.id, { points: (current.points || 0) + o.awarded_points });
+    const bonusCitizen = o?.awarded_points || 25;
+    const bonusAgent = 15; // bônus fixo ao agente pela resolução
+
+    // Bônus ao cidadão reportante
+    if (o?.reporter_id) {
+      const reporters = await base44.entities.User.filter({ id: o.reporter_id });
+      const reporter = reporters[0];
+      if (reporter) {
+        await base44.entities.User.update(reporter.id, { points: (reporter.points || 0) + bonusCitizen });
         await base44.entities.PointsLog.create({
-          user_id: current.id,
-          user_name: current.full_name,
-          points: o.awarded_points,
-          reason: "Ocorrência resolvida",
+          user_id: reporter.id,
+          user_name: reporter.full_name,
+          points: bonusCitizen,
+          reason: "Bônus: ocorrência resolvida",
           occurrence_id: o.id,
         });
       }
     }
+
+    // Bônus ao agente resolvedor
+    if (user?.id) {
+      await base44.entities.PointsLog.create({
+        user_id: user.id,
+        user_name: user.full_name,
+        points: bonusAgent,
+        reason: "Bônus: resolução de ocorrência",
+        occurrence_id: o.id,
+      });
+    }
+
     load();
   };
 
@@ -358,8 +393,22 @@ export default function AgentDashboard() {
             ) : (
               filtered.map((o) => {
                 const nearbyCams = findNearbyCameras(cameras, o.lat, o.lng);
+                const nearest = (o.priority === "critical" || o.type === "panic") && o.lat
+                  ? findNearestUnit({ agents, occurrenceLat: o.lat, occurrenceLng: o.lng })
+                  : null;
                 return (
                   <div key={o.id}>
+                    {nearest && (
+                      <a
+                        href={nearest.routeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 border border-primary/20 rounded-t-lg px-3 py-1 hover:bg-primary/20 transition-colors"
+                      >
+                        <Navigation className="w-3 h-3" />
+                        Viatura mais próxima: {nearest.agent.full_name.split(" ")[0]} ({nearest.distKm.toFixed(1)}km) — clique para rota
+                      </a>
+                    )}
                     <OccurrenceRow
                       occurrence={o}
                       currentAgentId={user?.id}

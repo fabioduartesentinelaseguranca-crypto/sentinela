@@ -34,6 +34,7 @@ import PerformanceReports from "@/components/admin/PerformanceReports";
 import OperationalEfficiencyReport from "@/components/admin/OperationalEfficiencyReport";
 import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport";
 import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
+import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -315,6 +316,9 @@ export default function AdminDashboard() {
 
       {/* ── OPERATIONAL EFFICIENCY REPORT TAB ────────────── */}
       {activeTab === "efficiency_report" && <OperationalEfficiencyReport />}
+
+      {/* ── TACTICAL COMMAND CENTER TAB ───────────────────── */}
+      {activeTab === "tactical" && <TacticalCommandCenter />}
 
       {/* ── SYSTEM HEALTH CHECKLIST TAB ───────────────────── */}
       {activeTab === "system_health" && <SystemHealthDashboard />}

@@ -24,23 +24,56 @@ export default function Ranking() {
   const load = async () => {
     setLoading(true);
     if (tab === "citizen") {
-      // Aggregate points from PointsLog for accuracy
-      const [allUsers, logs] = await Promise.all([
+      const [allUsers, logs, occs] = await Promise.all([
         base44.entities.User.list("-created_date", 200),
         base44.entities.PointsLog.list("-created_date", 1000),
+        base44.entities.Occurrence.list("-created_date", 500),
       ]);
+
+      // Base: pontos do PointsLog (inclui bônus de resolução)
       const pointsMap = {};
       logs.forEach((l) => {
         if (!l.user_id) return;
         pointsMap[l.user_id] = (pointsMap[l.user_id] || 0) + (l.points || 0);
       });
-      // Also include points stored directly on user (fallback)
+
+      // Pontos por ocorrências atribuídas/registradas (independente de resolução)
+      // +5pts por ocorrência aberta registrada; +10pts por em andamento; +25pts (bônus) por resolvida
+      const occPoints = {};
+      occs.forEach((o) => {
+        const uid = o.reporter_id;
+        if (!uid) return;
+        if (o.status === "open") occPoints[uid] = (occPoints[uid] || 0) + 5;
+        else if (o.status === "in_progress") occPoints[uid] = (occPoints[uid] || 0) + 10;
+        else if (o.status === "resolved") occPoints[uid] = (occPoints[uid] || 0) + 25; // bônus inclui os 10
+      });
+
+      // Merge: PointsLog prevalece, occ points são adicionados se não já computados via log
+      const occsCounted = new Set(logs.filter((l) => l.occurrence_id).map((l) => l.occurrence_id));
+      occs.forEach((o) => {
+        if (!o.reporter_id || occsCounted.has(o.id)) return; // já contabilizado via log
+        const pts = o.status === "resolved" ? 25 : o.status === "in_progress" ? 10 : 5;
+        pointsMap[o.reporter_id] = (pointsMap[o.reporter_id] || 0) + pts;
+      });
+
+      // Fallback: pontos diretos no usuário
       allUsers.forEach((u) => {
         if (!pointsMap[u.id] && (u.points || 0) > 0) pointsMap[u.id] = u.points;
       });
+
       const ranked = allUsers
         .filter((u) => (u.role === "citizen" || !u.role) && (pointsMap[u.id] || 0) > 0)
-        .map((u) => ({ ...u, computedPoints: pointsMap[u.id] || 0 }))
+        .map((u) => {
+          const logPts = logs.filter((l) => l.user_id === u.id).reduce((a, l) => a + (l.points || 0), 0);
+          const myOccs = occs.filter((o) => o.reporter_id === u.id);
+          return {
+            ...u,
+            computedPoints: pointsMap[u.id] || 0,
+            occTotal: myOccs.length,
+            occResolved: myOccs.filter((o) => o.status === "resolved").length,
+            bonusPts: logPts,
+          };
+        })
         .sort((a, b) => b.computedPoints - a.computedPoints);
       setCitizens(ranked);
     } else {
@@ -50,7 +83,11 @@ export default function Ranking() {
         base44.entities.CitizenFeedback.list("-created_date", 500),
       ]);
       const rows = agents.map((agent) => {
-        const resolved = occs.filter((o) => o.assigned_agent_id === agent.id && o.status === "resolved");
+        // Atribuídas (independente de status)
+        const assigned = occs.filter((o) => o.assigned_agent_id === agent.id);
+        const inProgress = assigned.filter((o) => o.status === "in_progress");
+        const resolved = assigned.filter((o) => o.status === "resolved");
+
         const times = resolved
           .filter((o) => o.updated_date && o.created_date)
           .map((o) => differenceInMinutes(new Date(o.updated_date), new Date(o.created_date)))
@@ -59,8 +96,13 @@ export default function Ranking() {
         const agentFbs = feedbacks.filter((f) => f.agent_id === agent.id);
         const avgRating = agentFbs.length ? agentFbs.reduce((a, b) => a + (b.rating || 0), 0) / agentFbs.length : 0;
         const positiveFbs = agentFbs.filter((f) => f.rating >= 4).length;
-        const score = calcAgentScore(resolved.length, avgTime, positiveFbs, avgRating);
-        return { agent, resolvedCount: resolved.length, avgTime, avgRating, positiveFbs, score };
+
+        // Score base + bônus por atribuições ativas
+        const baseScore = calcAgentScore(resolved.length, avgTime, positiveFbs, avgRating);
+        const activeBonus = inProgress.length * 3; // 3pts por cada em andamento
+        const score = baseScore + activeBonus;
+
+        return { agent, resolvedCount: resolved.length, assignedCount: assigned.length, inProgressCount: inProgress.length, avgTime, avgRating, positiveFbs, score };
       }).sort((a, b) => b.score - a.score);
       setAgentRows(rows);
     }
@@ -126,7 +168,12 @@ export default function Ranking() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{u.full_name} {u.id === user?.id && <span className="text-xs text-primary">(você)</span>}</div>
-                    <div className="text-xs text-muted-foreground">{u.computedPoints} pts</div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{u.computedPoints} pts</span>
+                      {u.occTotal > 0 && <span>· {u.occTotal} ocorrências</span>}
+                      {u.occResolved > 0 && <span className="text-success">· {u.occResolved} resolvidas</span>}
+                      {u.bonusPts > 0 && <span className="text-warning">· +{u.bonusPts} bônus</span>}
+                    </div>
                   </div>
                   <div className="h-2 w-28 rounded-full bg-muted overflow-hidden hidden sm:block">
                     <div className="h-full bg-gradient-to-r from-primary to-success transition-all" style={{ width: `${pct}%` }} />
@@ -147,12 +194,14 @@ export default function Ranking() {
                   {i < 3 ? MEDAL_ICON[i] : `#${i + 1}`}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{row.agent.full_name} {row.agent.id === user?.id && <span className="text-xs text-primary">(você)</span>}</div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                    <span>{row.resolvedCount} resolvidas</span>
-                    {row.avgTime > 0 && <span>·  {row.avgTime} min méd.</span>}
-                    {row.avgRating > 0 && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />{row.avgRating.toFixed(1)}</span>}
-                  </div>
+                <div className="font-medium truncate">{row.agent.full_name} {row.agent.id === user?.id && <span className="text-xs text-primary">(você)</span>}</div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                  <span>{row.assignedCount} atribuídas</span>
+                  <span className="text-success">{row.resolvedCount} resolvidas</span>
+                  {row.inProgressCount > 0 && <span className="text-primary">{row.inProgressCount} em andamento</span>}
+                  {row.avgTime > 0 && <span>· {row.avgTime}min méd.</span>}
+                  {row.avgRating > 0 && <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />{row.avgRating.toFixed(1)}</span>}
+                </div>
                 </div>
                 <div className="text-right">
                   <div className={`font-bold font-mono text-lg ${RANK_COLORS[i] || "text-foreground"}`}>{Math.round(row.score)}</div>
