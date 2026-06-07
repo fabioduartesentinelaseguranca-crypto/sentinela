@@ -23,7 +23,12 @@ export function AccessDenied({ role }) {
 
 export default function RoleGuard({ allow, children }) {
   const role = useAppRole();
-  if (!role) return null;
+  // Still loading auth — wait before deciding access
+  if (!role) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
+    </div>
+  );
   if (allow.includes(role)) return children;
   return <AccessDenied role={role} />;
 }

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
  * Values: 'citizen' | 'agent' | 'admin'
  */
 export function useAppRole() {
-  const { user } = useAuth();
-  if (!user) return null;
+  const { user, isLoadingAuth } = useAuth();
+  if (isLoadingAuth || !user) return null;
   return user.role || "citizen";
 }
