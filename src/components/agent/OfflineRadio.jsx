@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Radio, MapPin, AlertOctagon, Wifi, WifiOff, Send, RefreshCw } from "lucide-react";
+import { Radio, MapPin, AlertOctagon, Wifi, WifiOff, Send, RefreshCw, Mic, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import TacticalRadioPTT from "@/components/agent/TacticalRadioPTT";
 
 const CHANNEL = "patrol-radio-1";
 
@@ -17,6 +18,7 @@ function getQueue() {
 function saveQueue(q) { localStorage.setItem(LS_KEY, JSON.stringify(q)); }
 
 export default function OfflineRadio({ agentId, agentName }) {
+  const [radioTab, setRadioTab] = useState("text"); // "text" | "voice"
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -114,7 +116,21 @@ export default function OfflineRadio({ agentId, agentName }) {
         <div className="flex items-center gap-2">
           <Radio className="w-4 h-4 text-primary" />
           <span className="font-semibold text-sm">Rádio Tático</span>
-          <span className="text-[10px] text-muted-foreground font-mono">CH-1</span>
+          {/* Tab switcher */}
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5 ml-1">
+            <button
+              onClick={() => setRadioTab("text")}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${radioTab === "text" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <MessageSquare className="w-3 h-3" /> Texto
+            </button>
+            <button
+              onClick={() => setRadioTab("voice")}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${radioTab === "voice" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Mic className="w-3 h-3" /> Voz
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {queueCount > 0 && (
@@ -130,8 +146,15 @@ export default function OfflineRadio({ agentId, agentName }) {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 scrollbar-thin">
+      {/* Voice tab */}
+      {radioTab === "voice" && (
+        <div className="flex-1 overflow-y-auto">
+          <TacticalRadioPTT agentId={agentId} agentName={agentName} />
+        </div>
+      )}
+
+      {/* Text tab — Messages */}
+      {radioTab === "text" && <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 scrollbar-thin">
         {messages.length === 0 && (
           <div className="text-center text-xs text-muted-foreground py-8">Nenhuma mensagem no canal. Seja o primeiro a transmitir.</div>
         )}
@@ -174,10 +197,10 @@ export default function OfflineRadio({ agentId, agentName }) {
           );
         })}
         <div ref={bottomRef} />
-      </div>
+      </div>}
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-border/60 flex gap-2">
+      {/* Input — only for text tab */}
+      {radioTab === "text" && <div className="px-4 py-3 border-t border-border/60 flex gap-2">
         <Input
           placeholder="Mensagem tática..."
           value={input}
@@ -196,7 +219,7 @@ export default function OfflineRadio({ agentId, agentName }) {
         <Button size="icon" onClick={() => send(false)} disabled={!input.trim()}>
           <Send className="w-4 h-4" />
         </Button>
-      </div>
+      </div>}
     </div>
   );
 }
