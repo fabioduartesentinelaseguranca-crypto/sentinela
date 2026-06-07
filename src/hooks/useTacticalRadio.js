@@ -4,9 +4,66 @@
  * Sinalização via base44.entities.OfflineMessage (campo msg_type="audio" + content JSON)
  * Cada peer anuncia: offer, answer, ice-candidate
  * Todos os agentes no mesmo canal escutam e respondem automaticamente.
+ *
+ * Notificações: Service Worker envia push local + beep de alerta se app em background.
  */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
+
+// ── Service Worker registration ──────────────────────────────────────────────
+let _swRegistration = null;
+async function getSwRegistration() {
+  if (_swRegistration) return _swRegistration;
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    _swRegistration = await navigator.serviceWorker.register("/radio-sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
+    return _swRegistration;
+  } catch {
+    return null;
+  }
+}
+
+// ── Beep alert via Web Audio (walkie-talkie receive tone) ────────────────────
+function playReceiveTone() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Short two-tone "bip-bip" like a real radio
+    const tones = [880, 1100];
+    let t = ctx.currentTime;
+    tones.forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.start(t);
+      osc.stop(t + 0.18);
+      t += 0.2;
+    });
+  } catch {}
+}
+
+// ── Notify via SW (works when app is in background/closed) ──────────────────
+async function notifyViaSW(senderName) {
+  const swReg = await getSwRegistration();
+  if (!swReg) return;
+
+  // Permission check
+  if (Notification.permission !== "granted") {
+    await Notification.requestPermission();
+  }
+  if (Notification.permission !== "granted") return;
+
+  // Post message to the active SW
+  const sw = swReg.active || swReg.installing || swReg.waiting;
+  if (sw) {
+    sw.postMessage({ type: "RADIO_CALLING", payload: { senderName } });
+  }
+}
 
 const CHANNEL = "patrol-radio-1";
 const ICE_SERVERS = [
@@ -142,6 +199,14 @@ export function useTacticalRadio({ agentId, agentName }) {
     await sendSignal("stop-transmitting", { agentId });
   }, [sendSignal, agentId, removeLocalTracks]);
 
+  // ── Register SW + request notification permission on mount ─────────────────
+  useEffect(() => {
+    getSwRegistration(); // pre-register SW
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   // --- Signal handling ---
   useEffect(() => {
     const handleSignal = async (msg) => {
@@ -158,8 +223,31 @@ export function useTacticalRadio({ agentId, agentName }) {
       const { signalType, payload } = parsed;
 
       if (signalType === "calling") {
+        // ── Wake up agents in background ──────────────────────────────────
+        const senderName = payload?.agentName || msg.sender_name || "Agente";
+
+        // 1. Beep tone always (works if app tab is open but not focused)
+        playReceiveTone();
+
+        // 2. Push notification via Service Worker (works in background/closed tab)
+        notifyViaSW(senderName);
+
+        // 3. In-page Notification API fallback (if SW not available)
+        if (document.hidden && Notification.permission === "granted") {
+          try {
+            new Notification("📻 Rádio Tático", {
+              body: `${senderName} está transmitindo. Toque para ouvir.`,
+              icon: "/favicon.ico",
+              tag: "radio-call",
+              renotify: true,
+              requireInteraction: true,
+              silent: false,
+            });
+          } catch {}
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         // Another agent started transmitting — prepare to receive
-        // Create a peer connection as non-initiator; send offer back so we can receive
         const pc = getOrCreatePeer(peerId, false);
         if (localStream.current) addLocalTracks(pc);
         // We'll send an offer too (bi-directional)

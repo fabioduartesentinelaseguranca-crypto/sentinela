@@ -5,7 +5,7 @@
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTacticalRadio } from "@/hooks/useTacticalRadio";
-import { Radio, Mic, MicOff, Volume2, VolumeX, Signal, SignalZero, AlertCircle, Waves } from "lucide-react";
+import { Radio, Mic, MicOff, Volume2, VolumeX, Signal, SignalZero, AlertCircle, Waves, BellOff, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
@@ -23,8 +23,17 @@ export default function TacticalRadioPTT({ agentId, agentName }) {
 
   const [pttActive, setPttActive] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [notifPerm, setNotifPerm] = useState(
+    typeof Notification !== "undefined" ? Notification.permission : "denied"
+  );
   const pttRef = useRef(null);
   const longPressTimer = useRef(null);
+
+  const requestNotifPerm = async () => {
+    if (typeof Notification === "undefined") return;
+    const result = await Notification.requestPermission();
+    setNotifPerm(result);
+  };
 
   // --- PTT via mouse/touch ---
   const handlePTTStart = useCallback(async (e) => {
@@ -174,9 +183,31 @@ export default function TacticalRadioPTT({ agentId, agentName }) {
         <span className="text-[11px] text-muted-foreground w-8 text-right">{Math.round((muted ? 0 : volume) * 100)}%</span>
       </div>
 
+      {/* Notification permission banner */}
+      {notifPerm !== "granted" && (
+        <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <BellOff className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1">Ative notificações para receber chamadas com app em segundo plano.</span>
+          {notifPerm !== "denied" && (
+            <button
+              onClick={requestNotifPerm}
+              className="ml-1 underline font-medium hover:text-warning/80 transition-colors shrink-0"
+            >
+              Ativar
+            </button>
+          )}
+        </div>
+      )}
+      {notifPerm === "granted" && (
+        <div className="mx-4 mb-3 flex items-center gap-1.5 text-[10px] text-success/70">
+          <Bell className="w-3 h-3" />
+          Notificações ativas — você será alertado mesmo com app em segundo plano
+        </div>
+      )}
+
       {/* Info footer */}
       <div className="px-4 pb-3 text-[10px] text-muted-foreground/60 text-center">
-        Áudio ponto-a-ponto via WebRTC (sem servidor intermediário) · Internet necessária para sinalização inicial
+        Áudio P2P via WebRTC · Service Worker ativo para alertas em background
       </div>
     </div>
   );
