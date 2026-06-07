@@ -10,7 +10,8 @@ import OccurrenceChat from "@/components/agent/OccurrenceChat";
 import LiveMap from "@/components/agent/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Radio, Video, PlusCircle, Navigation } from "lucide-react";
+import { AlertTriangle, Map as MapIcon, Flame, Users, Siren, Bell, BellOff, FileText, Wrench, ClipboardList, Brain, Video, PlusCircle, Navigation, Search, X, Clock, CheckCircle2, ListFilter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import MapSearchBar from "@/components/agent/MapSearchBar";
 import RegisterOccurrenceDialog from "@/components/citizen/RegisterOccurrenceDialog";
 import NearCamerasAlert, { findNearbyCameras } from "@/components/shared/NearCamerasAlert";
@@ -75,6 +76,8 @@ export default function AgentDashboard() {
   const [virtualPatrolTarget, setVirtualPatrolTarget] = useState(null);
   const [proximityAlert, setProximityAlert] = useState(null); // {occ, dist, routeUrl}
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("active"); // active | in_progress | resolved | all
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -175,13 +178,37 @@ export default function AgentDashboard() {
   }, [user?.id]);
 
   const openOccurrences = occurrences.filter((o) => o.status === "open");
+  const inProgressOccurrences = occurrences.filter((o) => o.status === "in_progress");
+  const resolvedOccurrences = occurrences.filter((o) => o.status === "resolved");
   const panicOccurrences = occurrences.filter((o) => o.type === "panic" && o.status !== "resolved");
   const myActive = occurrences.filter((o) => o.assigned_agent_id === user?.id && o.status === "in_progress");
 
+  // Avg response time: time from created_date to when status became in_progress (approx: updated_date when in_progress)
+  const resolvedWithTime = occurrences.filter((o) => o.status === "resolved" && o.created_date && o.updated_date);
+  const avgResponseMin = resolvedWithTime.length > 0
+    ? Math.round(resolvedWithTime.reduce((sum, o) => {
+        const diff = (new Date(o.updated_date) - new Date(o.created_date)) / 60000;
+        return sum + diff;
+      }, 0) / resolvedWithTime.length)
+    : null;
+
   const rawFiltered = occurrences.filter((o) => {
-    if (filter === "all") return o.status !== "resolved";
-    if (filter === "mine") return o.assigned_agent_id === user?.id;
-    return o.type === filter;
+    // Status filter
+    if (statusFilter === "active") { if (o.status !== "open") return false; }
+    else if (statusFilter === "in_progress") { if (o.status !== "in_progress") return false; }
+    else if (statusFilter === "resolved") { if (o.status !== "resolved") return false; }
+    // Type filter (legacy dropdown)
+    if (filter === "mine" && o.assigned_agent_id !== user?.id) return false;
+    if (filter !== "all" && filter !== "mine" && o.type !== filter) return false;
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchAddr = o.address?.toLowerCase().includes(q);
+      const matchDesc = o.description?.toLowerCase().includes(q);
+      const matchType = o.subtype?.toLowerCase().includes(q) || o.type?.toLowerCase().includes(q);
+      if (!matchAddr && !matchDesc && !matchType) return false;
+    }
+    return true;
   });
 
   // Sort by urgency score (critical/panic first, then time decay + reporter credibility)
@@ -269,11 +296,17 @@ export default function AgentDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <StatCard label="Abertas" value={openOccurrences.length} icon={AlertTriangle} accent="warning" />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+        <StatCard label="Pendentes" value={openOccurrences.length} icon={AlertTriangle} accent="warning" />
+        <StatCard label="Em Atendimento" value={inProgressOccurrences.length} icon={MapIcon} accent="primary" />
+        <StatCard label="Finalizadas" value={resolvedOccurrences.length} icon={CheckCircle2} accent="success" />
         <StatCard label="Pânico Ativo" value={panicOccurrences.length} icon={Siren} accent="emergency" />
-        <StatCard label="Meus atendimentos" value={myActive.length} icon={MapIcon} />
-        <StatCard label="Agentes em serviço" value={agents.filter((a) => a.last_location).length} icon={Users} accent="success" />
+        <StatCard
+          label="Tempo Médio Resp."
+          value={avgResponseMin !== null ? `${avgResponseMin}min` : "—"}
+          icon={Clock}
+          hint={avgResponseMin !== null ? `baseado em ${resolvedWithTime.length} resolvidas` : "sem dados ainda"}
+        />
       </div>
 
       {/* Biometric check-in (shown only when no active shift) */}
@@ -339,26 +372,74 @@ export default function AgentDashboard() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-lg font-semibold">Ocorrências</h2>
-            <div className="flex items-center gap-2">
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas ativas</SelectItem>
-                  <SelectItem value="mine">Minhas</SelectItem>
-                  {Object.entries(TYPE_META).map(([k, m]) => (
-                    <SelectItem key={k} value={k}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant={showMap ? "default" : "outline"} size="sm" onClick={() => setShowMap(!showMap)}>
-                <MapIcon className="w-4 h-4 mr-1.5" /> {showMap ? "Ocultar" : "Mapa"}
-              </Button>
-              {showMap && (
-                <Button variant={heatmap ? "default" : "outline"} size="sm" onClick={() => setHeatmap(!heatmap)}>
-                  <Flame className="w-4 h-4 mr-1.5" /> Calor
+          <div className="space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h2 className="text-lg font-semibold">Ocorrências</h2>
+              <div className="flex items-center gap-2">
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    <SelectItem value="mine">Minhas</SelectItem>
+                    {Object.entries(TYPE_META).map(([k, m]) => (
+                      <SelectItem key={k} value={k}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant={showMap ? "default" : "outline"} size="sm" onClick={() => setShowMap(!showMap)}>
+                  <MapIcon className="w-4 h-4 mr-1.5" /> {showMap ? "Ocultar" : "Mapa"}
                 </Button>
+                {showMap && (
+                  <Button variant={heatmap ? "default" : "outline"} size="sm" onClick={() => setHeatmap(!heatmap)}>
+                    <Flame className="w-4 h-4 mr-1.5" /> Calor
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Status filter buttons */}
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { key: "active", label: "Pendentes", count: openOccurrences.length, color: "warning" },
+                { key: "in_progress", label: "Em Atendimento", count: inProgressOccurrences.length, color: "primary" },
+                { key: "resolved", label: "Finalizadas", count: resolvedOccurrences.length, color: "success" },
+                { key: "all", label: "Todas", count: occurrences.length, color: "muted" },
+              ].map(({ key, label, count, color }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                    statusFilter === key
+                      ? color === "warning" ? "bg-warning/20 border-warning/60 text-warning"
+                        : color === "primary" ? "bg-primary/20 border-primary/60 text-primary"
+                        : color === "success" ? "bg-success/20 border-success/60 text-success"
+                        : "bg-secondary border-border text-foreground"
+                      : "bg-transparent border-border/50 text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <ListFilter className="w-3.5 h-3.5" />
+                  {label}
+                  <span className="bg-background/30 px-1.5 py-0.5 rounded text-xs font-mono">{count}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por endereço, descrição ou tipo..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
           </div>
