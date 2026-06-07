@@ -66,6 +66,12 @@ const GROUPS = [
       { id: "efficiency_report", label: "Eficiência Operacional" },
     ],
   },
+  {
+    label: "🩺 Saúde do Sistema",
+    tabs: [
+      { id: "system_health", label: "Checklist E2E" },
+    ],
+  },
 ];
 
 export default function AdminTabNav({ activeTab, onTabChange }) {

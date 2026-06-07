@@ -33,6 +33,7 @@ import ProductivityReport from "@/components/admin/ProductivityReport";
 import PerformanceReports from "@/components/admin/PerformanceReports";
 import OperationalEfficiencyReport from "@/components/admin/OperationalEfficiencyReport";
 import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport";
+import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -314,6 +315,9 @@ export default function AdminDashboard() {
 
       {/* ── OPERATIONAL EFFICIENCY REPORT TAB ────────────── */}
       {activeTab === "efficiency_report" && <OperationalEfficiencyReport />}
+
+      {/* ── SYSTEM HEALTH CHECKLIST TAB ───────────────────── */}
+      {activeTab === "system_health" && <SystemHealthDashboard />}
     </div>
   );
 }
