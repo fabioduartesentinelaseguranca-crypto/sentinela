@@ -6,5 +6,6 @@ export default function Home() {
   if (!role) return null;
   if (role === "admin") return <Navigate to="/admin" replace />;
   if (role === "agent") return <Navigate to="/agent" replace />;
+  if (role === "psychologist") return <Navigate to="/psych" replace />;
   return <Navigate to="/citizen" replace />;
 }
