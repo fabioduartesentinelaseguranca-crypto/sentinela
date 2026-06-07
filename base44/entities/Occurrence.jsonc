@@ -81,7 +81,9 @@
     "create": {
       "$or": [
         {
-          "data.reporter_id": "{{user.id}}"
+          "user_condition": {
+            "role": "citizen"
+          }
         },
         {
           "user_condition": {
@@ -99,9 +101,6 @@
       "$or": [
         {
           "data.reporter_id": "{{user.id}}"
-        },
-        {
-          "data.assigned_agent_id": "{{user.id}}"
         },
         {
           "user_condition": {

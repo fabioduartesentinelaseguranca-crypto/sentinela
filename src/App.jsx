@@ -55,14 +55,6 @@ const AuthenticatedApp = () => {
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
         <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
-        <Route path="/citizen" element={<RoleGuard allow={["admin"]}><CitizenDashboard /></RoleGuard>} />
-        <Route path="/ranking" element={<RoleGuard allow={["admin"]}><Ranking /></RoleGuard>} />
-        <Route path="/agent" element={<RoleGuard allow={["admin"]}><AgentDashboard /></RoleGuard>} />
-        <Route path="/messages" element={<RoleGuard allow={["admin"]}><MessagingCenter /></RoleGuard>} />
-        <Route path="/training" element={<RoleGuard allow={["admin"]}><TrainingCenter /></RoleGuard>} />
-        <Route path="/profile" element={<RoleGuard allow={["admin"]}><AgentProfile /></RoleGuard>} />
-        <Route path="/achievements" element={<RoleGuard allow={["admin"]}><TeamAchievements /></RoleGuard>} />
-        <Route path="/psych" element={<RoleGuard allow={["admin"]}><PsychologistDashboard /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
