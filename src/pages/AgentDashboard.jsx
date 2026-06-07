@@ -164,13 +164,12 @@ export default function AgentDashboard() {
   };
 
   useEffect(() => {
+    if (!user?.id) return;
     load();
     (async () => {
       const loc = await getCurrentLocation();
       setCenter(loc);
-      if (user?.id) {
-        base44.auth.updateMe({ last_location: { ...loc, updated_at: nowISO() } }).catch(() => {});
-      }
+      base44.auth.updateMe({ last_location: { ...loc, updated_at: nowISO() } }).catch(() => {});
     })();
   }, [user?.id]);
 

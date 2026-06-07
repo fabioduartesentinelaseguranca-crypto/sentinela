@@ -51,18 +51,6 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/403" element={<AccessDeniedPage />} />
 
-      {/* Admin routes */}
-      <Route element={<AdminLayout />}>
-        <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
-        <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
-        <Route path="/notifications" element={<NotificationPreferences />} />
-      </Route>
-
-      {/* Psychologist routes */}
-      <Route element={<PsychologistLayout />}>
-        <Route path="/psych" element={<RoleGuard allow={["psychologist", "admin"]}><PsychologistDashboard /></RoleGuard>} />
-      </Route>
-
       {/* Citizen routes — role: citizen */}
       <Route element={<CitizenLayout />}>
         <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
@@ -77,6 +65,18 @@ const AuthenticatedApp = () => {
         <Route path="/training" element={<RoleGuard allow={["agent"]}><TrainingCenter /></RoleGuard>} />
         <Route path="/profile" element={<RoleGuard allow={["agent"]}><AgentProfile /></RoleGuard>} />
         <Route path="/achievements" element={<RoleGuard allow={["agent"]}><TeamAchievements /></RoleGuard>} />
+        <Route path="/notifications" element={<NotificationPreferences />} />
+      </Route>
+
+      {/* Psychologist routes */}
+      <Route element={<PsychologistLayout />}>
+        <Route path="/psych" element={<RoleGuard allow={["psychologist"]}><PsychologistDashboard /></RoleGuard>} />
+      </Route>
+
+      {/* Admin routes — last so they don't override role-specific routes */}
+      <Route element={<AdminLayout />}>
+        <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
+        <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
