@@ -35,6 +35,7 @@ import OperationalEfficiencyReport from "@/components/admin/OperationalEfficienc
 import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport";
 import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
 import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
+import QAAuditDashboard from "@/components/admin/QAAuditDashboard";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -322,6 +323,9 @@ export default function AdminDashboard() {
 
       {/* ── SYSTEM HEALTH CHECKLIST TAB ───────────────────── */}
       {activeTab === "system_health" && <SystemHealthDashboard />}
+
+      {/* ── QA AUDIT DASHBOARD TAB ────────────────────────── */}
+      {activeTab === "qa_audit" && <QAAuditDashboard />}
     </div>
   );
 }
