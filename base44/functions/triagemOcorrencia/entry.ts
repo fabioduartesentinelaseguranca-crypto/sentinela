@@ -21,9 +21,19 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'sem_conteudo', message: 'Nada a analisar' });
     }
 
-    // --- A. Classificação de urgência via LLM ---
+    // --- A. Classificação de urgência via LLM (Persona: TRIAGEM) ---
+    const PERSONA_TRIAGEM = `[PERSONA ATIVADA: TRIADOR TÉCNICO DE EMERGÊNCIA - ALTA VELOCIDADE]
+Você é um Triador Técnico de Emergência. Comportamento obrigatório:
+- FRIO, DIRETO E MATEMÁTICO. Zero empatia, zero palavras amigáveis.
+- Extraia APENAS palavras-chave de gravidade do relato.
+- Categorize o evento no menor número de tokens possível.
+- Prioridade: 'CRÍTICO_RISCO_MORTE' para risco iminente à vida.
+- Sem introduções, sem conclusões. APENAS DADOS.
+---\n\n`;
+
     const triagem = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Analise este relato de ocorrência de segurança pública e classifique-o estritamente. Retorne APENAS o JSON solicitado.\n\nRELATO: "${conteudo}"\n\nContexto adicional:\n- Tipo atual: ${occurrence.type || 'não definido'}\n- Subtipo atual: ${occurrence.subtype || 'não definido'}\n- Endereço: ${occurrence.address || 'não informado'}`,
+      prompt: `${PERSONA_TRIAGEM}Analise este relato de ocorrência de segurança pública e classifique-o estritamente. Retorne APENAS o JSON solicitado.\n\nRELATO: "${conteudo}"\n\nContexto adicional:\n- Tipo atual: ${occurrence.type || 'não definido'}\n- Subtipo atual: ${occurrence.subtype || 'não definido'}\n- Endereço: ${occurrence.address || 'não informado'}`,
+      model: 'claude_sonnet_4_6',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -32,10 +42,11 @@ Deno.serve(async (req) => {
           prioridade: { type: 'string', enum: ['critical', 'high', 'medium', 'low'] },
           palavras_chave_gravidade: { type: 'array', items: { type: 'string' } },
           orgao_recomendado: { type: 'string', enum: ['policia_militar', 'samu', 'bombeiros', 'defesa_civil', 'policia_civil', 'multiplos'] },
+          resumo_despacho_ia: { type: 'string', maxLength: 300, description: 'Resumo executivo de EXATAMENTE 3 linhas para leitura rápida no rádio policial' },
           justificativa: { type: 'string', maxLength: 200 },
           risco_morte: { type: 'boolean' }
         },
-        required: ['tipo_classificado', 'subtipo', 'prioridade', 'orgao_recomendado', 'justificativa']
+        required: ['tipo_classificado', 'subtipo', 'prioridade', 'orgao_recomendado', 'justificativa', 'resumo_despacho_ia']
       }
     });
 
@@ -87,10 +98,14 @@ Deno.serve(async (req) => {
 
     // Aplicar classificação da IA
     const classificacao = triagem;
+    const resumoDespacho = classificacao.resumo_despacho_ia || '';
     await base44.asServiceRole.entities.Occurrence.update(occurrence.id, {
       type: classificacao.tipo_classificado,
       subtype: classificacao.subtipo,
-      priority: classificacao.prioridade
+      priority: classificacao.prioridade,
+      description: occurrence.description
+        ? `${occurrence.description}\n\n📋 RESUMO DESPACHO IA:\n${resumoDespacho}`
+        : `📋 RESUMO DESPACHO IA:\n${resumoDespacho}`
     });
 
     // Se for saúde, anexar perfil médico

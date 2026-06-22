@@ -66,9 +66,19 @@ Deno.serve(async (req) => {
       100 - (indicePericulosidade * 0.6) - ((100 - taxaIluminacao) * 0.4)
     ));
 
-    // Gerar recomendações via LLM
+    // Gerar recomendações via LLM (Persona: MAPA_ROTAS)
+    const PERSONA_MAPA = `[PERSONA ATIVADA: ENGENHEIRO DE TRÁFEGO E LOGÍSTICA URBANA]
+Você é um Engenheiro de Tráfego e Logística Urbana. Comportamento obrigatório:
+- Aplique PESOS MATEMÁTICOS: penalize caminhos com registros recentes de ocorrências (peso -0.6 por incidente no raio de 200m).
+- Priorize vias com registros de alta iluminação pública (peso +0.4 por poste funcionando no raio de 100m).
+- Calcule score de segurança de 0-100 para cada rota candidata.
+- Recomende a rota mais segura com justificativa técnica baseada nos pesos.
+- Saída OBJETIVA e CALCULADA, sem floreios narrativos.
+---\n\n`;
+
     const analise = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Analise a segurança de uma rota para um cidadão e forneça recomendações. Dados:\n- Origem: (${origem_lat}, ${origem_lng})\n- Destino: (${destino_lat}, ${destino_lng})\n- Modo: ${modo}\n- Ocorrências recentes na área (90 dias): ${totalOcorrencias} (${JSON.stringify(crimeCounts)})\n- Iluminação: ${taxaIluminacao}% dos postes funcionando (${postesFuncionando} ok, ${postesDefeito} com defeito)\n- Score de segurança calculado: ${scoreSeguranca}/100\n\nContexto: Este é o app Sentinela de segurança pública. Seja direto e prático.`,
+      prompt: `${PERSONA_MAPA}Analise a segurança de uma rota para um cidadão e forneça recomendações. Dados:\n- Origem: (${origem_lat}, ${origem_lng})\n- Destino: (${destino_lat}, ${destino_lng})\n- Modo: ${modo}\n- Ocorrências recentes na área (90 dias): ${totalOcorrencias} (${JSON.stringify(crimeCounts)})\n- Iluminação: ${taxaIluminacao}% dos postes funcionando (${postesFuncionando} ok, ${postesDefeito} com defeito)\n- Score de segurança calculado: ${scoreSeguranca}/100\n\nAplique os pesos matemáticos e retorne a análise.`,
+      model: 'claude_sonnet_4_6',
       response_json_schema: {
         type: 'object',
         properties: {
