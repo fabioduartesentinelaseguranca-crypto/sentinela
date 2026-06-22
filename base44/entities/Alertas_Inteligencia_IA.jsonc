@@ -1,0 +1,139 @@
+{
+  "name": "Alertas_Inteligencia_IA",
+  "type": "object",
+  "properties": {
+    "id_usuario": {
+      "type": "string",
+      "description": "UUID do cidad\u00e3o que acionou o sistema"
+    },
+    "tipo_gatilho": {
+      "type": "string",
+      "enum": [
+        "CALCULADORA_PANICO",
+        "SENHA_COERCAO",
+        "DESVIO_ROTA"
+      ],
+      "description": "Tipo de gatilho que disparou o alerta"
+    },
+    "data_hora_brasilia": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Hor\u00e1rio exato do acionamento no fuso de Bras\u00edlia (GMT-3)"
+    },
+    "geolocalizacao_latitude": {
+      "type": "number",
+      "description": "Latitude capturada do GPS do celular"
+    },
+    "geolocalizacao_longitude": {
+      "type": "number",
+      "description": "Longitude capturada do GPS do celular"
+    },
+    "status_alerta": {
+      "type": "string",
+      "enum": [
+        "TRIAGEM_IA",
+        "DESPACHADO_POLICIA",
+        "EM_ANDAMENTO",
+        "FINALIZADO",
+        "SUSPEITA_TROTE"
+      ],
+      "default": "TRIAGEM_IA",
+      "description": "Status atual do alerta no fluxo de despacho"
+    },
+    "url_audio_video_criptografado": {
+      "type": "string",
+      "description": "Link do arquivo de m\u00eddia capturado em segundo plano (acesso restrito via token tempor\u00e1rio)"
+    },
+    "transcricao_audio_ia": {
+      "type": "string",
+      "description": "Texto integral extra\u00eddo pelo processamento de voz da IA"
+    },
+    "analise_acustica_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags geradas pela IA (ex: Gritos, Men\u00e7\u00e3o_Arma, Estresse_Alto)"
+    },
+    "resumo_despacho_ia": {
+      "type": "string",
+      "description": "Resumo executivo de at\u00e9 3 linhas para leitura r\u00e1pida da pol\u00edcia no r\u00e1dio"
+    },
+    "grau_prioridade_ia": {
+      "type": "string",
+      "enum": [
+        "CR\u00cdTICO_RISCO_MORTE",
+        "ALTO",
+        "M\u00c9DIO",
+        "BAIXO"
+      ],
+      "default": "M\u00c9DIO",
+      "description": "Grau de prioridade classificado pela IA"
+    }
+  },
+  "required": [
+    "tipo_gatilho",
+    "data_hora_brasilia"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.id_usuario": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.id_usuario": "{{user.id}}",
+          "data.status_alerta": "TRIAGEM_IA"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
