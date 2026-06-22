@@ -17,7 +17,9 @@ import SecurityNewsFeed from "@/components/citizen/SecurityNewsFeed";
 import CitizenBadges from "@/components/citizen/CitizenBadges";
 import CitizenRankingPanel from "@/components/citizen/CitizenRankingPanel";
 import CitizenProgressBar from "@/components/citizen/CitizenProgressBar";
-import { FileText, Shield, Trophy } from "lucide-react";
+import { FileText, Shield, Trophy, MapPin, Navigation, Heart } from "lucide-react";
+import GeofenceAlertCard from "@/components/citizen/GeofenceAlertCard";
+import PerfilMedicoForm from "@/components/citizen/PerfilMedicoForm";
 
 export default function CitizenDashboard() {
   const { user, refreshUser } = useAuth();
@@ -68,6 +70,37 @@ export default function CitizenDashboard() {
         <StatCard label="Medida Protetiva" value={panicEnabled ? "Ativa" : "—"} icon={Shield} accent={panicEnabled ? "success" : "primary"} />
       </div>
 
+      {/* Quick nav actions */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <Link to="/rotas-seguras" className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <Navigation className="w-5 h-5 text-primary" />
+          </div>
+          <div className="text-left">
+            <div className="font-semibold text-sm">Rotas Seguras</div>
+            <div className="text-[11px] text-muted-foreground">Caminho com menor risco</div>
+          </div>
+        </Link>
+        <Link to="/caminhe-comigo" className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-success/15 flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-5 h-5 text-success" />
+          </div>
+          <div className="text-left">
+            <div className="font-semibold text-sm">Caminhe Comigo</div>
+            <div className="text-[11px] text-muted-foreground">Compartilhe seu trajeto</div>
+          </div>
+        </Link>
+        <button onClick={() => { const el = document.getElementById("perfil-medico"); el?.scrollIntoView({ behavior: "smooth" }); }} className="p-4 rounded-xl border border-border/60 bg-card hover:border-emergency/40 transition-colors flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emergency/15 flex items-center justify-center flex-shrink-0">
+            <Heart className="w-5 h-5 text-emergency" />
+          </div>
+          <div className="text-left">
+            <div className="font-semibold text-sm">Perfil de Saúde</div>
+            <div className="text-[11px] text-muted-foreground">Emergência médica</div>
+          </div>
+        </button>
+      </div>
+
       {/* Quick actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -115,11 +148,16 @@ export default function CitizenDashboard() {
             </div>
           )}
 
+          <GeofenceAlertCard />
           <ProtectiveMeasureCard user={user} onUpdated={refreshUser} />
           <EmergencyContactsManager userId={user?.id} onChange={setContacts} />
           <FirstAidGuide />
 
           <SecurityNewsFeed city="sua região" />
+
+          <div id="perfil-medico" className="rounded-2xl border border-border/60 bg-card p-5">
+            <PerfilMedicoForm />
+          </div>
 
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <AnonymousTipForm />

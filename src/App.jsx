@@ -30,6 +30,9 @@ import RoleGuard from '@/components/shared/RoleGuard';
 import UserManual from './pages/UserManual';
 import NotificationPreferences from './pages/NotificationPreferences';
 import CentralDespacho from './pages/CentralDespacho';
+import RotasSeguras from './pages/RotasSeguras';
+import CaminheComigo from './pages/CaminheComigo';
+import CaminheComigoViewer from './pages/CaminheComigoViewer';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +59,8 @@ const AuthenticatedApp = () => {
       <Route element={<CitizenLayout />}>
         <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
         <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
+        <Route path="/rotas-seguras" element={<RoleGuard allow={["citizen"]}><RotasSeguras /></RoleGuard>} />
+        <Route path="/caminhe-comigo" element={<RoleGuard allow={["citizen"]}><CaminheComigo /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
@@ -100,7 +105,12 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <Routes>
+            {/* Public routes — no auth required */}
+            <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
+            {/* Authenticated routes */}
+            <Route path="*" element={<AuthenticatedApp />} />
+          </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>
