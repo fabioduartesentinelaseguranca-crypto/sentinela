@@ -19,6 +19,15 @@ export default function DisguisedMode() {
   const secretSeq = useRef([]);
   const trackRef = useRef(null);
   const sosLocked = useRef(false);
+  const bioConfig = useRef(null);
+
+  // Load coercion config
+  useEffect(() => {
+    if (!user?.id) return;
+    base44.entities.Configuracoes_Biometria_Coacao.filter({ user_id: user.id }).then((list) => {
+      if (list?.[0]?.coacao_ativada) bioConfig.current = list[0];
+    }).catch(() => {});
+  }, [user?.id]);
 
   // Silent background location tracking
   useEffect(() => {
@@ -60,12 +69,12 @@ export default function DisguisedMode() {
 
   const checkPins = () => {
     const typed = display;
-    const disarmPin = user?.disarm_pin;
-    const coercionPin = user?.coercion_pin;
+    const cfg = bioConfig.current;
+    const disarmPin = cfg?.disarm_pin;
+    const coercionPin = cfg?.coacao_pin;
 
     // Coercion PIN — pretend to disarm, fire silent red alert
     if (coercionPin && typed === coercionPin && disarmActive) {
-      // Fake disarm: show a harmless-looking result
       setDisplay("0");
       setDisarmActive(false);
       triggerSilentSOS("Senha de coação — usuário rendido");

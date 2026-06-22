@@ -1,0 +1,52 @@
+{
+  "name": "Configuracoes_Biometria_Coacao",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID do cidad\u00e3o"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "coacao_pin": {
+      "type": "string",
+      "description": "PIN de coa\u00e7\u00e3o (senha num\u00e9rica que finge desarmar mas dispara alerta)"
+    },
+    "coacao_ativada": {
+      "type": "boolean",
+      "default": true
+    },
+    "disarm_pin": {
+      "type": "string",
+      "description": "PIN normal de desarme (desarma de verdade)"
+    },
+    "metodo_coacao": {
+      "type": "string",
+      "enum": [
+        "pin",
+        "digital_coacao",
+        "face_coacao"
+      ],
+      "default": "pin",
+      "description": "M\u00e9todo biom\u00e9trico de coa\u00e7\u00e3o configurado"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

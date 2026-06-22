@@ -41,6 +41,12 @@ const GROUPS = [
     ],
   },
   {
+    label: "📋 Documentos",
+    tabs: [
+      { id: "boletins", label: "Boletins de Ocorrência" },
+    ],
+  },
+  {
     label: "🚗 Frota & Equipamentos",
     tabs: [
       { id: "vehicles", label: "Viaturas" },

@@ -21,6 +21,8 @@ import { FileText, Shield, Trophy, MapPin, Navigation, Heart } from "lucide-reac
 import GeofenceAlertCard from "@/components/citizen/GeofenceAlertCard";
 import PerfilMedicoForm from "@/components/citizen/PerfilMedicoForm";
 import GuardianNetwork from "@/components/citizen/GuardianNetwork";
+import CoercionBiometricConfig from "@/components/citizen/CoercionBiometricConfig";
+import PerimetroInfantilManager from "@/components/citizen/PerimetroInfantilManager";
 
 export default function CitizenDashboard() {
   const { user, refreshUser } = useAuth();
@@ -151,6 +153,8 @@ export default function CitizenDashboard() {
 
           <GeofenceAlertCard />
           <ProtectiveMeasureCard user={user} onUpdated={refreshUser} />
+          <CoercionBiometricConfig />
+          <PerimetroInfantilManager />
           <EmergencyContactsManager userId={user?.id} onChange={setContacts} />
           <GuardianNetwork />
           <FirstAidGuide />

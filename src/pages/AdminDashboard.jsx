@@ -37,6 +37,8 @@ import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
 import QaEstressePanel from "@/components/admin/QaEstressePanel";
 import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
 import GuardianManager from "@/components/admin/GuardianManager";
+import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
+import BoletinsOcorrenciaList from "@/components/admin/BoletinsOcorrenciaList";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -330,6 +332,19 @@ export default function AdminDashboard() {
 
       {/* ── GUARDIANS TAB ─────────────────────────────────── */}
       {activeTab === "guardians" && <GuardianManager />}
+
+      {/* ── BOLETINS DE OCORRÊNCIA TAB ───────────────────── */}
+      {activeTab === "boletins" && (
+        <div className="space-y-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" /> Boletins de Ocorrência Pré-Preenchidos
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Selecione um alerta finalizado para visualizar e aprovar o BO gerado por IA.
+          </p>
+          <BoletinsOcorrenciaList />
+        </div>
+      )}
     </div>
   );
 }

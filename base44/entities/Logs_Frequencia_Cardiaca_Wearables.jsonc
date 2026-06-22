@@ -1,0 +1,76 @@
+{
+  "name": "Logs_Frequencia_Cardiaca_Wearables",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number",
+      "description": "Batimentos por minuto registrados"
+    },
+    "data_registro": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "smartwatch",
+        "manual",
+        "health_connect",
+        "health_kit"
+      ],
+      "default": "smartwatch"
+    },
+    "acao_tomada": {
+      "type": "string",
+      "enum": [
+        "nenhuma",
+        "alerta_enviado",
+        "panico_autonomo",
+        "confirmado_seguro",
+        "queda_detectada"
+      ],
+      "default": "nenhuma"
+    },
+    "status_resposta": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "seguro",
+        "nao_respondeu"
+      ],
+      "default": "pendente"
+    },
+    "coordenada_lat": {
+      "type": "number"
+    },
+    "coordenada_lng": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_id",
+    "bpm"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

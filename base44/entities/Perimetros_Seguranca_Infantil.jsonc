@@ -1,0 +1,93 @@
+{
+  "name": "Perimetros_Seguranca_Infantil",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID do respons\u00e1vel (pai/m\u00e3e)"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "nome_crianca": {
+      "type": "string",
+      "description": "Nome da crian\u00e7a protegida"
+    },
+    "nome_local": {
+      "type": "string",
+      "description": "Nome descritivo (ex: Escola Municipal Jo\u00e3o Silva)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "escola",
+        "creche",
+        "parque",
+        "rota_escolar",
+        "casa_parente",
+        "outro"
+      ],
+      "default": "escola"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "raio_metros": {
+      "type": "number",
+      "default": 300
+    },
+    "horario_inicio": {
+      "type": "string",
+      "description": "HH:MM in\u00edcio do per\u00edodo de monitoramento"
+    },
+    "horario_fim": {
+      "type": "string",
+      "description": "HH:MM fim do per\u00edodo de monitoramento"
+    },
+    "dias_semana": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 6
+      },
+      "description": "0=Domingo, 6=S\u00e1bado"
+    },
+    "dispositivo_crianca_id": {
+      "type": "string",
+      "description": "ID do dispositivo da crian\u00e7a (para pareamento)"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "data_criacao": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "nome_crianca",
+    "nome_local",
+    "lat",
+    "lng"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "name": "Boletins_Ocorrencia_Gerados",
+  "type": "object",
+  "properties": {
+    "id_alerta": {
+      "type": "string",
+      "description": "ID do alerta de intelig\u00eancia (Alertas_Inteligencia_IA) de origem"
+    },
+    "id_ocorrencia": {
+      "type": "string",
+      "description": "ID da ocorr\u00eancia associada"
+    },
+    "texto_juridico_bo": {
+      "type": "string",
+      "description": "Texto completo do Boletim de Ocorr\u00eancia redigido pela IA"
+    },
+    "tags_reconhecimento_visual": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags extra\u00eddas por vis\u00e3o computacional (ex: arma_fogo, veiculo_batido, fuma\u00e7a)"
+    },
+    "telemetria_iot": {
+      "type": "object",
+      "properties": {
+        "velocidade_viatura": {
+          "type": "number"
+        },
+        "sirene_ativa": {
+          "type": "boolean"
+        },
+        "tempo_deslocamento_seg": {
+          "type": "number"
+        },
+        "rota_gps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "description": "Dados de telemetria IoT da viatura"
+    },
+    "data_emissao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora de emiss\u00e3o no fuso oficial de Bras\u00edlia"
+    },
+    "status_assinatura": {
+      "type": "string",
+      "enum": [
+        "rascunho",
+        "assinado",
+        "rejeitado"
+      ],
+      "default": "rascunho"
+    },
+    "assinatura_agente_responsavel": {
+      "type": "string",
+      "description": "Nome completo do agente que aprovou e assinou"
+    },
+    "assinatura_agente_id": {
+      "type": "string"
+    },
+    "texto_revisado_bo": {
+      "type": "string",
+      "description": "Vers\u00e3o final revisada pelo agente (se editada)"
+    },
+    "observacoes_revisao": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id_alerta"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.id_alerta": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
