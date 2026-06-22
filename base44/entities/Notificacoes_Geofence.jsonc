@@ -1,0 +1,108 @@
+{
+  "name": "Notificacoes_Geofence",
+  "type": "object",
+  "properties": {
+    "cerca_id": {
+      "type": "string",
+      "description": "ID da Cerca Geogr\u00e1fica que disparou"
+    },
+    "cerca_nome": {
+      "type": "string"
+    },
+    "tipo_risco": {
+      "type": "string"
+    },
+    "nivel_urgencia": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio notificado"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "coordenada_lat": {
+      "type": "number",
+      "description": "Latitude do dispositivo no momento do disparo"
+    },
+    "coordenada_lng": {
+      "type": "number"
+    },
+    "data_disparo": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mensagem": {
+      "type": "string",
+      "description": "Conte\u00fado da notifica\u00e7\u00e3o enviada"
+    },
+    "status_envio": {
+      "type": "string",
+      "enum": [
+        "enviado",
+        "pendente",
+        "falhou",
+        "lido"
+      ],
+      "default": "enviado"
+    },
+    "canal": {
+      "type": "string",
+      "enum": [
+        "push",
+        "sms",
+        "email",
+        "todos"
+      ],
+      "default": "push"
+    }
+  },
+  "required": [
+    "cerca_id",
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

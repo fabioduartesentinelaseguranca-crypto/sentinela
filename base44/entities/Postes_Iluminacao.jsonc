@@ -1,0 +1,102 @@
+{
+  "name": "Postes_Iluminacao",
+  "type": "object",
+  "properties": {
+    "coordenada_lat": {
+      "type": "number",
+      "description": "Latitude do poste"
+    },
+    "coordenada_lng": {
+      "type": "number",
+      "description": "Longitude do poste"
+    },
+    "endereco": {
+      "type": "string"
+    },
+    "bairro": {
+      "type": "string"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "funcionando",
+        "com_defeito",
+        "desligado",
+        "manutencao"
+      ],
+      "default": "funcionando"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "led",
+        "sodio",
+        "mercurio",
+        "solar",
+        "outro"
+      ],
+      "default": "led"
+    },
+    "potencia_watts": {
+      "type": "number",
+      "description": "Pot\u00eancia em watts"
+    },
+    "altura_metros": {
+      "type": "number"
+    },
+    "ultima_manutencao": {
+      "type": "string",
+      "format": "date"
+    },
+    "id_prefeitura": {
+      "type": "string",
+      "description": "Identificador oficial da prefeitura"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "coordenada_lat",
+    "coordenada_lng"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

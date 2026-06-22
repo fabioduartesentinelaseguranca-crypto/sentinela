@@ -1,0 +1,133 @@
+{
+  "name": "Perfis_Medicos_Usuarios",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio cidad\u00e3o"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "tipo_sanguineo": {
+      "type": "string",
+      "enum": [
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-",
+        "O+",
+        "O-",
+        "nao_informado"
+      ],
+      "default": "nao_informado"
+    },
+    "alergias": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de alergias conhecidas"
+    },
+    "restricoes_medicamentos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Medicamentos contraindicados"
+    },
+    "condicoes_preexistentes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ex: diabetes, hipertens\u00e3o, asma, cardiopatia"
+    },
+    "medicamentos_uso_continuo": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contato_emergencia_nome": {
+      "type": "string"
+    },
+    "contato_emergencia_telefone": {
+      "type": "string"
+    },
+    "contato_emergencia_parentesco": {
+      "type": "string"
+    },
+    "contato_emergencia_alternativo": {
+      "type": "string",
+      "description": "Segundo contato de emerg\u00eancia"
+    },
+    "plano_saude": {
+      "type": "string"
+    },
+    "numero_plano": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Informa\u00e7\u00f5es adicionais relevantes para emerg\u00eancia"
+    },
+    "ultima_atualizacao": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

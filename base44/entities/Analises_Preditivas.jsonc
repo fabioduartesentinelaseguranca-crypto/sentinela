@@ -1,0 +1,168 @@
+{
+  "name": "Analises_Preditivas",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo do relat\u00f3rio preditivo"
+    },
+    "resumo": {
+      "type": "string",
+      "description": "Resumo executivo da an\u00e1lise"
+    },
+    "tipo_crime": {
+      "type": "string",
+      "description": "Categoria criminal analisada"
+    },
+    "subtipos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "regiao": {
+      "type": "string"
+    },
+    "bairro": {
+      "type": "string"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "percentual_variacao": {
+      "type": "number",
+      "description": "Varia\u00e7\u00e3o percentual (ex: 35 = aumento de 35%)"
+    },
+    "tendencia": {
+      "type": "string",
+      "enum": [
+        "alta",
+        "estavel",
+        "queda",
+        "pico"
+      ],
+      "default": "estavel"
+    },
+    "faixa_horaria_inicio": {
+      "type": "string",
+      "description": "HH:MM in\u00edcio da faixa cr\u00edtica"
+    },
+    "faixa_horaria_fim": {
+      "type": "string",
+      "description": "HH:MM fim da faixa cr\u00edtica"
+    },
+    "dias_criticos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Dias da semana mais afetados"
+    },
+    "data_geracao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "periodo_analise_inicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "periodo_analise_fim": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_ocorrencias_periodo": {
+      "type": "number"
+    },
+    "heatmap_coordenadas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "intensidade": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Pontos de calor para renderiza\u00e7\u00e3o no mapa"
+    },
+    "recomendacoes": {
+      "type": "string",
+      "description": "Recomenda\u00e7\u00f5es t\u00e1ticas para policiamento"
+    },
+    "fatores_contribuintes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "rascunho",
+        "publicado",
+        "arquivado"
+      ],
+      "default": "rascunho"
+    },
+    "nivel_confianca": {
+      "type": "string",
+      "enum": [
+        "alta",
+        "media",
+        "baixa"
+      ],
+      "default": "media"
+    }
+  },
+  "required": [
+    "titulo",
+    "tipo_crime",
+    "regiao"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

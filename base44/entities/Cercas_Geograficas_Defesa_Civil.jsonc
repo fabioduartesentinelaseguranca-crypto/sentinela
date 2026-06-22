@@ -1,0 +1,133 @@
+{
+  "name": "Cercas_Geograficas_Defesa_Civil",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome descritivo da cerca geogr\u00e1fica"
+    },
+    "tipo_risco": {
+      "type": "string",
+      "enum": [
+        "alagamento",
+        "deslizamento",
+        "incendio",
+        "estrutural",
+        "quimico",
+        "tsunami",
+        "tornado",
+        "outro"
+      ],
+      "description": "Tipo de risco de defesa civil"
+    },
+    "poligono_coordenadas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "description": "V\u00e9rtices do pol\u00edgono da \u00e1rea de risco [{lat, lng}, ...]"
+    },
+    "bairro": {
+      "type": "string",
+      "description": "Bairro(s) abrangido(s)"
+    },
+    "cidade": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string"
+    },
+    "nivel_urgencia": {
+      "type": "string",
+      "enum": [
+        "extremo",
+        "alto",
+        "medio",
+        "baixo"
+      ],
+      "default": "medio"
+    },
+    "mensagem_alerta": {
+      "type": "string",
+      "description": "Mensagem push enviada aos usu\u00e1rios dentro da cerca"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "inativo",
+        "programado"
+      ],
+      "default": "programado"
+    },
+    "data_ativacao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data_desativacao": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "criado_por_id": {
+      "type": "string",
+      "description": "ID do admin que criou"
+    },
+    "criado_por_nome": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "tipo_risco",
+    "poligono_coordenadas"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.status": "ativo"
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
