@@ -385,27 +385,27 @@ export default function CentralDespacho() {
                   <Button
                     onClick={() => updateStatus(selected, "DESPACHADO_POLICIA")}
                     disabled={selected.status_alerta === "DESPACHADO_POLICIA" || selected.status_alerta === "FINALIZADO"}
-                    className="bg-green-700 hover:bg-green-600 text-white font-bold py-6 rounded-xl border border-green-500/30"
+                    className="bg-green-700 hover:bg-green-600 text-white font-bold h-auto py-4 px-3 rounded-xl border border-green-500/30 whitespace-normal text-center leading-tight"
                   >
-                    <Shield className="w-4 h-4 mr-2" />
+                    <Shield className="w-4 h-4 shrink-0" />
                     Despachar Viatura Mais Próxima
                   </Button>
                   <Button
                     onClick={() => updateStatus(selected, "EM_ANDAMENTO")}
                     disabled={selected.status_alerta === "FINALIZADO"}
                     variant="outline"
-                    className="border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold py-6 rounded-xl"
+                    className="border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold h-auto py-4 px-3 rounded-xl whitespace-normal text-center leading-tight"
                   >
-                    <PhoneCall className="w-4 h-4 mr-2" />
+                    <PhoneCall className="w-4 h-4 shrink-0" />
                     Apoio Defesa Civil / SAMU
                   </Button>
                   <Button
                     onClick={() => updateStatus(selected, "SUSPEITA_TROTE")}
                     disabled={selected.status_alerta === "FINALIZADO" || selected.status_alerta === "SUSPEITA_TROTE"}
                     variant="outline"
-                    className="border-gray-700 text-gray-400 hover:bg-gray-800 font-bold py-6 rounded-xl"
+                    className="border-gray-700 text-gray-400 hover:bg-gray-800 font-bold h-auto py-4 px-3 rounded-xl whitespace-normal text-center leading-tight"
                   >
-                    <Flag className="w-4 h-4 mr-2" />
+                    <Flag className="w-4 h-4 shrink-0" />
                     Encerrar / Trote
                   </Button>
                 </div>
