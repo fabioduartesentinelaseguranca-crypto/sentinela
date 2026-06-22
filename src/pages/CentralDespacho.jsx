@@ -382,32 +382,30 @@ export default function CentralDespacho() {
                   Ações Rápidas de Despacho
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Button
+                  <button
                     onClick={() => updateStatus(selected, "DESPACHADO_POLICIA")}
                     disabled={selected.status_alerta === "DESPACHADO_POLICIA" || selected.status_alerta === "FINALIZADO"}
-                    className="bg-green-700 hover:bg-green-600 text-white font-bold h-auto py-4 px-3 rounded-xl border border-green-500/30 whitespace-normal text-center leading-tight"
+                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Shield className="w-4 h-4 shrink-0" />
-                    Despachar Viatura Mais Próxima
-                  </Button>
-                  <Button
+                    <Shield className="w-5 h-5" />
+                    <span className="text-xs text-center leading-tight">Despachar Viatura Mais Próxima</span>
+                  </button>
+                  <button
                     onClick={() => updateStatus(selected, "EM_ANDAMENTO")}
                     disabled={selected.status_alerta === "FINALIZADO"}
-                    variant="outline"
-                    className="border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold h-auto py-4 px-3 rounded-xl whitespace-normal text-center leading-tight"
+                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <PhoneCall className="w-4 h-4 shrink-0" />
-                    Apoio Defesa Civil / SAMU
-                  </Button>
-                  <Button
+                    <PhoneCall className="w-5 h-5" />
+                    <span className="text-xs text-center leading-tight">Apoio Defesa Civil / SAMU</span>
+                  </button>
+                  <button
                     onClick={() => updateStatus(selected, "SUSPEITA_TROTE")}
                     disabled={selected.status_alerta === "FINALIZADO" || selected.status_alerta === "SUSPEITA_TROTE"}
-                    variant="outline"
-                    className="border-gray-700 text-gray-400 hover:bg-gray-800 font-bold h-auto py-4 px-3 rounded-xl whitespace-normal text-center leading-tight"
+                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Flag className="w-4 h-4 shrink-0" />
-                    Encerrar / Trote
-                  </Button>
+                    <Flag className="w-5 h-5" />
+                    <span className="text-xs text-center leading-tight">Encerrar / Trote</span>
+                  </button>
                 </div>
               </div>
             </div>
