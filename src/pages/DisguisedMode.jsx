@@ -2,8 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { getCurrentLocation } from "@/lib/geo";
 import { useAuth } from "@/lib/AuthContext";
+import { nowISO } from "@/lib/deviceTime";
 
-// Fake calculator that silently tracks user location and can trigger panic
+// Fake calculator with silent SOS via secret sequence and coercion PIN detection.
+// Normal disarm PIN clears the faux alarm. Coercion PIN pretends to disarm but silently
+// fires a critical red alert — the user is under duress.
+
 export default function DisguisedMode() {
   const { user } = useAuth();
   const [display, setDisplay] = useState("0");
@@ -11,45 +15,77 @@ export default function DisguisedMode() {
   const [op, setOp] = useState(null);
   const [fresh, setFresh] = useState(true);
   const [sosTriggered, setSosTriggered] = useState(false);
+  const [disarmActive, setDisarmActive] = useState(true);
   const secretSeq = useRef([]);
   const trackRef = useRef(null);
+  const sosLocked = useRef(false);
 
   // Silent background location tracking
   useEffect(() => {
     trackRef.current = setInterval(async () => {
       const loc = await getCurrentLocation();
       if (user?.id) {
-        base44.auth.updateMe({ last_location: { ...loc, updated_at: new Date().toISOString() } }).catch(() => {});
+        base44.auth.updateMe({ last_location: { ...loc, updated_at: nowISO() } }).catch(() => {});
       }
-    }, 30000);
+    }, 15000);
     return () => clearInterval(trackRef.current);
   }, [user?.id]);
 
-  const triggerSilentSOS = async () => {
-    if (sosTriggered) return;
-    // Só permite pânico se a medida protetiva estiver ativa
-    if (user?.protective_measure_status !== "active") return;
+  const triggerSilentSOS = async (reason) => {
+    if (sosLocked.current) return;
+    sosLocked.current = true;
     setSosTriggered(true);
     const loc = await getCurrentLocation();
-    await base44.entities.Occurrence.create({
-      type: "panic",
-      subtype: "Emergência Pessoal",
-      description: `[MODO DISFARÇADO] Pânico silencioso acionado por ${user?.full_name}`,
-      lat: loc.lat,
-      lng: loc.lng,
-      reporter_id: user?.id,
-      priority: "critical",
-      status: "open",
-    });
-    // Flash screen briefly (invisible to observer)
-    setTimeout(() => setSosTriggered(false), 5000);
+    await Promise.all([
+      base44.entities.Occurrence.create({
+        type: "panic",
+        subtype: "Emergência Pessoal",
+        description: `[MODO DISFARÇADO] ${reason || "Pânico silencioso"} acionado por ${user?.full_name}`,
+        lat: loc.lat, lng: loc.lng, reporter_id: user?.id,
+        priority: "critical", status: "open",
+      }),
+      base44.entities.Alertas_Inteligencia_IA.create({
+        id_usuario: user?.id,
+        tipo_gatilho: "SENHA_COERCAO",
+        data_hora_brasilia: new Date().toISOString(),
+        geolocalizacao_latitude: loc.lat,
+        geolocalizacao_longitude: loc.lng,
+        status_alerta: "TRIAGEM_IA",
+        resumo_despacho_ia: `CÓDIGO VERMELHO — ${user?.full_name} está sob coação. Senha de coação digitada. Usuário rendido.`,
+        grau_prioridade_ia: "CRÍTICO_RISCO_MORTE",
+      }),
+    ]);
+    setTimeout(() => { setSosTriggered(false); sosLocked.current = false; }, 10000);
+  };
+
+  const checkPins = () => {
+    const typed = display;
+    const disarmPin = user?.disarm_pin;
+    const coercionPin = user?.coercion_pin;
+
+    // Coercion PIN — pretend to disarm, fire silent red alert
+    if (coercionPin && typed === coercionPin && disarmActive) {
+      // Fake disarm: show a harmless-looking result
+      setDisplay("0");
+      setDisarmActive(false);
+      triggerSilentSOS("Senha de coação — usuário rendido");
+      return true;
+    }
+
+    // Normal disarm PIN — quietly disarm the faux alarm
+    if (disarmPin && typed === disarmPin && disarmActive) {
+      setDisplay("0");
+      setDisarmActive(false);
+      return true;
+    }
+
+    return false;
   };
 
   const handleNumber = (n) => {
     secretSeq.current = [...secretSeq.current.slice(-5), n];
-    // Secret code: press 9-1-1-9-1 to trigger silent SOS
     if (secretSeq.current.join("") === "91191") {
-      triggerSilentSOS();
+      triggerSilentSOS("Sequência secreta");
     }
     setDisplay(fresh ? n : display === "0" ? n : display + n);
     setFresh(false);
@@ -62,6 +98,10 @@ export default function DisguisedMode() {
   };
 
   const handleEqual = () => {
+    if (op === null && prev === null) {
+      // Typing a raw number and pressing = — check PINs
+      if (checkPins()) return;
+    }
     if (op === null || prev === null) return;
     const curr = parseFloat(display);
     let result;

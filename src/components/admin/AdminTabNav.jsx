@@ -35,6 +35,12 @@ const GROUPS = [
     ],
   },
   {
+    label: "🤝 Comunidade",
+    tabs: [
+      { id: "guardians", label: "Anjos da Guarda" },
+    ],
+  },
+  {
     label: "🚗 Frota & Equipamentos",
     tabs: [
       { id: "vehicles", label: "Viaturas" },

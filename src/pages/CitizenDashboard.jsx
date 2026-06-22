@@ -20,6 +20,7 @@ import CitizenProgressBar from "@/components/citizen/CitizenProgressBar";
 import { FileText, Shield, Trophy, MapPin, Navigation, Heart } from "lucide-react";
 import GeofenceAlertCard from "@/components/citizen/GeofenceAlertCard";
 import PerfilMedicoForm from "@/components/citizen/PerfilMedicoForm";
+import GuardianNetwork from "@/components/citizen/GuardianNetwork";
 
 export default function CitizenDashboard() {
   const { user, refreshUser } = useAuth();
@@ -151,6 +152,7 @@ export default function CitizenDashboard() {
           <GeofenceAlertCard />
           <ProtectiveMeasureCard user={user} onUpdated={refreshUser} />
           <EmergencyContactsManager userId={user?.id} onChange={setContacts} />
+          <GuardianNetwork />
           <FirstAidGuide />
 
           <SecurityNewsFeed city="sua região" />

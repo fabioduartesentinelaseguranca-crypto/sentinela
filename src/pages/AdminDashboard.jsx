@@ -36,6 +36,7 @@ import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport"
 import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
 import QaEstressePanel from "@/components/admin/QaEstressePanel";
 import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
+import GuardianManager from "@/components/admin/GuardianManager";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -326,6 +327,9 @@ export default function AdminDashboard() {
 
       {/* ── QA & ESTRESSE TAB ─────────────────────────────── */}
       {activeTab === "qa_estresse" && <QaEstressePanel />}
+
+      {/* ── GUARDIANS TAB ─────────────────────────────────── */}
+      {activeTab === "guardians" && <GuardianManager />}
     </div>
   );
 }

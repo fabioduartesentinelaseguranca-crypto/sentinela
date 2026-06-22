@@ -8,6 +8,10 @@ import { Shield, MapPin, Share2, Smartphone, Loader2, StopCircle, Play, Clock, N
 import { toast } from "sonner";
 import L from "leaflet";
 
+// Haversine in meters
+function haversineM(a, b) { const R=6371000; const dLat=(b.lat-a.lat)*Math.PI/180; const dLng=(b.lng-a.lng)*Math.PI/180; const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
+function bearing(a,b){ const dLng=(b.lng-a.lng)*Math.PI/180; const y=Math.sin(dLng)*Math.cos(b.lat*Math.PI/180); const x=Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180)-Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos(dLng); return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+
 const USER_ICON = L.divIcon({
   html: '<div class="w-8 h-8 rounded-full bg-primary border-[3px] border-white shadow-lg flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-white animate-pulse"></div></div>',
   className: "", iconSize: [32, 32], iconAnchor: [16, 16],
@@ -27,6 +31,54 @@ export default function CaminheComigo() {
   const [copied, setCopied] = useState(false);
   const watchId = useRef(null);
   const timerRef = useRef(null);
+  const trailRef = useRef([]);        // last 30s of coordinates
+  const anomalyLocked = useRef(false);
+
+  // ── Anomaly detection helpers ────────────────────────
+  const checkAnomaly = useCallback((loc) => {
+    const trail = trailRef.current;
+    trail.push({ ...loc, ts: Date.now() });
+    if (trail.length > 60) trail.shift(); // keep last ~60s at 1Hz
+
+    if (trail.length < 4 || anomalyLocked.current) return;
+
+    const recent = trail.filter((p) => Date.now() - p.ts < 10000); // last 10s
+    if (recent.length < 3) return;
+
+    // Instant speed over last 2 samples
+    const last = trail[trail.length - 1];
+    const prev2 = trail[trail.length - 2];
+    const d = haversineM(prev2, last);
+    const dt = (last.ts - prev2.ts) / 1000;
+    const speedKmh = dt > 0 ? (d / 1000) / (dt / 3600) : 0;
+
+    // Heading change (bearing diff in degrees)
+    const b1 = bearing(prev2, last);
+    const b2 = bearing(trail[trail.length - 3], prev2);
+    const headingDelta = Math.abs(b1 - b2) % 360;
+    const sharpTurn = headingDelta > 180 ? 360 - headingDelta : headingDelta;
+
+    // Trigger if: running + sharp turn (> 12 km/h + > 90° turn)
+    // OR: running alone (> 18 km/h = sprinting)
+    if ((speedKmh > 12 && sharpTurn > 90) || speedKmh > 18) {
+      anomalyLocked.current = true;
+      toast.error("🚨 Alerta preventivo: movimento brusco detectado!", {
+        description: `Velocidade: ${speedKmh.toFixed(0)} km/h · Mudança de direção: ${sharpTurn.toFixed(0)}°`,
+        duration: 10000,
+      });
+      const mapsLink = `https://maps.google.com/?q=${loc.lat},${loc.lng}`;
+      base44.entities.Occurrence.create({
+        type: "panic",
+        subtype: "Desvio de Rota Suspeito",
+        description: `[CAMINHE COMIGO] ${user?.full_name} apresentou movimento brusco (${speedKmh.toFixed(0)} km/h, ${sharpTurn.toFixed(0)}° de desvio). Possível fuga ou abordagem. Localização: ${mapsLink}`,
+        lat: loc.lat, lng: loc.lng, reporter_id: user?.id,
+        priority: "high", status: "open",
+      }).catch(() => {});
+      setTimeout(() => { anomalyLocked.current = false; }, 30000);
+    }
+  }, [user]);
+
+  useEffect(() => { trailRef.current = []; anomalyLocked.current = false; }, [active]);
 
   const shareUrl = session?.share_token
     ? `${window.location.origin}/caminhe-comigo/${session.share_token}`
@@ -63,6 +115,7 @@ export default function CaminheComigo() {
       (p) => {
         const newLoc = { lat: p.coords.latitude, lng: p.coords.longitude };
         setLocation(newLoc);
+        checkAnomaly(newLoc);
         base44.auth.updateMe({ last_location: { ...newLoc, updated_at: new Date().toISOString() } }).catch(() => {});
       },
       () => {},
