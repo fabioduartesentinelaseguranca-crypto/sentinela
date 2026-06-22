@@ -1,8 +1,9 @@
 import AppLayout from "./AppLayout";
-import { Map, MessageSquare, BookOpen, UserCircle, Trophy, HelpCircle, Bell } from "lucide-react";
+import { Map, MessageSquare, BookOpen, UserCircle, Trophy, HelpCircle, Bell, Radio } from "lucide-react";
 
 const NAV = [
-  { to: "/agent", end: true, label: "Central", icon: Map },
+  { to: "/agent", end: true, label: "Painel", icon: Map },
+  { to: "/central", label: "Despacho", icon: Radio },
   { to: "/messages", label: "Mensagens", icon: MessageSquare },
   { to: "/training", label: "Capacitação", icon: BookOpen },
   { to: "/profile", label: "Meu Perfil", icon: UserCircle },

@@ -1,8 +1,9 @@
 import AppLayout from "./AppLayout";
-import { LayoutDashboard, Trophy, MessageSquare, Shield, HelpCircle, BookOpen, Bell } from "lucide-react";
+import { LayoutDashboard, Trophy, MessageSquare, Shield, HelpCircle, BookOpen, Bell, Radio } from "lucide-react";
 
 const NAV = [
   { to: "/admin", end: true, label: "Painel Admin", icon: LayoutDashboard },
+  { to: "/central", label: "Despacho", icon: Radio },
   { to: "/training", label: "Capacitação", icon: BookOpen },
   { to: "/achievements", label: "Conquistas", icon: Trophy },
   { to: "/messages", label: "Mensagens", icon: MessageSquare },

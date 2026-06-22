@@ -66,7 +66,6 @@ const AuthenticatedApp = () => {
         <Route path="/training" element={<RoleGuard allow={["agent"]}><TrainingCenter /></RoleGuard>} />
         <Route path="/profile" element={<RoleGuard allow={["agent"]}><AgentProfile /></RoleGuard>} />
         <Route path="/achievements" element={<RoleGuard allow={["agent"]}><TeamAchievements /></RoleGuard>} />
-        <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
@@ -87,6 +86,9 @@ const AuthenticatedApp = () => {
 
       {/* Disguised mode — no layout, no role restriction */}
       <Route path="/disguise" element={<DisguisedMode />} />
+
+      {/* Central de Despacho — tela full-screen, acesso para agentes e admins */}
+      <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>
