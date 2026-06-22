@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Siren, Clock, MapPin, Phone, Shield, Crosshair, PhoneCall, Flag, ChevronRight, AlertTriangle, Radio, Zap, Navigation, Volume2, FileText } from "lucide-react";
+import { Siren, Clock, MapPin, Phone, Shield, Crosshair, PhoneCall, Flag, ChevronRight, AlertTriangle, Radio, Zap, Navigation, Volume2, FileText, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -443,15 +443,26 @@ export default function CentralDespacho() {
           </div>
           {selected?.geolocalizacao_latitude && (
             <div className="p-3 border-t border-white/5 bg-[#161616]">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.geolocalizacao_latitude},${selected.geolocalizacao_longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
-              >
-                <Navigation className="w-4 h-4" />
-                Traçar Rota no Google Maps
-              </a>
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.geolocalizacao_latitude},${selected.geolocalizacao_longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-medium transition-colors"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  Google Maps
+                </a>
+                <a
+                  href={`https://waze.com/ul?ll=${selected.geolocalizacao_latitude},${selected.geolocalizacao_longitude}&navigate=yes`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium transition-colors"
+                >
+                  <Car className="w-3.5 h-3.5" />
+                  Waze
+                </a>
+              </div>
             </div>
           )}
         </aside>
