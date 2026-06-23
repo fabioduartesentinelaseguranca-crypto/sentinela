@@ -18,6 +18,12 @@ const C = {
 
 function rgb(c) { return c; }
 
+// ─── DEACCENT: strip diacritics for jsPDF WinAnsiEncoding ────
+function deaccent(str) {
+  if (typeof str !== 'string') return str;
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0327/g, '');
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────
 function checkPage(doc, y, needed = 40) {
   if (y > doc.internal.pageSize.height - needed) {
@@ -34,7 +40,7 @@ function sectionTitle(doc, title, y) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(...rgb(C.white));
-  doc.text(title, 20, y + 6.5);
+  doc.text(deaccent(title), 20, y + 6.5);
   return y + 16;
 }
 
@@ -43,7 +49,7 @@ function subTitle(doc, title, y) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...rgb(C.primary));
-  doc.text(title, 20, y);
+  doc.text(deaccent(title), 20, y);
   doc.setDrawColor(...rgb(C.primary));
   doc.setLineWidth(0.4);
   doc.line(20, y + 2.5, 90, y + 2.5);
@@ -55,7 +61,7 @@ function bodyText(doc, text, y, indent = 20) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(55, 55, 65);
-  const lines = doc.splitTextToSize(text, 190 - indent);
+  const lines = doc.splitTextToSize(deaccent(text), 190 - indent);
   doc.text(lines, indent, y);
   return y + (lines.length * 4.5) + 3;
 }
@@ -66,7 +72,7 @@ function bulletList(doc, items, y, indent = 25) {
   doc.setTextColor(55, 55, 65);
   for (const item of items) {
     y = checkPage(doc, y, 10);
-    const lines = doc.splitTextToSize(item, 185 - indent);
+    const lines = doc.splitTextToSize(deaccent(item), 185 - indent);
     doc.text('\u2022 ' + lines[0], indent - 5, y);
     if (lines.length > 1) {
       for (let i = 1; i < lines.length; i++) {
@@ -115,14 +121,14 @@ function entityTable(doc, name, schema, y) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...rgb(C.primary));
-  doc.text(name, 20, y);
+  doc.text(deaccent(name), 20, y);
   y += 6;
 
   if (schema.description) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...rgb(C.gray));
-    const descLines = doc.splitTextToSize(schema.description, 170);
+    const descLines = doc.splitTextToSize(deaccent(schema.description), 170);
     doc.text(descLines, 20, y);
     y += (descLines.length * 4) + 2;
   }
@@ -141,7 +147,7 @@ function entityTable(doc, name, schema, y) {
   doc.setTextColor(255, 255, 255);
   x = 20;
   cols.forEach((c, i) => {
-    doc.text(c, x + 2, y + 5);
+    doc.text(deaccent(c), x + 2, y + 5);
     x += w[i];
   });
   y += 9;
@@ -166,7 +172,7 @@ function entityTable(doc, name, schema, y) {
       (prop.description || '').substring(0, 90)
     ];
     cells.forEach((c, i) => {
-      doc.text(String(c), x + 2, y + 5.5);
+      doc.text(deaccent(String(c)), x + 2, y + 5.5);
       x += w[i];
     });
     y += 9;
@@ -180,7 +186,7 @@ function entityTable(doc, name, schema, y) {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(7);
     doc.setTextColor(...rgb(C.lightGray));
-    const rlsLines = doc.splitTextToSize('RLS: ' + schema.rls, 170);
+    const rlsLines = doc.splitTextToSize(deaccent('RLS: ' + schema.rls), 170);
     doc.text(rlsLines, 20, y);
     y += (rlsLines.length * 3.5) + 3;
   }
@@ -605,25 +611,25 @@ Deno.serve(async (req) => {
 
     doc.setFontSize(14);
     doc.setTextColor(...rgb(C.lightGray));
-    doc.text('SEGURAN\u00c7A CIDAD\u00c3', 105, 82, { align: 'center' });
+    doc.text('SEGURANCA CIDADA', 105, 82, { align: 'center' });
 
     // Document info
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(...rgb(C.white));
-    doc.text('Documenta\u00e7\u00e3o T\u00e9cnica Completa', 105, 115, { align: 'center' });
+    doc.text('Documentacao Tecnica Completa', 105, 115, { align: 'center' });
 
     doc.setFontSize(9);
     doc.setTextColor(...rgb(C.lightGray));
-    doc.text('Vers\u00e3o 3.0 \u2014 Junho 2026', 105, 125, { align: 'center' });
+    doc.text('Versao 3.0 \u2014 Junho 2026', 105, 125, { align: 'center' });
 
     // Description
     doc.setFontSize(9);
     doc.setTextColor(140, 150, 160);
     const descs = [
-      'Plataforma integrada de seguran\u00e7a p\u00fablica com intelig\u00eancia artificial,',
-      'biometria invertida, geofencing, an\u00e1lise preditiva criminal,',
-      'central de despacho em tempo real e rede comunit\u00e1ria de prote\u00e7\u00e3o.'
+      'Plataforma integrada de seguranca publica com inteligencia artificial,',
+      'biometria invertida, geofencing, analise preditiva criminal,',
+      'central de despacho em tempo real e rede comunitaria de protecao.'
     ];
     descs.forEach((d, i) => doc.text(d, 105, 150 + (i * 6), { align: 'center' }));
 
@@ -636,7 +642,7 @@ Deno.serve(async (req) => {
     // ═══ TABLE OF CONTENTS ═══
     doc.addPage();
     y = 30;
-    y = sectionTitle(doc, '\u00cdNDICE', y);
+    y = sectionTitle(doc, 'INDICE', y);
     y += 8;
 
     const toc = [
@@ -656,18 +662,18 @@ Deno.serve(async (req) => {
       doc.setFontSize(11);
       doc.setTextColor(...rgb(C.primary));
       doc.text(num, 25, y);
-      doc.text(title, 37, y);
+      doc.text(deaccent(title), 37, y);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...rgb(C.lightGray));
-      doc.text(desc, 37, y + 5.5);
+      doc.text(deaccent(desc), 37, y + 5.5);
       y += 13;
     });
 
     // ═══ 1. VIS\u00c3O GERAL ═══
     doc.addPage();
     y = 25;
-    y = sectionTitle(doc, '1. VIS\u00c3O GERAL DO SISTEMA', y);
+    y = sectionTitle(doc, '1. VISAO GERAL DO SISTEMA', y);
     y = bodyText(doc, 'O SENTINELA \u00e9 uma plataforma de seguran\u00e7a cidad\u00e3 que integra cidad\u00e3os, agentes de seguran\u00e7a p\u00fablica (policiais, bombeiros, socorristas), psic\u00f3logos e administradores em um ecossistema unificado de preven\u00e7\u00e3o, resposta e an\u00e1lise de incidentes.', y);
 
     y = bodyText(doc, 'A plataforma utiliza intelig\u00eancia artificial avan\u00e7ada (Claude, Gemini, Whisper) para triagem autom\u00e1tica de ocorr\u00eancias, detec\u00e7\u00e3o de trotes, an\u00e1lise preditiva criminal, gera\u00e7\u00e3o autom\u00e1tica de boletins de ocorr\u00eancia jur\u00eddicos e reconhecimento de padr\u00f5es ac\u00fasticos em \u00e1udio capturado durante emerg\u00eancias.', y);
@@ -740,12 +746,12 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(r.color[0], r.color[1], r.color[2]);
-      doc.text(r.role, 25, y + 6);
+      doc.text(deaccent(r.role), 25, y + 6);
       y += 8;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(55, 55, 65);
-      const rLines = doc.splitTextToSize(r.desc, 165);
+      const rLines = doc.splitTextToSize(deaccent(r.desc), 165);
       doc.text(rLines, 25, y);
       y += (rLines.length * 4) + 4;
     });
@@ -795,16 +801,16 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...rgb(C.primary));
-      doc.text(from, 20, y);
+      doc.text(deaccent(from), 20, y);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(55, 55, 65);
       doc.text(card, 75, y);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...rgb(C.primary));
-      doc.text(to, 100, y);
+      doc.text(deaccent(to), 100, y);
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(...rgb(C.lightGray));
-      doc.text('\u2192 ' + desc, 155, y);
+      doc.text('\u2192 ' + deaccent(desc), 155, y);
       y += 5.5;
     });
 
@@ -820,16 +826,16 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(...rgb(C.primary));
-      doc.text(fn.name, 22, y + 6);
+      doc.text(deaccent(fn.name), 22, y + 6);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(55, 55, 65);
-      const dLines = doc.splitTextToSize(fn.desc, 148);
+      const dLines = doc.splitTextToSize(deaccent(fn.desc), 148);
       doc.text(dLines, 22, y + 13);
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(7);
       doc.setTextColor(...rgb(C.lightGray));
-      doc.text('Trigger: ' + fn.trigger + '  |  Consumo: ' + fn.credits, 22, y + 13 + (dLines.length * 4));
+      doc.text('Trigger: ' + deaccent(fn.trigger) + '  |  Consumo: ' + deaccent(fn.credits), 22, y + 13 + (dLines.length * 4));
       y += 23 + (dLines.length * 4);
     });
 
@@ -923,7 +929,7 @@ Deno.serve(async (req) => {
         doc.text(String(si + 1) + '.', 25, y);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(55, 55, 65);
-        const sLines = doc.splitTextToSize(step, 158);
+        const sLines = doc.splitTextToSize(deaccent(step), 158);
         doc.text(sLines, 33, y);
         y += (sLines.length * 4) + 0.5;
       });
@@ -980,18 +986,18 @@ Deno.serve(async (req) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(...rgb(C.primary));
-      doc.text(mod.name, 22, y + 4);
+      doc.text(deaccent(mod.name), 22, y + 4);
       y += 10;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(55, 55, 65);
-      const mLines = doc.splitTextToSize(mod.desc, 170);
+      const mLines = doc.splitTextToSize(deaccent(mod.desc), 170);
       doc.text(mLines, 22, y);
       y += (mLines.length * 4) + 2;
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(7);
       doc.setTextColor(...rgb(C.lightGray));
-      const cLines = doc.splitTextToSize('Componentes: ' + mod.components, 170);
+      const cLines = doc.splitTextToSize('Componentes: ' + deaccent(mod.components), 170);
       doc.text(cLines, 22, y);
       y += (cLines.length * 3.5) + 6;
     });
@@ -1024,7 +1030,7 @@ Deno.serve(async (req) => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...rgb(C.lightGray));
-        doc.text('SENTINELA \u2014 Documenta\u00e7\u00e3o T\u00e9cnica', 15, 15);
+        doc.text('SENTINELA \u2014 Documentacao Tecnica', 15, 15);
         doc.text('v3.0', 195, 15, { align: 'right' });
       }
       // Footer
