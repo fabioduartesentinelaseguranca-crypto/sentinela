@@ -61,6 +61,7 @@ const GROUPS = [
     tabs: [
       { id: "cameras", label: "Câmeras" },
       { id: "video", label: "Análise de Vídeo" },
+      { id: "cercas_escolares", label: "🏫 Cercas Virtuais Escolares" },
     ],
   },
   {

@@ -39,6 +39,7 @@ import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
 import GuardianManager from "@/components/admin/GuardianManager";
 import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
 import BoletinsOcorrenciaList from "@/components/admin/BoletinsOcorrenciaList";
+import CercaVirtualEscolar from "@/pages/CercaVirtualEscolar";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -351,6 +352,9 @@ export default function AdminDashboard() {
 
       {/* ── GUARDIANS TAB ─────────────────────────────────── */}
       {activeTab === "guardians" && <GuardianManager />}
+
+      {/* ── CERCAS VIRTUAIS ESCOLARES TAB ─────────────────── */}
+      {activeTab === "cercas_escolares" && <CercaVirtualEscolar />}
 
       {/* ── BOLETINS DE OCORRÊNCIA TAB ───────────────────── */}
       {activeTab === "boletins" && (

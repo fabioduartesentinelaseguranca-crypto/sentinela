@@ -34,6 +34,7 @@ import RotasSeguras from './pages/RotasSeguras';
 import CaminheComigo from './pages/CaminheComigo';
 import CaminheComigoViewer from './pages/CaminheComigoViewer';
 import MasterDashboard from './pages/MasterDashboard';
+import CercaVirtualEscolar from './pages/CercaVirtualEscolar';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -95,6 +96,7 @@ const AuthenticatedApp = () => {
 
       {/* Central de Despacho — tela full-screen, acesso para agentes e admins */}
       <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />
+      <Route path="/cercas-escolares" element={<RoleGuard allow={["agent", "admin"]}><CercaVirtualEscolar /></RoleGuard>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>

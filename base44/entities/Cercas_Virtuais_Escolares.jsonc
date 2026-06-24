@@ -1,0 +1,112 @@
+{
+  "name": "Cercas_Virtuais_Escolares",
+  "type": "object",
+  "properties": {
+    "nome_escola": {
+      "type": "string"
+    },
+    "tipo_escola": {
+      "type": "string",
+      "enum": [
+        "escola_municipal",
+        "escola_estadual",
+        "creche",
+        "escola_particular",
+        "outro"
+      ],
+      "default": "escola_municipal"
+    },
+    "endereco": {
+      "type": "string"
+    },
+    "poligono": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "description": "[lat, lng]"
+      },
+      "description": "V\u00e9rtices do pol\u00edgono da cerca"
+    },
+    "tipos_alerta": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos tipos de alerta: entrada_veiculo, saida_nao_autorizada, presenca_suspeita, entrada_horario_indevido"
+    },
+    "horario_inicio": {
+      "type": "string",
+      "description": "HH:MM in\u00edcio do monitoramento"
+    },
+    "horario_fim": {
+      "type": "string",
+      "description": "HH:MM fim do monitoramento"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "criado_por_id": {
+      "type": "string"
+    },
+    "criado_por_nome": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome_escola",
+    "poligono"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

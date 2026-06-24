@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Siren, Clock, MapPin, Phone, Shield, Crosshair, PhoneCall, Flag, ChevronRight, AlertTriangle, Radio, Zap, Navigation, Volume2, FileText, Car } from "lucide-react";
+import { Siren, Clock, MapPin, Phone, Shield, Crosshair, PhoneCall, Flag, ChevronRight, AlertTriangle, Radio, Zap, Navigation, Volume2, FileText, Car, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -381,30 +381,38 @@ export default function CentralDespacho() {
                   <Navigation className="w-3.5 h-3.5 text-green-400" />
                   Ações Rápidas de Despacho
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex flex-col gap-3">
                   <button
                     onClick={() => updateStatus(selected, "DESPACHADO_POLICIA")}
                     disabled={selected.status_alerta === "DESPACHADO_POLICIA" || selected.status_alerta === "FINALIZADO"}
-                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Shield className="w-5 h-5" />
-                    <span className="text-xs text-center leading-tight">Despachar Viatura Mais Próxima</span>
+                    <Shield className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm text-left leading-tight">Despachar Viatura Mais Próxima</span>
                   </button>
                   <button
                     onClick={() => updateStatus(selected, "EM_ANDAMENTO")}
                     disabled={selected.status_alerta === "FINALIZADO"}
-                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-yellow-600/50 text-yellow-400 hover:bg-yellow-950/30 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <PhoneCall className="w-5 h-5" />
-                    <span className="text-xs text-center leading-tight">Apoio Defesa Civil / SAMU</span>
+                    <PhoneCall className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm text-left leading-tight">Apoio Defesa Civil / SAMU</span>
                   </button>
                   <button
                     onClick={() => updateStatus(selected, "SUSPEITA_TROTE")}
                     disabled={selected.status_alerta === "FINALIZADO" || selected.status_alerta === "SUSPEITA_TROTE"}
-                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-700 text-gray-400 hover:bg-gray-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Flag className="w-5 h-5" />
-                    <span className="text-xs text-center leading-tight">Encerrar / Trote</span>
+                    <Flag className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm text-left leading-tight">Encerrar como Trote</span>
+                  </button>
+                  <button
+                    onClick={() => updateStatus(selected, "FINALIZADO")}
+                    disabled={selected.status_alerta === "FINALIZADO"}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-blue-700/50 text-blue-400 hover:bg-blue-950/30 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-sm text-left leading-tight">Marcar como Finalizado</span>
                   </button>
                 </div>
               </div>
