@@ -30,9 +30,9 @@ export default function AppLayout({ navItems = [], roleLabel }) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Logo size="md" />
+            <Logo size="lg" />
             {roleLabel && (
               <span className="hidden md:inline-flex text-[10px] font-medium uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2.5 py-1 rounded-full">
                 {roleLabel}
