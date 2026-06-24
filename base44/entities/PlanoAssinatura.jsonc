@@ -1,0 +1,56 @@
+{
+  "name": "PlanoAssinatura",
+  "type": "object",
+  "properties": {
+    "plano_id": {
+      "type": "string",
+      "enum": [
+        "basico",
+        "essencial",
+        "avancado",
+        "premium"
+      ]
+    },
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "faixa_populacional": {
+      "type": "string",
+      "description": "Ex: At\u00e9 50.000 hab."
+    },
+    "populacao_min": {
+      "type": "number"
+    },
+    "populacao_max": {
+      "type": "number"
+    },
+    "preco_base": {
+      "type": "number",
+      "description": "Pre\u00e7o base mensal em R$"
+    },
+    "limite_cidadaos": {
+      "type": "number"
+    },
+    "limite_agentes": {
+      "type": "number"
+    },
+    "modulos_incluidos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "plano_id",
+    "nome",
+    "preco_base"
+  ]
+}

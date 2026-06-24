@@ -1,0 +1,92 @@
+{
+  "name": "ClienteMunicipal",
+  "type": "object",
+  "properties": {
+    "nome_municipio": {
+      "type": "string"
+    },
+    "estado": {
+      "type": "string"
+    },
+    "populacao": {
+      "type": "number",
+      "description": "Popula\u00e7\u00e3o do munic\u00edpio"
+    },
+    "nome_responsavel": {
+      "type": "string"
+    },
+    "email_responsavel": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "cnpj": {
+      "type": "string"
+    },
+    "plano": {
+      "type": "string",
+      "enum": [
+        "basico",
+        "essencial",
+        "avancado",
+        "premium"
+      ],
+      "default": "basico"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "suspenso",
+        "trial",
+        "cancelado"
+      ],
+      "default": "trial"
+    },
+    "modulos_ativos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de IDs dos m\u00f3dulos contratados"
+    },
+    "limite_usuarios_cidadaos": {
+      "type": "number",
+      "default": 1000
+    },
+    "limite_usuarios_agentes": {
+      "type": "number",
+      "default": 10
+    },
+    "usuarios_cidadaos_ativos": {
+      "type": "number",
+      "default": 0
+    },
+    "usuarios_agentes_ativos": {
+      "type": "number",
+      "default": 0
+    },
+    "valor_mensal": {
+      "type": "number",
+      "description": "Valor mensal em R$"
+    },
+    "data_inicio_contrato": {
+      "type": "string",
+      "format": "date"
+    },
+    "data_renovacao": {
+      "type": "string",
+      "format": "date"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome_municipio",
+    "estado",
+    "populacao",
+    "plano"
+  ]
+}

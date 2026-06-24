@@ -1,0 +1,49 @@
+{
+  "name": "ModuloSentinela",
+  "type": "object",
+  "properties": {
+    "modulo_id": {
+      "type": "string",
+      "description": "Identificador \u00fanico do m\u00f3dulo (ex: cidadao_basico)"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "cidadao",
+        "agente",
+        "gestao",
+        "ia",
+        "saude",
+        "defesa_civil"
+      ],
+      "description": "Categoria do m\u00f3dulo"
+    },
+    "planos_incluidos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Planos que incluem este m\u00f3dulo por padr\u00e3o"
+    },
+    "preco_adicional": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor adicional mensal se n\u00e3o incluso no plano"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "modulo_id",
+    "nome",
+    "categoria"
+  ]
+}

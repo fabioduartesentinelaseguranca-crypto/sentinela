@@ -33,6 +33,7 @@ import CentralDespacho from './pages/CentralDespacho';
 import RotasSeguras from './pages/RotasSeguras';
 import CaminheComigo from './pages/CaminheComigo';
 import CaminheComigoViewer from './pages/CaminheComigoViewer';
+import MasterDashboard from './pages/MasterDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -108,6 +109,8 @@ function App() {
           <Routes>
             {/* Public routes — no auth required */}
             <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
+            {/* Master dashboard — completely isolated, no auth provider */}
+            <Route path="/master" element={<MasterDashboard />} />
             {/* Authenticated routes */}
             <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
