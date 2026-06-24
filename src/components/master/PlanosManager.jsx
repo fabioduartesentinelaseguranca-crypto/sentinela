@@ -173,22 +173,54 @@ export default function PlanosManager() {
         </div>
       )}
 
-      {/* Cards de planos */}
+      {/* Card customizado do cliente ativo */}
+      {clienteAtivo && (
+        <div className="rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary/10 to-primary/5 p-5 relative">
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
+            <Star className="w-3 h-3" /> Plano Atual
+          </div>
+          <div className="flex items-start justify-between mb-3 pr-24">
+            <div>
+              <div className="font-bold text-base">{clienteAtivo.nome_municipio} – {clienteAtivo.estado}</div>
+              <div className="text-xs text-muted-foreground mt-0.5 capitalize">
+                Plano base: <span className="font-medium text-foreground">{planoCliente}</span>
+                {clienteAtivo.populacao ? ` · ${clienteAtivo.populacao.toLocaleString("pt-BR")} hab.` : ""}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">
+                R$ {(valorCliente || 0).toLocaleString("pt-BR")}
+              </div>
+              <div className="text-xs text-muted-foreground">/mês (contratado)</div>
+            </div>
+          </div>
+
+          <div className="flex gap-4 text-xs text-muted-foreground mb-4">
+            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {(clienteAtivo.limite_usuarios_cidadaos || 0).toLocaleString("pt-BR")} cidadãos</span>
+            <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {clienteAtivo.limite_usuarios_agentes || 0} agentes</span>
+          </div>
+
+          <div className="border-t border-border/30 pt-3">
+            <div className="text-xs font-semibold mb-2">{modulosCliente.size} módulos contratados:</div>
+            <div className="flex flex-wrap gap-1">
+              {[...modulosCliente].map(mid => (
+                <span key={mid} className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success flex items-center gap-1">
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  {nomeModulos[mid] || mid}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cards de planos do catálogo */}
       <div className="grid md:grid-cols-2 gap-4">
         {listaPlanos.map(p => {
           const colorClass = PLANO_COLOR[p.plano_id] || PLANO_COLOR.basico;
-          const isAtivo = planoCliente === p.plano_id;
           return (
-            <div
-              key={p.plano_id}
-              className={`rounded-2xl border bg-gradient-to-br p-5 ${colorClass} ${isAtivo ? PLANO_RING[p.plano_id] : ""} relative`}
-            >
-              {isAtivo && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
-                  <Star className="w-3 h-3" /> Plano Atual
-                </div>
-              )}
-              <div className="flex items-start justify-between mb-3 pr-20">
+            <div key={p.plano_id} className={`rounded-2xl border bg-gradient-to-br p-5 ${colorClass}`}>
+              <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="font-bold text-base">{p.nome}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{p.faixa_populacional}</div>
@@ -203,49 +235,16 @@ export default function PlanosManager() {
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {(p.limite_cidadaos || 0).toLocaleString("pt-BR")} cidadãos</span>
                 <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {p.limite_agentes} agentes</span>
               </div>
-
-              {/* Módulos incluídos no plano */}
-              <div className="mt-3 border-t border-border/30 pt-3">
+              <div className="border-t border-border/30 pt-3">
                 <div className="text-xs font-semibold mb-2">{(p.modulos_incluidos || []).length} módulos incluídos:</div>
                 <div className="flex flex-wrap gap-1">
-                  {(p.modulos_incluidos || []).map(mid => {
-                    const nome = nomeModulos[mid] || mid;
-                    const contratado = modulosCliente.has(mid);
-                    return (
-                      <span
-                        key={mid}
-                        className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${
-                          isAtivo && contratado
-                            ? "bg-success/20 text-success font-medium"
-                            : "bg-muted/60 text-muted-foreground"
-                        }`}
-                      >
-                        {isAtivo && contratado && <CheckCircle2 className="w-2.5 h-2.5" />}
-                        {nome}
-                      </span>
-                    );
-                  })}
+                  {(p.modulos_incluidos || []).map(mid => (
+                    <span key={mid} className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
+                      {nomeModulos[mid] || mid}
+                    </span>
+                  ))}
                 </div>
               </div>
-
-              {/* Se é o plano do cliente, mostra módulos extras contratados fora do plano */}
-              {isAtivo && (() => {
-                const extras = [...modulosCliente].filter(mid => !(p.modulos_incluidos || []).includes(mid));
-                if (!extras.length) return null;
-                return (
-                  <div className="mt-3 border-t border-border/30 pt-3">
-                    <div className="text-xs font-semibold mb-2 text-warning">{extras.length} módulos adicionais contratados:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {extras.map(mid => (
-                        <span key={mid} className="text-[10px] px-1.5 py-0.5 rounded bg-warning/15 text-warning flex items-center gap-1">
-                          <CheckCircle2 className="w-2.5 h-2.5" />
-                          {nomeModulos[mid] || mid}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           );
         })}
