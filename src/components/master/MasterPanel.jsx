@@ -49,9 +49,9 @@ export default function MasterPanel({ onLogout }) {
           })}
         </div>
 
-        {activeTab === "clientes" && <ClientesManager />}
-        {activeTab === "modulos" && <ModulosManager />}
-        {activeTab === "planos" && <PlanosManager />}
+        {activeTab === "clientes" && <ClientesManager key="clientes" />}
+        {activeTab === "modulos" && <ModulosManager key={`modulos-${Date.now()}`} />}
+        {activeTab === "planos" && <PlanosManager key={`planos-${Date.now()}`} />}
       </div>
     </div>
   );
