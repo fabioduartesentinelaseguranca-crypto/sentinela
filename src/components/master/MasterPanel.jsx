@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Shield, Users, Package, CreditCard, LogOut, Building2 } from "lucide-react";
+import { Package, CreditCard, LogOut, Building2 } from "lucide-react";
+import Logo from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import ClientesManager from "./ClientesManager";
 import ModulosManager from "./ModulosManager";
@@ -19,13 +20,8 @@ export default function MasterPanel({ onLogout }) {
       {/* Header */}
       <header className="border-b border-border/60 bg-card px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <div className="font-bold text-sm tracking-tight">SENTINELA</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Painel Master</div>
-          </div>
+          <Logo size="lg" />
+          <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Painel Master</div>
         </div>
         <Button variant="ghost" size="sm" onClick={onLogout}>
           <LogOut className="w-4 h-4 mr-1.5" /> Sair

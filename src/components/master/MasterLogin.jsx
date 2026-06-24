@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Shield, Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Logo from "@/components/shared/Logo";
 
 export default function MasterLogin({ onLogin }) {
   const [password, setPassword] = useState("");
@@ -24,8 +25,8 @@ export default function MasterLogin({ onLogin }) {
       <div className="w-full max-w-md">
         <div className="rounded-3xl border border-border/60 bg-card p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mb-4">
-              <Shield className="w-8 h-8 text-primary" />
+            <div className="mb-4">
+              <Logo size="lg" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Painel Master</h1>
             <p className="text-sm text-muted-foreground mt-1 text-center">
