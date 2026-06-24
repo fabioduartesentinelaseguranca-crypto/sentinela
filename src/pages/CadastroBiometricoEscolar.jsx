@@ -220,6 +220,7 @@ export default function CadastroBiometricoEscolar() {
               <BiometriaCapturaFace
                 onCapture={setBiometria}
                 onClear={() => setBiometria(null)}
+                alunoId={editingId || null}
               />
 
               {editingId && !biometria && (
