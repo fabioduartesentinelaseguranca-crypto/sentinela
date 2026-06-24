@@ -186,6 +186,7 @@ export default function CitizenDashboard() {
       <CitizenOccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
 
       <RegisterOccurrenceDialog
+        key={defaultType}
         open={openDialog}
         onOpenChange={setOpenDialog}
         defaultType={defaultType}

@@ -5,7 +5,7 @@ const ModulosContext = createContext({ modulosAtivos: new Set(), hasModulo: () =
 
 async function fetchModulos(setModulosAtivos, setLoading) {
   try {
-    const list = await base44.entities.ClienteMunicipal.filter({ status: "ativo" }, "-created_date", 1);
+    const list = await base44.entities.ClienteMunicipal.filter({ status: ["ativo", "trial"] }, "-created_date", 1);
     if (list.length > 0 && list[0].modulos_ativos?.length > 0) {
       setModulosAtivos(new Set(list[0].modulos_ativos));
     } else {
