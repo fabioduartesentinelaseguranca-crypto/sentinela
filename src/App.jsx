@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { ModulosProvider } from '@/lib/useModulos.jsx';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 // Layouts
@@ -106,19 +107,21 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <Routes>
-            {/* Public routes — no auth required */}
-            <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
-            {/* Master dashboard — completely isolated, no auth provider */}
-            <Route path="/master" element={<MasterDashboard />} />
-            {/* Authenticated routes */}
-            <Route path="*" element={<AuthenticatedApp />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <ModulosProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <Routes>
+              {/* Public routes — no auth required */}
+              <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
+              {/* Master dashboard — completely isolated, no auth provider */}
+              <Route path="/master" element={<MasterDashboard />} />
+              {/* Authenticated routes */}
+              <Route path="*" element={<AuthenticatedApp />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </ModulosProvider>
     </AuthProvider>
   );
 }

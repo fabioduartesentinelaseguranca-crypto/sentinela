@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useModulos } from "@/lib/useModulos.jsx";
 
 const GROUPS = [
   {
@@ -8,7 +9,7 @@ const GROUPS = [
       { id: "overview", label: "Dashboard" },
       { id: "tactical", label: "⚡ Comando Tático" },
       { id: "manager", label: "Gestor" },
-      { id: "kpis", label: "KPIs Estratégicos" },
+      { id: "kpis", label: "KPIs Estratégicos", modulo: "gestao_kpis" },
       { id: "analytics", label: "Analítico" },
       { id: "report", label: "Relatório PDF" },
     ],
@@ -16,60 +17,60 @@ const GROUPS = [
   {
     label: "🗺️ Inteligência & Mapas",
     tabs: [
-      { id: "opheatmap", label: "Mapa Operacional" },
-      { id: "heatmap", label: "Mapa Preditivo" },
-      { id: "forensic", label: "Inteligência Forense" },
-      { id: "tips", label: "Denúncias" },
-      { id: "wanted", label: "Procurados" },
+      { id: "opheatmap", label: "Mapa Operacional", modulo: "gestao_heatmap" },
+      { id: "heatmap", label: "Mapa Preditivo", modulo: "gestao_heatmap" },
+      { id: "forensic", label: "Inteligência Forense", modulo: "gestao_analise_preditiva" },
+      { id: "tips", label: "Denúncias", modulo: "cidadao_dicas_anonimas" },
+      { id: "wanted", label: "Procurados", modulo: "gestao_procurados" },
     ],
   },
   {
     label: "👮 Agentes & Escalas",
     tabs: [
-      { id: "schedule", label: "Calendário de Escalas" },
-      { id: "smartshift", label: "Escala Inteligente" },
+      { id: "schedule", label: "Calendário de Escalas", modulo: "agente_gestao_turno" },
+      { id: "smartshift", label: "Escala Inteligente", modulo: "agente_gestao_turno" },
       { id: "patrol", label: "Zonas de Patrulha" },
       { id: "ranking", label: "Ranking" },
       { id: "achievements", label: "Conquistas" },
-      { id: "training", label: "Capacitação" },
+      { id: "training", label: "Capacitação", modulo: "agente_treinamento" },
     ],
   },
   {
     label: "🤝 Comunidade",
     tabs: [
-      { id: "guardians", label: "Anjos da Guarda" },
+      { id: "guardians", label: "Anjos da Guarda", modulo: "cidadao_rede_anjos" },
     ],
   },
   {
     label: "📋 Documentos",
     tabs: [
-      { id: "boletins", label: "Boletins de Ocorrência" },
+      { id: "boletins", label: "Boletins de Ocorrência", modulo: "agente_bo_juridico" },
     ],
   },
   {
     label: "🚗 Frota & Equipamentos",
     tabs: [
-      { id: "vehicles", label: "Viaturas" },
-      { id: "fleet_maintenance", label: "Manutenção Frota" },
+      { id: "vehicles", label: "Viaturas", modulo: "gestao_frota" },
+      { id: "fleet_maintenance", label: "Manutenção Frota", modulo: "gestao_frota" },
       { id: "inventory", label: "Estoque Geral" },
-      { id: "tactical_stock", label: "Estoque Tático QR" },
+      { id: "tactical_stock", label: "Estoque Tático QR", modulo: "gestao_estoque_tatico" },
       { id: "maintenance", label: "Tickets Manutenção" },
     ],
   },
   {
     label: "🎥 Vigilância",
     tabs: [
-      { id: "cameras", label: "Câmeras" },
-      { id: "video", label: "Análise de Vídeo" },
-      { id: "cercas_escolares", label: "🏫 Cercas Virtuais Escolares" },
+      { id: "cameras", label: "Câmeras", modulo: "gestao_cameras" },
+      { id: "video", label: "Análise de Vídeo", modulo: "gestao_cameras" },
+      { id: "cercas_escolares", label: "🏫 Cercas Virtuais Escolares", modulo: "cidadao_perimetro_infantil" },
     ],
   },
   {
     label: "🧠 Saúde & RH",
     tabs: [
-      { id: "fatigue_risk", label: "Risco de Fadiga 🔴" },
-      { id: "psych", label: "Avaliações Psicológicas" },
-      { id: "psych_appointments", label: "Consultas Agendadas" },
+      { id: "fatigue_risk", label: "Risco de Fadiga 🔴", modulo: "agente_fadiga" },
+      { id: "psych", label: "Avaliações Psicológicas", modulo: "agente_psicologico" },
+      { id: "psych_appointments", label: "Consultas Agendadas", modulo: "agente_psicologico" },
     ],
   },
   {
@@ -90,6 +91,8 @@ const GROUPS = [
 ];
 
 export default function AdminTabNav({ activeTab, onTabChange }) {
+  const { hasModulo } = useModulos();
+
   const [openGroup, setOpenGroup] = useState(() => {
     for (const g of GROUPS) {
       if (g.tabs.some((t) => t.id === activeTab)) return g.label;
@@ -97,9 +100,15 @@ export default function AdminTabNav({ activeTab, onTabChange }) {
     return GROUPS[0].label;
   });
 
+  // Filter tabs and groups by active modules
+  const filteredGroups = GROUPS.map(g => ({
+    ...g,
+    tabs: g.tabs.filter(t => !t.modulo || hasModulo(t.modulo)),
+  })).filter(g => g.tabs.length > 0);
+
   return (
     <div className="flex flex-wrap gap-2 border-b border-border/60 pb-3">
-      {GROUPS.map((group) => {
+      {filteredGroups.map((group) => {
         const isOpen = openGroup === group.label;
         const hasActive = group.tabs.some((t) => t.id === activeTab);
 

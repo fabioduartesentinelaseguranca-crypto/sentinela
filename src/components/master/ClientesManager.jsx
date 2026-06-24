@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Plus, Edit2, CheckCircle2, XCircle, Package, Users, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Building2, Plus, Edit2, CheckCircle2, Package, Users, ChevronDown, ChevronUp, X, Lock, RefreshCw, AlertTriangle } from "lucide-react";
+import { format, addMonths, isBefore, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const STATUS_META = {
   ativo: { label: "Ativo", color: "bg-success/15 text-success" },
@@ -22,8 +24,18 @@ const EMPTY_FORM = {
   nome_municipio: "", estado: "", populacao: "", nome_responsavel: "",
   email_responsavel: "", telefone: "", cnpj: "", plano: "basico",
   status: "trial", modulos_ativos: [], limite_usuarios_cidadaos: 1000,
-  limite_usuarios_agentes: 10, valor_mensal: "", observacoes: ""
+  limite_usuarios_agentes: 10, valor_mensal: "", observacoes: "",
+  data_inicio_contrato: new Date().toISOString().slice(0, 10),
+  data_renovacao: addMonths(new Date(), 1).toISOString().slice(0, 10),
 };
+
+function podeAlterarModulos(cliente) {
+  // Pode alterar módulos apenas se: novo cliente (sem data_renovacao) OU
+  // data_renovacao foi atingida (renovação atual)
+  if (!cliente?.data_renovacao) return true;
+  const renovacao = parseISO(cliente.data_renovacao);
+  return !isBefore(new Date(), renovacao);
+}
 
 export default function ClientesManager() {
   const [clientes, setClientes] = useState([]);
@@ -35,6 +47,7 @@ export default function ClientesManager() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [modulosBloqueados, setModulosBloqueados] = useState(false);
 
   const load = async () => {
     const [c, m, p] = await Promise.all([
@@ -50,7 +63,6 @@ export default function ClientesManager() {
 
   useEffect(() => { load(); }, []);
 
-  // Auto-fill modules when plan changes
   const applyPlano = (planoId) => {
     const plano = planos.find(p => p.plano_id === planoId);
     if (plano) {
@@ -68,6 +80,7 @@ export default function ClientesManager() {
   };
 
   const toggleModulo = (modulo_id) => {
+    if (modulosBloqueados) return;
     setForm(f => ({
       ...f,
       modulos_ativos: f.modulos_ativos.includes(modulo_id)
@@ -78,15 +91,27 @@ export default function ClientesManager() {
 
   const save = async () => {
     setSaving(true);
-    const data = { ...form, populacao: Number(form.populacao), valor_mensal: Number(form.valor_mensal) };
+    const data = {
+      ...form,
+      populacao: Number(form.populacao),
+      valor_mensal: Number(form.valor_mensal),
+    };
+
     if (editingId) {
+      // Se está renovando (módulos desbloqueados), avança a data_renovacao em +1 mês
+      if (!modulosBloqueados) {
+        data.data_renovacao = addMonths(new Date(), 1).toISOString().slice(0, 10);
+      }
       await base44.entities.ClienteMunicipal.update(editingId, data);
     } else {
+      data.data_inicio_contrato = new Date().toISOString().slice(0, 10);
+      data.data_renovacao = addMonths(new Date(), 1).toISOString().slice(0, 10);
       await base44.entities.ClienteMunicipal.create(data);
     }
     setShowForm(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setModulosBloqueados(false);
     await load();
     setSaving(false);
   };
@@ -94,6 +119,7 @@ export default function ClientesManager() {
   const startEdit = (c) => {
     setForm({ ...EMPTY_FORM, ...c });
     setEditingId(c.id);
+    setModulosBloqueados(!podeAlterarModulos(c));
     setShowForm(true);
   };
 
@@ -111,7 +137,7 @@ export default function ClientesManager() {
           <h2 className="text-lg font-semibold">Clientes Municipais</h2>
           <p className="text-sm text-muted-foreground">{clientes.length} municípios cadastrados</p>
         </div>
-        <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); }}>
+        <Button onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setModulosBloqueados(false); setShowForm(true); }}>
           <Plus className="w-4 h-4 mr-1.5" /> Novo Cliente
         </Button>
       </div>
@@ -183,15 +209,39 @@ export default function ClientesManager() {
               <Input type="number" value={form.valor_mensal} onChange={e => setForm(f => ({ ...f, valor_mensal: e.target.value }))} placeholder="0" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Lim. Cidadãos</label>
-              <Input type="number" value={form.limite_usuarios_cidadaos} onChange={e => setForm(f => ({ ...f, limite_usuarios_cidadaos: Number(e.target.value) }))} />
+              <label className="text-xs text-muted-foreground mb-1 block">Próxima Renovação</label>
+              <Input
+                type="date"
+                value={form.data_renovacao || ""}
+                onChange={e => setForm(f => ({ ...f, data_renovacao: e.target.value }))}
+              />
             </div>
           </div>
 
           {/* Módulos */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block font-medium">Módulos Contratados ({form.modulos_ativos.length} selecionados)</label>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-60 overflow-y-auto pr-1">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-muted-foreground font-medium">
+                Módulos Contratados ({form.modulos_ativos.length} selecionados)
+              </label>
+              {modulosBloqueados ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-warning bg-warning/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> Alterações bloqueadas até a renovação
+                    {form.data_renovacao && ` (${format(parseISO(form.data_renovacao), "dd/MM/yyyy", { locale: ptBR })})`}
+                  </span>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => setModulosBloqueados(false)}>
+                    <RefreshCw className="w-3 h-3 mr-1" /> Renovar Agora
+                  </Button>
+                </div>
+              ) : (
+                <span className="text-[10px] text-success bg-success/10 px-2 py-0.5 rounded-full">
+                  ✓ Módulos editáveis — renovação em andamento
+                </span>
+              )}
+            </div>
+
+            <div className={`grid md:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-60 overflow-y-auto pr-1 ${modulosBloqueados ? "opacity-60 pointer-events-none" : ""}`}>
               {modulos.map(m => (
                 <button
                   key={m.modulo_id}
@@ -207,6 +257,13 @@ export default function ClientesManager() {
                 </button>
               ))}
             </div>
+
+            {modulosBloqueados && (
+              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                Inclusão/exclusão de módulos só é permitida uma vez por mês, no ato da renovação. Clique em "Renovar Agora" para liberar.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end">
@@ -230,6 +287,7 @@ export default function ClientesManager() {
         {clientes.map(c => {
           const sm = STATUS_META[c.status] || STATUS_META.trial;
           const isExpanded = expandedId === c.id;
+          const bloqueado = !podeAlterarModulos(c);
           return (
             <div key={c.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
               <div className="flex items-center gap-3 p-4">
@@ -242,10 +300,16 @@ export default function ClientesManager() {
                     {c.populacao?.toLocaleString("pt-BR")} hab. ·{" "}
                     <span className={`font-medium capitalize ${PLANO_COLOR[c.plano]}`}>{c.plano}</span>
                     {c.valor_mensal ? ` · R$ ${Number(c.valor_mensal).toLocaleString("pt-BR")}/mês` : ""}
+                    {c.data_renovacao && (
+                      <span className={`ml-2 ${bloqueado ? "text-success" : "text-warning"}`}>
+                        · {bloqueado ? `Renova ${format(parseISO(c.data_renovacao), "dd/MM", { locale: ptBR })}` : "Renovação disponível"}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-medium ${sm.color}`}>{sm.label}</span>
+                  {bloqueado && <Lock className="w-3 h-3 text-muted-foreground" title="Módulos bloqueados até renovação" />}
                   <span className="text-xs text-muted-foreground hidden md:block">
                     <Package className="w-3 h-3 inline mr-1" />{(c.modulos_ativos || []).length} módulos
                   </span>
@@ -273,7 +337,7 @@ export default function ClientesManager() {
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">Status do Contrato</div>
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 flex-wrap">
                         {["trial", "ativo", "suspenso", "cancelado"].map(s => (
                           <button
                             key={s}
@@ -286,7 +350,10 @@ export default function ClientesManager() {
                   </div>
 
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1.5">Módulos Ativos ({(c.modulos_ativos || []).length})</div>
+                    <div className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                      Módulos Ativos ({(c.modulos_ativos || []).length})
+                      {bloqueado && <Lock className="w-3 h-3 text-muted-foreground" />}
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {(c.modulos_ativos || []).map(mid => {
                         const m = modulos.find(x => x.modulo_id === mid);
@@ -295,6 +362,12 @@ export default function ClientesManager() {
                         ) : null;
                       })}
                     </div>
+                    {bloqueado && c.data_renovacao && (
+                      <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Próxima alteração de módulos disponível em {format(parseISO(c.data_renovacao), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
