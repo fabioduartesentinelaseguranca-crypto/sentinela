@@ -40,6 +40,7 @@ import GuardianManager from "@/components/admin/GuardianManager";
 import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
 import BoletinsOcorrenciaList from "@/components/admin/BoletinsOcorrenciaList";
 import CercaVirtualEscolar from "@/pages/CercaVirtualEscolar";
+import CadastroBiometricoEscolar from "@/pages/CadastroBiometricoEscolar";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -355,6 +356,9 @@ export default function AdminDashboard() {
 
       {/* ── CERCAS VIRTUAIS ESCOLARES TAB ─────────────────── */}
       {activeTab === "cercas_escolares" && <CercaVirtualEscolar />}
+
+      {/* ── BIOMETRIA ESCOLAR TAB ─────────────────────────── */}
+      {activeTab === "biometria_escolar" && <CadastroBiometricoEscolar />}
 
       {/* ── BOLETINS DE OCORRÊNCIA TAB ───────────────────── */}
       {activeTab === "boletins" && (

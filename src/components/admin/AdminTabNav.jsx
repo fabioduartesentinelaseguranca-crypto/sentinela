@@ -63,6 +63,7 @@ const GROUPS = [
       { id: "cameras", label: "Câmeras", modulo: "gestao_cameras" },
       { id: "video", label: "Análise de Vídeo", modulo: "gestao_cameras" },
       { id: "cercas_escolares", label: "🏫 Cercas Virtuais Escolares", modulo: "cidadao_perimetro_infantil" },
+      { id: "biometria_escolar", label: "🫱 Biometria Escolar", modulo: "cidadao_perimetro_infantil" },
     ],
   },
   {

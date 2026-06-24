@@ -1,0 +1,131 @@
+{
+  "name": "Registros_Acesso_Escolar",
+  "type": "object",
+  "properties": {
+    "id_aluno": {
+      "type": "string"
+    },
+    "nome_aluno": {
+      "type": "string"
+    },
+    "matricula": {
+      "type": "string"
+    },
+    "id_escola_cerca": {
+      "type": "string"
+    },
+    "nome_escola": {
+      "type": "string"
+    },
+    "tipo_evento": {
+      "type": "string",
+      "enum": [
+        "entrada",
+        "saida"
+      ],
+      "description": "ENTRADA ou SA\u00cdDA"
+    },
+    "data_hora": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "confianca_score": {
+      "type": "number",
+      "description": "Score de confian\u00e7a do reconhecimento 0-100"
+    },
+    "metodo": {
+      "type": "string",
+      "enum": [
+        "facial",
+        "manual",
+        "qrcode"
+      ],
+      "default": "facial"
+    },
+    "dentro_horario": {
+      "type": "boolean",
+      "description": "Se o evento ocorreu dentro do hor\u00e1rio esperado"
+    },
+    "alerta_disparado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se um alerta foi enviado aos respons\u00e1veis"
+    },
+    "motivo_alerta": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do motivo do alerta (sa\u00edda antecipada, atraso, etc.)"
+    },
+    "registrado_por_id": {
+      "type": "string"
+    },
+    "pendente_sync": {
+      "type": "boolean",
+      "default": false,
+      "description": "True se est\u00e1 aguardando sincroniza\u00e7\u00e3o (modo offline)"
+    }
+  },
+  "required": [
+    "id_aluno",
+    "tipo_evento",
+    "data_hora"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

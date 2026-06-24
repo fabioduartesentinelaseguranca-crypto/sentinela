@@ -1,0 +1,141 @@
+{
+  "name": "Alunos_Biometria",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do aluno"
+    },
+    "data_nascimento": {
+      "type": "string",
+      "format": "date"
+    },
+    "matricula": {
+      "type": "string",
+      "description": "N\u00famero de matr\u00edcula \u00fanico"
+    },
+    "turno": {
+      "type": "string",
+      "enum": [
+        "manha",
+        "tarde",
+        "noite",
+        "integral"
+      ],
+      "default": "manha"
+    },
+    "horario_entrada": {
+      "type": "string",
+      "description": "HH:MM hor\u00e1rio normal de entrada"
+    },
+    "horario_saida": {
+      "type": "string",
+      "description": "HH:MM hor\u00e1rio normal de sa\u00edda"
+    },
+    "tolerancia_minutos": {
+      "type": "number",
+      "default": 15,
+      "description": "Toler\u00e2ncia em minutos para alerta de sa\u00edda antecipada/atraso"
+    },
+    "id_escola_cerca": {
+      "type": "string",
+      "description": "ID da Cerca Virtual Escolar vinculada"
+    },
+    "nome_escola": {
+      "type": "string"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "URL da foto de refer\u00eancia processada"
+    },
+    "face_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Vetor num\u00e9rico facial (embedding)"
+    },
+    "responsaveis_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos pais/respons\u00e1veis vinculados no Sentinela"
+    },
+    "responsaveis_nomes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cadastrado_por_id": {
+      "type": "string"
+    },
+    "cadastrado_por_nome": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "nome",
+    "matricula",
+    "id_escola_cerca"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
