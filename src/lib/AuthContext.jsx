@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { useInviteOnboarding } from '@/hooks/useInviteOnboarding';
 
 const AuthContext = createContext();
 
@@ -131,6 +132,9 @@ export const AuthProvider = ({ children }) => {
     // Use the SDK's redirectToLogin method
     base44.auth.redirectToLogin(window.location.href);
   };
+
+  // Aplica token de convite salvo no localStorage após o login
+  useInviteOnboarding(user);
 
   return (
     <AuthContext.Provider value={{ 

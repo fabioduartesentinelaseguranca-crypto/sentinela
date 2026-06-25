@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Plus, Edit2, CheckCircle2, Package, Users, ChevronDown, ChevronUp, X, Lock, RefreshCw, AlertTriangle } from "lucide-react";
+import { Building2, Plus, Edit2, CheckCircle2, Package, Users, ChevronDown, ChevronUp, X, Lock, RefreshCw, AlertTriangle, Link2, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { format, addMonths, isBefore, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -330,6 +331,27 @@ export default function ClientesManager() {
                       <div>{c.nome_responsavel || "—"}</div>
                       <div className="text-xs text-muted-foreground">{c.email_responsavel}</div>
                     </div>
+                    {c.invite_token && (
+                      <div className="md:col-span-3">
+                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                          <Link2 className="w-3 h-3" /> Link de Convite (cadastro vinculado a este cliente)
+                        </div>
+                        <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
+                          <code className="text-xs text-primary flex-1 truncate">
+                            {window.location.origin}/convite/{c.invite_token}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/convite/${c.invite_token}`);
+                              toast.success("Link copiado!");
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <div className="text-xs text-muted-foreground">Usuários</div>
                       <div>{(c.usuarios_cidadaos_ativos || 0).toLocaleString()} / {(c.limite_usuarios_cidadaos || 0).toLocaleString()} cidadãos</div>

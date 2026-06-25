@@ -37,6 +37,7 @@ import CaminheComigoViewer from './pages/CaminheComigoViewer';
 import MasterDashboard from './pages/MasterDashboard';
 import CercaVirtualEscolar from './pages/CercaVirtualEscolar';
 import CadastroBiometricoEscolar from './pages/CadastroBiometricoEscolar';
+import ConviteCliente from './pages/ConviteCliente';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -115,6 +116,7 @@ function App() {
             <Routes>
               {/* Public routes — no auth required */}
               <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
+              <Route path="/convite/:token" element={<ConviteCliente />} />
               {/* Master dashboard — completely isolated, no auth provider */}
               <Route path="/master" element={<MasterDashboard />} />
               {/* Authenticated routes */}
