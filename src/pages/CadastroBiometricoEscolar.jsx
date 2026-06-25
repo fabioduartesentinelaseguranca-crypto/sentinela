@@ -7,11 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   School, Plus, Users, UserCheck, LogIn, LogOut, Fingerprint,
   Trash2, Edit2, ChevronDown, ChevronUp, X, Loader2, AlertTriangle,
-  Shield, Clock, BookOpen
+  Shield, Clock, BookOpen, ShieldAlert, ClipboardList, Radio, ScanFace
 } from "lucide-react";
 import { toast } from "sonner";
 import BiometriaCapturaFace from "@/components/escola/BiometriaCapturaFace";
 import RegistroAcessoManual from "@/components/escola/RegistroAcessoManual";
+import BlacklistManager from "@/components/escola/BlacklistManager";
+import OrdemServicoVisitante from "@/components/escola/OrdemServicoVisitante";
+import AlertasIntrusaoPanel from "@/components/escola/AlertasIntrusaoPanel";
+import MotorSegurancaEscolar from "@/components/escola/MotorSegurancaEscolar";
 
 const TURNO_LABELS = { manha: "Manhã", tarde: "Tarde", noite: "Noite", integral: "Integral" };
 
@@ -32,16 +36,22 @@ export default function CadastroBiometricoEscolar() {
   const [biometria, setBiometria] = useState(null); // { fotoUrl, embedding }
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
-  const [activeTab, setActiveTab] = useState("alunos"); // "alunos" | "acesso"
+  const [activeTab, setActiveTab] = useState("alunos");
   const [escolaAcesso, setEscolaAcesso] = useState(null);
+  const [blacklist, setBlacklist] = useState([]);
+  const [ordensAtivas, setOrdensAtivas] = useState([]);
 
   const load = async () => {
-    const [a, e] = await Promise.all([
+    const [a, e, bl, os] = await Promise.all([
       base44.entities.Alunos_Biometria.list("-created_date", 100),
       base44.entities.Cercas_Virtuais_Escolares.filter({ ativo: true }, "-created_date", 50),
+      base44.entities.Blacklist_Biometrica.filter({ ativo: true }, "-created_date", 100),
+      base44.entities.Ordens_Servico_Visitantes.filter({ status: "ativo" }, "-created_date", 50),
     ]);
     setAlunos(a);
     setEscolas(e);
+    setBlacklist(bl);
+    setOrdensAtivas(os);
     if (e.length > 0 && !escolaAcesso) setEscolaAcesso(e[0]);
     setLoading(false);
   };
@@ -180,10 +190,14 @@ export default function CadastroBiometricoEscolar() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border/60">
+      <div className="flex gap-1 border-b border-border/60 flex-wrap">
         {[
-          { id: "alunos", label: "Alunos Cadastrados", icon: BookOpen },
+          { id: "alunos", label: "Alunos", icon: BookOpen },
           { id: "acesso", label: "Registro de Acesso", icon: LogIn },
+          { id: "motor", label: "Motor de Segurança", icon: ScanFace },
+          { id: "alertas", label: "Alertas de Intrusão", icon: Radio },
+          { id: "blacklist", label: "Blacklist", icon: ShieldAlert },
+          { id: "visitantes", label: "Visitantes / OS", icon: ClipboardList },
         ].map(t => {
           const Icon = t.icon;
           return (
@@ -404,6 +418,37 @@ export default function CadastroBiometricoEscolar() {
           )}
         </div>
       )}
+
+      {/* ── TAB: MOTOR DE SEGURANÇA ── */}
+      {activeTab === "motor" && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Escola monitorada</label>
+            <select
+              value={escolaAcesso?.id || ""}
+              onChange={e => setEscolaAcesso(escolas.find(x => x.id === e.target.value))}
+              className="flex h-9 w-64 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+            >
+              {escolas.map(e => <option key={e.id} value={e.id}>{e.nome_escola}</option>)}
+            </select>
+          </div>
+          <MotorSegurancaEscolar
+            escola={escolaAcesso}
+            alunosMatriculados={alunos.filter(a => a.id_escola_cerca === escolaAcesso?.id)}
+            blacklist={blacklist}
+            ordensAtivas={ordensAtivas}
+          />
+        </div>
+      )}
+
+      {/* ── TAB: ALERTAS ── */}
+      {activeTab === "alertas" && <AlertasIntrusaoPanel />}
+
+      {/* ── TAB: BLACKLIST ── */}
+      {activeTab === "blacklist" && <BlacklistManager />}
+
+      {/* ── TAB: VISITANTES ── */}
+      {activeTab === "visitantes" && <OrdemServicoVisitante escolas={escolas} />}
 
       {/* ── TAB: ACESSO ── */}
       {activeTab === "acesso" && (

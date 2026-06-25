@@ -1,0 +1,87 @@
+{
+  "name": "Blacklist_Biometrica",
+  "type": "object",
+  "properties": {
+    "descricao_risco": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do risco/motivo da restri\u00e7\u00e3o"
+    },
+    "nivel_alerta": {
+      "type": "string",
+      "enum": [
+        "vermelho",
+        "laranja",
+        "amarelo"
+      ],
+      "default": "vermelho",
+      "description": "N\u00edvel de criticidade do alerta"
+    },
+    "face_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Vetor biom\u00e9trico facial (128 dimens\u00f5es)"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "URL da foto de refer\u00eancia"
+    },
+    "nome_suspeito": {
+      "type": "string",
+      "description": "Nome (se conhecido)"
+    },
+    "documentos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Documentos ou antecedentes anexados"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "criado_por_id": {
+      "type": "string"
+    },
+    "criado_por_nome": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "descricao_risco",
+    "nivel_alerta"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

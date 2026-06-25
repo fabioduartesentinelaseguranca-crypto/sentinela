@@ -1,0 +1,131 @@
+{
+  "name": "Ordens_Servico_Visitantes",
+  "type": "object",
+  "properties": {
+    "id_escola_cerca": {
+      "type": "string"
+    },
+    "nome_escola": {
+      "type": "string"
+    },
+    "nome_visitante": {
+      "type": "string"
+    },
+    "tipo_visitante": {
+      "type": "string",
+      "enum": [
+        "fornecedor",
+        "tecnico",
+        "prestador_servico",
+        "visitante_comum"
+      ],
+      "default": "visitante_comum"
+    },
+    "foto_url": {
+      "type": "string"
+    },
+    "face_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "documento_identidade": {
+      "type": "string"
+    },
+    "motivo_visita": {
+      "type": "string"
+    },
+    "qr_token": {
+      "type": "string",
+      "description": "Token \u00fanico para autentica\u00e7\u00e3o 2FA"
+    },
+    "data_visita": {
+      "type": "string",
+      "format": "date"
+    },
+    "horario_inicio": {
+      "type": "string",
+      "description": "HH:MM"
+    },
+    "horario_fim": {
+      "type": "string",
+      "description": "HH:MM"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "ativo",
+        "utilizado",
+        "expirado",
+        "cancelado"
+      ],
+      "default": "pendente"
+    },
+    "usado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "criado_por_id": {
+      "type": "string"
+    },
+    "criado_por_nome": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome_visitante",
+    "data_visita",
+    "id_escola_cerca"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "name": "Alertas_Intrusao_Escolar",
+  "type": "object",
+  "properties": {
+    "tipo_alerta": {
+      "type": "string",
+      "enum": [
+        "blacklist_match",
+        "suspeito_permanencia",
+        "acesso_fora_horario",
+        "anti_spoofing",
+        "visitante_sem_os",
+        "panico_operador"
+      ],
+      "description": "Tipo do evento de seguran\u00e7a"
+    },
+    "nivel": {
+      "type": "string",
+      "enum": [
+        "vermelho",
+        "laranja",
+        "amarelo"
+      ],
+      "default": "vermelho"
+    },
+    "id_escola_cerca": {
+      "type": "string"
+    },
+    "nome_escola": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "foto_captura_url": {
+      "type": "string",
+      "description": "Frame capturado no momento do alerta"
+    },
+    "similaridade_blacklist": {
+      "type": "number",
+      "description": "Score de similaridade 0-100 (se blacklist_match)"
+    },
+    "id_blacklist_ref": {
+      "type": "string",
+      "description": "ID do registro na blacklist que gerou o match"
+    },
+    "tempo_permanencia_seg": {
+      "type": "number",
+      "description": "Segundos no frame (suspeito_permanencia)"
+    },
+    "horario_tentativa": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "em_atendimento",
+        "resolvido",
+        "falso_positivo"
+      ],
+      "default": "ativo"
+    },
+    "bloqueio_ativo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o sinal de bloqueio f\u00edsico foi disparado"
+    },
+    "atendido_por_id": {
+      "type": "string"
+    },
+    "atendido_por_nome": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo_alerta",
+    "nivel"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "citizen"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
