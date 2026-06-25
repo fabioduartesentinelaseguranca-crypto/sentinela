@@ -81,6 +81,10 @@
     },
     "observacoes": {
       "type": "string"
+    },
+    "invite_token": {
+      "type": "string",
+      "description": "Token \u00fanico para link de cadastro \u2014 usu\u00e1rios que se registrarem via este link ficam vinculados a este cliente"
     }
   },
   "required": [
