@@ -129,6 +129,18 @@ export default function ClientesManager() {
     load();
   };
 
+  const gerarOuCopiarLink = async (c) => {
+    let token = c.invite_token;
+    if (!token) {
+      token = `${c.nome_municipio.toLowerCase().replace(/\s+/g, "-")}-${Math.random().toString(36).slice(2, 10)}`;
+      await base44.entities.ClienteMunicipal.update(c.id, { invite_token: token });
+      await load();
+    }
+    const link = `${window.location.origin}/convite/${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Link de convite copiado!");
+  };
+
   if (loading) return <div className="py-20 text-center text-muted-foreground">Carregando clientes...</div>;
 
   return (
@@ -314,6 +326,13 @@ export default function ClientesManager() {
                   <span className="text-xs text-muted-foreground hidden md:block">
                     <Package className="w-3 h-3 inline mr-1" />{(c.modulos_ativos || []).length} módulos
                   </span>
+                  <button
+                    onClick={() => gerarOuCopiarLink(c)}
+                    title={c.invite_token ? "Copiar link de convite" : "Gerar link de convite"}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-primary" />
+                  </button>
                   <button onClick={() => startEdit(c)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
                     <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
