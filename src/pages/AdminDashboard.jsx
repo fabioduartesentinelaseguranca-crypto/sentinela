@@ -94,30 +94,32 @@ export default function AdminDashboard() {
   const agentCount = users.filter((u) => u.role === "agent").length;
 
   return (
-    <div className={`${activeTab === "overview" ? "px-4 md:px-6 py-4" : "max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8"} space-y-6`}>
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Painel Administrativo</h1>
-          <p className="text-sm text-muted-foreground mt-1">Visão geral da plataforma Sentinela.</p>
+    <div className={`${activeTab === "overview" ? "px-4 md:px-6 py-4" : "max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8"} space-y-4`}>
+      {activeTab !== "overview" && (
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Painel Administrativo</h1>
+            <p className="text-sm text-muted-foreground mt-1">Visão geral da plataforma Sentinela.</p>
+          </div>
+          <Button size="sm" onClick={async () => {
+            try {
+              const res = await base44.functions.invoke("gerarDocumentacaoPDF", {});
+              const blob = new Blob([res.data], { type: "application/pdf" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "Sentinela_Documentacao_Completa.pdf";
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Documentação baixada com sucesso!");
+            } catch (e) {
+              toast.error("Erro ao gerar documentação");
+            }
+          }}>
+            <FileText className="w-4 h-4 mr-1.5" /> Baixar Documentação PDF
+          </Button>
         </div>
-        <Button size="sm" onClick={async () => {
-          try {
-            const res = await base44.functions.invoke("gerarDocumentacaoPDF", {});
-            const blob = new Blob([res.data], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "Sentinela_Documentacao_Completa.pdf";
-            a.click();
-            URL.revokeObjectURL(url);
-            toast.success("Documentação baixada com sucesso!");
-          } catch (e) {
-            toast.error("Erro ao gerar documentação");
-          }
-        }}>
-          <FileText className="w-4 h-4 mr-1.5" /> Baixar Documentação PDF
-        </Button>
-      </div>
+      )}
 
       <AdminTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
