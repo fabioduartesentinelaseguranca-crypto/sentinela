@@ -90,6 +90,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    const currentUser = await base44.auth.me();
+    setUser(currentUser);
+  };
+
   const checkUserAuth = async () => {
     try {
       // Now check if the user is authenticated
@@ -148,6 +153,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkUserAuth,
+      refreshUser,
       checkAppState
     }}>
       {children}

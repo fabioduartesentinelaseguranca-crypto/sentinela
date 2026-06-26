@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -8,6 +9,7 @@ import { LogOut, User as UserIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import MessagingBadge from "./MessagingBadge";
 import ManualSearchBar from "./ManualSearchBar";
+import ProfileModal from "./ProfileModal";
 
 // Map role → their profile/home route
 const ROLE_PROFILE_ROUTE = {
@@ -22,6 +24,7 @@ export default function AppLayout({ navItems = [], roleLabel }) {
   const role = useAppRole();
   const navigate = useNavigate();
   const profileRoute = ROLE_PROFILE_ROUTE[role] || "/citizen";
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = () => {
     base44.auth.logout();
@@ -66,22 +69,46 @@ export default function AppLayout({ navItems = [], roleLabel }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center">
-                  <UserIcon className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-border/60">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary">
+                        {(user?.full_name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">{user?.full_name}</span>
-                  <span className="text-xs text-muted-foreground font-normal">{user?.email}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-border/60 flex-shrink-0">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-primary">
+                          {(user?.full_name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">{user?.full_name}</span>
+                    <span className="text-xs text-muted-foreground font-normal">{user?.email}</span>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+                <UserIcon className="w-4 h-4 mr-2" /> Meu Perfil
+              </DropdownMenuItem>
               {role === "agent" && (
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  <UserIcon className="w-4 h-4 mr-2" /> Meu Perfil
+                  <UserIcon className="w-4 h-4 mr-2" /> Perfil do Agente
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={handleLogout} className="text-destructive">
@@ -89,6 +116,7 @@ export default function AppLayout({ navItems = [], roleLabel }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
           </div>
         </div>
 
