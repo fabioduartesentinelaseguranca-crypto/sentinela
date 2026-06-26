@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   Shield, Car, CloudRain, HeartPulse, Siren, Wrench, BarChart2,
@@ -12,6 +12,20 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import "leaflet/dist/leaflet.css";
+
+// Auto-fit map to markers
+function FitBounds({ positions }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 13);
+    } else {
+      map.fitBounds(positions, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [positions.length]);
+  return null;
+}
 
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -93,10 +107,8 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
   // Filter occurrences with coords for map
   const mappedOccs = occurrences.filter(o => o.lat && o.lng).slice(0, 30);
 
-  // Center of map: use first occurrence or default to Curitiba
-  const mapCenter = mappedOccs.length > 0
-    ? [mappedOccs[0].lat, mappedOccs[0].lng]
-    : [-25.4284, -49.2733];
+  const markerPositions = mappedOccs.map(o => [o.lat, o.lng]);
+  const mapCenter = markerPositions.length > 0 ? markerPositions[0] : [-25.4284, -49.2733];
 
   const recentOccs = occurrences.slice(0, 5);
 
@@ -196,6 +208,7 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             />
+            <FitBounds positions={markerPositions} />
             {mappedOccs.map(o => (
               <Marker
                 key={o.id}
