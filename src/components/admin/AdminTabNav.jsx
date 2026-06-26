@@ -96,9 +96,9 @@ export default function AdminTabNav({ activeTab, onTabChange }) {
 
   const [openGroup, setOpenGroup] = useState(() => {
     for (const g of GROUPS) {
-      if (g.tabs.some((t) => t.id === activeTab)) return g.label;
+      if (g.tabs.some((t) => t.id === activeTab && t.id !== "overview")) return g.label;
     }
-    return GROUPS[0].label;
+    return null;
   });
 
   // Filter tabs and groups by active modules
