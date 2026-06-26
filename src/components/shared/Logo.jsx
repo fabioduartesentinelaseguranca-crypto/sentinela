@@ -2,7 +2,7 @@ export default function Logo({ size = "md", showText = true }) {
   const sizes = {
     sm: { img: "w-7 h-7", text: "text-sm", wrap: "gap-2" },
     md: { img: "w-9 h-9", text: "text-lg", wrap: "gap-2.5" },
-    lg: { img: "w-10 h-10", text: "text-lg", wrap: "gap-3" },
+    lg: { img: "w-14 h-14", text: "text-lg", wrap: "gap-3" },
   };
   const s = sizes[size];
   return (
