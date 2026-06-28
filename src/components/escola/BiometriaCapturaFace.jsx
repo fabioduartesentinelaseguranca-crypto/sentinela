@@ -14,6 +14,28 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
   const streamRef = useRef(null);
   const [ready, setReady] = useState(false);
 
+  // Conecta stream ao video e marca como pronto
+  const attachStream = (video, stream) => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      video.play().catch(() => {});
+      setReady(true);
+    };
+    // Fallback: se onloadedmetadata não disparar (já tinha metadados)
+    if (video.readyState >= 1) {
+      video.play().catch(() => {});
+      setReady(true);
+    }
+  };
+
+  // Ref callback: chamado quando o <video> monta no DOM
+  const videoCallbackRef = useCallback((el) => {
+    videoRef.current = el;
+    if (el && streamRef.current) {
+      attachStream(el, streamRef.current);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     navigator.mediaDevices.getUserMedia({
@@ -21,10 +43,9 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
     }).then(stream => {
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
       streamRef.current = stream;
+      // Se o video já montou, conectar agora; caso contrário o videoCallbackRef vai conectar
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
-        setReady(true);
+        attachStream(videoRef.current, stream);
       }
     }).catch(() => {
       if (!cancelled) {
@@ -37,14 +58,6 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
       streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     };
-  }, []);
-
-  const videoCallbackRef = useCallback((el) => {
-    videoRef.current = el;
-    if (el && streamRef.current) {
-      el.srcObject = streamRef.current;
-      el.play().then(() => setReady(true)).catch(() => {});
-    }
   }, []);
 
   const capture = () => {
