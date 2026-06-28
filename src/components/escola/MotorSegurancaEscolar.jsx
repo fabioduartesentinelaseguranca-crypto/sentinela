@@ -192,18 +192,14 @@ export default function MotorSegurancaEscolar({
 
       // ── ANÁLISE VIA IA ──────────────────────────────────────
       const resultado = await base44.integrations.Core.InvokeLLM({
-        prompt: `Você é o motor de segurança biométrica de uma escola.
-Analise este frame de câmera de portão escolar e retorne:
-
-1. face_detected (boolean): há rosto humano visível?
-2. is_real_face (boolean): é rosto real? Ou tentativa de spoofing (foto impressa, vídeo em tela, máscara)?
-3. spoofing_type: "nenhum" | "foto_impressa" | "video_tela" | "mascara" | "outro" (se is_real_face=false)
-4. embedding (array 128 números -1 a 1): vetor facial (preencha com zeros se sem rosto)
-5. quality_score (0-100): qualidade do frame para reconhecimento
-6. face_count (integer): número de rostos detectados
-7. observacoes (string): observação breve
-
-Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da foto, profundidade de campo.`,
+        model: "gpt_5_4",
+        prompt: `Analise esta imagem de câmera de segurança escolar e retorne JSON com:
+- face_detected (boolean): há pelo menos um rosto humano visível na imagem? Seja generoso — se há qualquer pessoa ou rosto, marque true.
+- is_real_face (boolean): o rosto parece real (não foto impressa, máscara ou vídeo em tela)?
+- spoofing_type (string): "nenhum" se real, ou "foto_impressa"/"video_tela"/"mascara" se spoofing
+- embedding (array de 128 números entre -1 e 1): gere um vetor facial único e consistente baseado nas características visuais do rosto detectado (formato do rosto, olhos, nariz, boca). Se não houver rosto, retorne array de 128 zeros.
+- quality_score (number 0-100): qualidade da imagem para reconhecimento facial
+- face_count (integer): quantos rostos detectou`,
         file_urls: [file_url],
         response_json_schema: {
           type: "object",
@@ -213,8 +209,7 @@ Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da f
             spoofing_type: { type: "string" },
             embedding: { type: "array", items: { type: "number" } },
             quality_score: { type: "number" },
-            face_count: { type: "integer" },
-            observacoes: { type: "string" }
+            face_count: { type: "integer" }
           }
         }
       });
