@@ -53,7 +53,7 @@ function dentroHorarioLetivo(horario_inicio, horario_fim) {
   return minNow >= minI && minNow <= minF;
 }
 
-const INTERVAL_MS = 5000; // análise a cada 5s
+const INTERVAL_MS = 3000; // análise a cada 3s
 const LOITERING_THRESHOLD_MS = 45000; // 45 segundos
 
 export default function MotorSegurancaEscolar({
@@ -75,6 +75,8 @@ export default function MotorSegurancaEscolar({
   const [modalAberto, setModalAberto] = useState(false);
   // Resultados de reconhecimento em tempo real
   const [matchesDetectados, setMatchesDetectados] = useState([]);
+  const [debugInfo, setDebugInfo] = useState(null);
+  const [framePreview, setFramePreview] = useState(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -183,12 +185,16 @@ export default function MotorSegurancaEscolar({
     try {
       const blob = await capturarFrame();
       if (!blob) {
-        // Vídeo ainda não está pronto — aguardar próximo ciclo
+        setDebugInfo(prev => ({ ...(prev || {}), status: "❌ Frame nulo — vídeo não pronto", ts: new Date().toLocaleTimeString() }));
         return;
       }
 
+      // Preview local do frame capturado
+      setFramePreview(URL.createObjectURL(blob));
+
       // Upload do frame
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+      setDebugInfo(prev => ({ ...(prev || {}), status: "⬆️ Upload OK", file_url, ts: new Date().toLocaleTimeString() }));
 
       // ── ANÁLISE VIA IA ──────────────────────────────────────
       const resultado = await base44.integrations.Core.InvokeLLM({
@@ -231,6 +237,16 @@ export default function MotorSegurancaEscolar({
         setMatchesDetectados([]);
         return;
       }
+
+      setDebugInfo({
+        status: resultado.face_detected ? "✅ Rosto detectado" : "🔍 Sem rosto",
+        face_detected: resultado.face_detected,
+        face_count: resultado.face_count,
+        quality_score: resultado.quality_score,
+        is_real_face: resultado.is_real_face,
+        spoofing_type: resultado.spoofing_type,
+        ts: new Date().toLocaleTimeString(),
+      });
 
       const embedding = resultado.embedding || [];
 
@@ -499,6 +515,27 @@ export default function MotorSegurancaEscolar({
                 <div className="absolute inset-0 border-4 border-red-500 animate-pulse pointer-events-none rounded-b-2xl" />
               )}
             </div>
+
+            {/* Painel de Debug */}
+            {debugInfo && (
+              <div className="bg-black/60 border-t border-yellow-500/30 px-4 py-2 font-mono text-[10px] space-y-0.5">
+                <div className="flex items-center gap-2 text-yellow-400 font-semibold mb-1">⚙️ DEBUG — IA Response</div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
+                  <span>Status: <span className="text-foreground">{debugInfo.status}</span></span>
+                  <span>Hora: <span className="text-foreground">{debugInfo.ts}</span></span>
+                  <span>Rostos: <span className="text-foreground">{debugInfo.face_count ?? "—"}</span></span>
+                  <span>Qualidade: <span className={debugInfo.quality_score >= 50 ? "text-success" : "text-red-400"}>{debugInfo.quality_score ?? "—"}/100</span></span>
+                  <span>Real: <span className={debugInfo.is_real_face ? "text-success" : "text-red-400"}>{debugInfo.is_real_face === undefined ? "—" : debugInfo.is_real_face ? "Sim" : "Não"}</span></span>
+                  <span>Spoofing: <span className="text-foreground">{debugInfo.spoofing_type || "—"}</span></span>
+                </div>
+                {framePreview && (
+                  <div className="mt-1.5">
+                    <span className="text-yellow-400">Último frame capturado:</span>
+                    <img src={framePreview} alt="frame" className="mt-1 rounded border border-yellow-500/30 h-16 object-cover" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Painel de Reconhecimento em Tempo Real */}
             <div className="bg-card border-t border-border/60 px-4 py-3">
