@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   UserCheck, Plus, X, Loader2, Search, ShieldCheck, AlertTriangle,
-  Trash2, Edit2, ChevronDown, ChevronUp, Phone, Users, Link2, Link2Off
+  Trash2, Edit2, ChevronDown, ChevronUp, Phone, Users, Link2, Link2Off,
+  RefreshCw, CheckCircle2, Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import BiometriaCapturaFace from "./BiometriaCapturaFace";
@@ -33,9 +34,7 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
   const [expandedId, setExpandedId] = useState(null);
   const [busca, setBusca] = useState("");
   const [filtroEscola, setFiltroEscola] = useState("");
-
-  // Busca de alunos por matrícula para preview
-  const [alunosVinculados, setAlunosVinculados] = useState([]);
+  const [checklist, setChecklist] = useState({}); // { responsavelId: { loading, itens } }
 
   const load = async () => {
     setLoading(true);
@@ -45,18 +44,6 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
   };
 
   useEffect(() => { load(); }, []);
-
-  // Quando a escola ou matrículas do form mudam, resolve os alunos vinculados
-  useEffect(() => {
-    if (!form.id_escola_cerca) { setAlunosVinculados([]); return; }
-    const matriculas = (form.matriculas_vinculadas || []).filter(Boolean);
-    if (!matriculas.length) { setAlunosVinculados([]); return; }
-    const encontrados = alunos.filter(a =>
-      a.id_escola_cerca === form.id_escola_cerca &&
-      matriculas.includes(a.matricula)
-    );
-    setAlunosVinculados(encontrados);
-  }, [form.id_escola_cerca, form.matriculas_vinculadas, alunos]);
 
   const setMatricula = (i, val) => {
     const arr = [...(form.matriculas_vinculadas || [""])];
@@ -74,6 +61,36 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
 
   const escolaSelecionada = escolas.find(e => e.id === form.id_escola_cerca);
 
+  // Checklist: consulta o banco para cada matrícula e verifica consistência
+  const runChecklist = async (responsavelId, matriculas, escolaId, embeddingResponsavel) => {
+    setChecklist(prev => ({ ...prev, [responsavelId]: { loading: true, itens: [] } }));
+    const itens = [];
+    for (const mat of matriculas.filter(Boolean)) {
+      const encontrados = await base44.entities.Alunos_Biometria.filter({ matricula: mat, id_escola_cerca: escolaId });
+      if (!encontrados || encontrados.length === 0) {
+        itens.push({ matricula: mat, status: "nao_encontrado", nome: null, temBiometria: false, consistencia: null });
+        continue;
+      }
+      const aluno = encontrados[0];
+      const temBiometria = aluno.face_embedding?.length > 0;
+      // Se responsável e aluno têm embedding, calcula similaridade cosseno simples
+      let consistencia = null;
+      if (temBiometria && embeddingResponsavel?.length > 0) {
+        const ea = aluno.face_embedding;
+        const er = embeddingResponsavel;
+        const dot = ea.reduce((s, v, i) => s + v * (er[i] || 0), 0);
+        const normA = Math.sqrt(ea.reduce((s, v) => s + v * v, 0));
+        const normR = Math.sqrt(er.reduce((s, v) => s + v * v, 0));
+        const sim = normA && normR ? dot / (normA * normR) : 0;
+        // Responsável NÃO deve ser biometricamente igual ao aluno (são pessoas diferentes)
+        // Só verifica que a matrícula pertence ao aluno correto (embedding distinto é o esperado)
+        consistencia = sim < 0.75 ? "ok" : "suspeito"; // sim alta = possível foto do mesmo rosto
+      }
+      itens.push({ matricula: mat, status: "encontrado", nome: aluno.nome, temBiometria, consistencia, alunoId: aluno.id });
+    }
+    setChecklist(prev => ({ ...prev, [responsavelId]: { loading: false, itens } }));
+  };
+
   const save = async () => {
     if (!form.nome_responsavel || !form.id_escola_cerca) {
       toast.error("Preencha nome e escola.");
@@ -90,7 +107,7 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
     }
     setSaving(true);
 
-    // Resolver IDs e nomes dos alunos pelas matrículas
+    // Tentar resolver alunos (best-effort — salva mesmo se não encontrar)
     const alunosMatch = alunos.filter(a =>
       a.id_escola_cerca === form.id_escola_cerca &&
       matriculasValidas.includes(a.matricula)
@@ -116,18 +133,24 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
     };
 
     try {
+      let savedId = editingId;
       if (editingId) {
         await base44.entities.Biometria_Responsaveis.update(editingId, data);
         toast.success("Responsável atualizado!");
       } else {
-        await base44.entities.Biometria_Responsaveis.create(data);
-        toast.success("Responsável cadastrado com biometria!");
+        const created = await base44.entities.Biometria_Responsaveis.create(data);
+        savedId = created.id;
+        toast.success("Responsável cadastrado! Verificando consistência...");
       }
       setShowForm(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
       setBiometria(null);
       await load();
+      // Rodar checklist automático após salvar
+      if (savedId) {
+        runChecklist(savedId, matriculasValidas, form.id_escola_cerca, biometria?.embedding || []);
+      }
     } catch {
       toast.error("Erro ao salvar. Tente novamente.");
     }
@@ -307,12 +330,14 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
                           onChange={e => setMatricula(i, e.target.value)}
                           placeholder="Nº de matrícula do aluno"
                         />
-                        {mat && (
-                          <div className={`text-[10px] mt-0.5 flex items-center gap-1 ${alunoEncontrado ? "text-success" : "text-muted-foreground"}`}>
-                            {alunoEncontrado
-                              ? <><UserCheck className="w-3 h-3" /> {alunoEncontrado.nome}</>
-                              : <><AlertTriangle className="w-3 h-3" /> Matrícula não encontrada nesta escola</>
-                            }
+                        {mat && alunoEncontrado && (
+                          <div className="text-[10px] mt-0.5 flex items-center gap-1 text-success">
+                            <UserCheck className="w-3 h-3" /> {alunoEncontrado.nome}
+                          </div>
+                        )}
+                        {mat && !alunoEncontrado && (
+                          <div className="text-[10px] mt-0.5 flex items-center gap-1 text-muted-foreground">
+                            <Clock className="w-3 h-3" /> Será verificado no banco ao salvar
                           </div>
                         )}
                       </div>
@@ -329,26 +354,9 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
                 </button>
               </div>
 
-              {/* Preview dos vínculos */}
-              {alunosVinculados.length > 0 && (
-                <div className="mt-3 rounded-xl border border-success/30 bg-success/5 p-3 space-y-2">
-                  <div className="text-xs font-semibold text-success flex items-center gap-1.5">
-                    <Link2 className="w-3.5 h-3.5" /> {alunosVinculados.length} aluno(s) vinculado(s)
-                  </div>
-                  {alunosVinculados.map(a => (
-                    <div key={a.id} className="flex items-center gap-2.5">
-                      {a.foto_url
-                        ? <img src={a.foto_url} alt={a.nome} className="w-8 h-10 object-cover rounded border border-border flex-shrink-0" />
-                        : <div className="w-8 h-10 rounded bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground flex-shrink-0">{a.nome?.[0]}</div>
-                      }
-                      <div>
-                        <div className="text-sm font-medium">{a.nome}</div>
-                        <div className="text-[10px] text-muted-foreground">Mat: {a.matricula} · {a.nome_escola}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-[10px] text-muted-foreground">
+                A verificação completa de consistência (matrícula vs. biometria) é feita automaticamente ao salvar.
+              </p>
             </div>
           )}
 
@@ -413,30 +421,66 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
 
                 {isExpanded && (
                   <div className="border-t border-border/60 p-4 space-y-3">
-                    {/* Alunos vinculados */}
+                    {/* Checklist de consistência */}
                     <div>
-                      <div className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                        <Link2 className="w-3 h-3" /> Alunos Vinculados
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                          <ShieldCheck className="w-3 h-3" /> Checklist de Consistência
+                        </div>
+                        <button
+                          onClick={() => runChecklist(r.id, r.matriculas_vinculadas || [], r.id_escola_cerca, r.face_embedding)}
+                          className="text-[10px] text-primary hover:underline flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Verificar agora
+                        </button>
                       </div>
-                      {r.alunos_nomes?.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {r.alunos_nomes.map((nome, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <UserCheck className="w-3.5 h-3.5 text-success flex-shrink-0" />
-                              <span>{nome}</span>
-                              {r.matriculas_vinculadas?.[i] && (
-                                <span className="text-xs text-muted-foreground">· Mat: {r.matriculas_vinculadas[i]}</span>
+
+                      {!checklist[r.id] && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 italic">
+                          <Clock className="w-3 h-3" /> Clique em "Verificar agora" para checar as matrículas no banco.
+                        </div>
+                      )}
+
+                      {checklist[r.id]?.loading && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Consultando banco de dados...
+                        </div>
+                      )}
+
+                      {checklist[r.id] && !checklist[r.id].loading && (
+                        <div className="space-y-2">
+                          {checklist[r.id].itens.map((item, idx) => (
+                            <div key={idx} className={`rounded-lg px-3 py-2 text-xs space-y-0.5 ${
+                              item.status === "nao_encontrado"
+                                ? "bg-warning/10 border border-warning/30"
+                                : item.consistencia === "suspeito"
+                                ? "bg-destructive/10 border border-destructive/30"
+                                : "bg-success/10 border border-success/30"
+                            }`}>
+                              <div className="flex items-center gap-2 font-medium">
+                                {item.status === "nao_encontrado"
+                                  ? <><AlertTriangle className="w-3.5 h-3.5 text-warning flex-shrink-0" /> Mat. <span className="font-mono">{item.matricula}</span> — não encontrada nesta escola</>
+                                  : item.consistencia === "suspeito"
+                                  ? <><AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0" /> Mat. <span className="font-mono">{item.matricula}</span> — inconsistência biométrica suspeita</>
+                                  : <><CheckCircle2 className="w-3.5 h-3.5 text-success flex-shrink-0" /> Mat. <span className="font-mono">{item.matricula}</span> — {item.nome}</>
+                                }
+                              </div>
+                              {item.status === "encontrado" && (
+                                <div className="text-muted-foreground pl-5">
+                                  {item.temBiometria
+                                    ? item.consistencia === "suspeito"
+                                      ? "⚠ Embeddings muito similares — verifique se a foto do responsável é diferente da do aluno."
+                                      : "✓ Biometria do aluno cadastrada e distinta da do responsável."
+                                    : "ℹ Aluno encontrado, mas sem biometria cadastrada ainda."
+                                  }
+                                </div>
                               )}
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-warning">
-                          <Link2Off className="w-3.5 h-3.5" />
-                          Nenhum aluno vinculado (matrículas podem não existir nesta escola)
-                        </div>
                       )}
                     </div>
+
                     {/* Matrículas informadas */}
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">Matrículas informadas</div>
@@ -446,6 +490,7 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
                         ))}
                       </div>
                     </div>
+
                     {/* Embedding info */}
                     {temBio && (
                       <div>
