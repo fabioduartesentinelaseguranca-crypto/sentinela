@@ -46,14 +46,30 @@
     },
     "foto_url": {
       "type": "string",
-      "description": "URL da foto de refer\u00eancia processada"
+      "description": "URL da foto de refer\u00eancia principal (sem \u00f3culos ou \u00fanica)"
     },
     "face_embedding": {
       "type": "array",
       "items": {
         "type": "number"
       },
-      "description": "Vetor num\u00e9rico facial (embedding)"
+      "description": "Vetor num\u00e9rico facial principal (sem \u00f3culos ou \u00fanico)"
+    },
+    "usa_oculos": {
+      "type": "boolean",
+      "default": false,
+      "description": "True se o aluno usa \u00f3culos de grau \u2014 cadastro duplo ativo"
+    },
+    "foto_url_oculos": {
+      "type": "string",
+      "description": "URL da foto com \u00f3culos de grau (cadastro duplo)"
+    },
+    "face_embedding_oculos": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Vetor facial com \u00f3culos de grau (segundo embedding para match)"
     },
     "responsaveis_ids": {
       "type": "array",

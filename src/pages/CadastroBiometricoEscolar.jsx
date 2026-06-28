@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   School, Plus, Users, UserCheck, LogIn, LogOut, Fingerprint,
   Trash2, Edit2, ChevronDown, ChevronUp, X, Loader2, AlertTriangle,
-  Shield, Clock, BookOpen, ShieldAlert, ClipboardList, Radio, ScanFace
+  Shield, Clock, BookOpen, ShieldAlert, ClipboardList, Radio, ScanFace, Glasses
 } from "lucide-react";
 import { toast } from "sonner";
 import BiometriaCapturaFace from "@/components/escola/BiometriaCapturaFace";
@@ -33,7 +33,9 @@ export default function CadastroBiometricoEscolar() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [biometria, setBiometria] = useState(null); // { fotoUrl, embedding }
+  const [biometria, setBiometria] = useState(null);       // { fotoUrl, embedding } — sem óculos (ou única)
+  const [biometriaOculos, setBiometriaOculos] = useState(null); // { fotoUrl, embedding } — com óculos
+  const [usaOculos, setUsaOculos] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [activeTab, setActiveTab] = useState("alunos");
@@ -78,6 +80,10 @@ export default function CadastroBiometricoEscolar() {
       toast.error("Capture a foto biométrica do aluno.");
       return;
     }
+    if (!editingId && usaOculos && !biometriaOculos) {
+      toast.error("Capture também a foto do aluno COM óculos.");
+      return;
+    }
     setSaving(true);
     const data = {
       nome: form.nome,
@@ -94,6 +100,12 @@ export default function CadastroBiometricoEscolar() {
       cadastrado_por_nome: user?.full_name,
       ativo: true,
       ...(biometria ? { foto_url: biometria.fotoUrl, face_embedding: biometria.embedding } : {}),
+      // Cadastro duplo: embedding com óculos (segundo vetor)
+      ...(biometriaOculos ? {
+        foto_url_oculos: biometriaOculos.fotoUrl,
+        face_embedding_oculos: biometriaOculos.embedding,
+      } : {}),
+      usa_oculos: usaOculos,
     };
     try {
       if (editingId) {
@@ -107,6 +119,8 @@ export default function CadastroBiometricoEscolar() {
       setEditingId(null);
       setForm(EMPTY_FORM);
       setBiometria(null);
+      setBiometriaOculos(null);
+      setUsaOculos(false);
       await load();
     } catch {
       toast.error("Erro ao salvar. Tente novamente.");
@@ -118,6 +132,8 @@ export default function CadastroBiometricoEscolar() {
     setForm({ ...EMPTY_FORM, ...a, responsaveis_nomes: a.responsaveis_nomes?.length ? a.responsaveis_nomes : [""] });
     setEditingId(a.id);
     setBiometria(a.foto_url ? { fotoUrl: a.foto_url, embedding: a.face_embedding || [] } : null);
+    setBiometriaOculos(a.foto_url_oculos ? { fotoUrl: a.foto_url_oculos, embedding: a.face_embedding_oculos || [] } : null);
+    setUsaOculos(!!a.usa_oculos);
     setShowForm(true);
     setActiveTab("alunos");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -230,12 +246,52 @@ export default function CadastroBiometricoEscolar() {
                 <button onClick={() => setShowForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
               </div>
 
+              {/* Seletor de óculos de grau */}
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/20">
+                <Glasses className="w-5 h-5 text-primary flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">O aluno usa óculos de grau?</div>
+                  <div className="text-xs text-muted-foreground">Se sim, serão capturados dois vetores biométricos para garantir reconhecimento com e sem óculos.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setUsaOculos(v => !v); setBiometriaOculos(null); }}
+                  className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${usaOculos ? "bg-primary" : "bg-muted"}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${usaOculos ? "translate-x-7" : "translate-x-1"}`} />
+                </button>
+              </div>
+
               {/* Biometria facial */}
-              <BiometriaCapturaFace
-                onCapture={setBiometria}
-                onClear={() => setBiometria(null)}
-                alunoId={editingId || null}
-              />
+              {usaOculos ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                    <Glasses className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Cadastro duplo ativo: capture uma foto <strong>sem óculos</strong> e outra <strong>com óculos</strong>. Ambos os vetores serão vinculados à mesma matrícula.</span>
+                  </div>
+                  <BiometriaCapturaFace
+                    onCapture={setBiometria}
+                    onClear={() => setBiometria(null)}
+                    alunoId={editingId || null}
+                    label="Foto 1 — Sem Óculos *"
+                    captureLabel="Sem Óculos"
+                  />
+                  <BiometriaCapturaFace
+                    onCapture={setBiometriaOculos}
+                    onClear={() => setBiometriaOculos(null)}
+                    alunoId={null}
+                    label="Foto 2 — Com Óculos *"
+                    captureLabel="Com Óculos"
+                  />
+                </div>
+              ) : (
+                <BiometriaCapturaFace
+                  onCapture={setBiometria}
+                  onClear={() => setBiometria(null)}
+                  alunoId={editingId || null}
+                  label="Foto Biométrica *"
+                />
+              )}
 
               {editingId && !biometria && (
                 <p className="text-xs text-muted-foreground">Deixe em branco para manter a foto biométrica atual.</p>
