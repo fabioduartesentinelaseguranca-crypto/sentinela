@@ -149,7 +149,7 @@ export default function CadastroBiometricoEscolar() {
 
   const stats = {
     total: alunos.length,
-    comBiometria: alunos.filter(a => a.face_embedding?.length > 0).length,
+    comBiometria: alunos.filter(a => a.foto_url || a.face_embedding?.length > 0).length,
     escolas: new Set(alunos.map(a => a.id_escola_cerca)).size,
   };
 
@@ -407,7 +407,7 @@ export default function CadastroBiometricoEscolar() {
             <div className="space-y-2">
               {alunos.map(a => {
                 const isExpanded = expandedId === a.id;
-                const temBio = a.face_embedding?.length > 0;
+                const temBio = !!(a.foto_url || a.face_embedding?.length > 0);
                 return (
                   <div key={a.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
                     <div className="flex items-center gap-3 p-4">
