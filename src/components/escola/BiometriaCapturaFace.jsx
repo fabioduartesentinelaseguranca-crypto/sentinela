@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Camera, Upload, RotateCcw, CheckCircle2, Loader2,
@@ -143,25 +144,40 @@ export default function BiometriaCapturaFace({
   }, [step, qualidade, saving]);
 
   // ── câmera ─────────────────────────────────────────────────────────────
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+
   const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
+    setCameraModalOpen(true);
+    // pequeno delay para o modal montar antes de acessar o ref do video
+    setTimeout(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+          }
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
-      });
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-      livenessRef.current = 0;
-      setLivenessChecks(0);
-      setStep(STEP.CAPTURA);
-      startLiveness();
-    } catch {
-      toast.error("Câmera não disponível. Use o upload de foto.");
-    }
+        livenessRef.current = 0;
+        setLivenessChecks(0);
+        setStep(STEP.CAPTURA);
+        startLiveness();
+      } catch {
+        setCameraModalOpen(false);
+        toast.error("Câmera não disponível. Use o upload de foto.");
+      }
+    }, 100);
+  };
+
+  const closeCameraModal = () => {
+    stopCamera();
+    setCameraModalOpen(false);
+    if (step === STEP.CAPTURA) setStep(STEP.ESCOLHA);
   };
 
   const stopCamera = () => {
@@ -215,6 +231,7 @@ export default function BiometriaCapturaFace({
     canvas.toBlob(blob => {
       const url = URL.createObjectURL(blob);
       stopCamera();
+      setCameraModalOpen(false);
       processImage(blob, url);
     }, "image/jpeg", 0.95);
   };
@@ -299,6 +316,7 @@ Seja rigoroso: fotos sem rosto claro, muito borradas, ou com óculos escuros dev
 
   const reset = () => {
     stopCamera();
+    setCameraModalOpen(false);
     setCaptured(null);
     setQualidade(null);
     setLocalScores(null);
@@ -364,61 +382,99 @@ Seja rigoroso: fotos sem rosto claro, muito borradas, ou com óculos escuros dev
         </div>
       )}
 
-      {/* ── ETAPA 1: CAPTURA (webcam HD) ── */}
-      {step === STEP.CAPTURA && (
-        <div className="space-y-2">
-          <div className="relative rounded-xl overflow-hidden border border-border bg-black" style={{ aspectRatio: "4/3" }}>
-            <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-
-            {/* Overlay escuro com óvalo aberto — SVG responsivo */}
-            <div className="absolute inset-0 pointer-events-none">
-              <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  <mask id={`oval-mask-${label}`}>
-                    <rect width="640" height="480" fill="white" />
-                    <ellipse cx="320" cy="235" rx="148" ry="185" fill="black" />
-                  </mask>
-                </defs>
-                <rect width="640" height="480" fill="rgba(0,0,0,0.52)" mask={`url(#oval-mask-${label})`} />
-                {/* Borda do óvalo */}
-                <ellipse cx="320" cy="235" rx="148" ry="185" fill="none"
-                  stroke={livenessChecks >= 3 ? "#22c55e" : "#38bdf8"}
-                  strokeWidth="3" strokeDasharray={livenessChecks >= 3 ? "none" : "10 6"} />
-                {/* Guias de centralização */}
-                <line x1="320" y1="50" x2="320" y2="80" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                <line x1="320" y1="390" x2="320" y2="420" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                <line x1="170" y1="235" x2="200" y2="235" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                <line x1="440" y1="235" x2="470" y2="235" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-              </svg>
+      {/* ── MODAL: CÂMERA AO VIVO ── */}
+      {cameraModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-xl rounded-2xl overflow-hidden bg-black border border-border/40 shadow-2xl">
+            {/* Header do modal */}
+            <div className="flex items-center justify-between px-4 py-3 bg-background/90 border-b border-border/40">
+              <div className="flex items-center gap-2">
+                <ScanFace className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold">Captura Biométrica</span>
+                {captureLabel && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary flex items-center gap-1">
+                    <Glasses className="w-3 h-3" /> {captureLabel}
+                  </span>
+                )}
+              </div>
+              <button onClick={closeCameraModal} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
 
-            {/* Status liveness */}
-            <div className="absolute top-3 left-0 right-0 flex justify-center pointer-events-none">
-              <div className="bg-black/70 px-3 py-1.5 rounded-lg text-xs text-white flex items-center gap-2">
-                {livenessChecks >= 3
-                  ? <><CheckCircle2 className="w-3.5 h-3.5 text-success" /><span className="text-success font-medium">Vivacidade OK — pronto para capturar</span></>
-                  : <><div className="w-2 h-2 rounded-full bg-primary animate-pulse" /><span>Mova levemente a cabeça ({livenessChecks}/3)...</span></>
-                }
+            {/* Área da câmera */}
+            <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
+              <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+
+              {/* Overlay escuro com óvalo aberto */}
+              <div className="absolute inset-0 pointer-events-none">
+                <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
+                  <defs>
+                    <mask id={`oval-modal-mask-${label}`}>
+                      <rect width="640" height="480" fill="white" />
+                      <ellipse cx="320" cy="235" rx="155" ry="195" fill="black" />
+                    </mask>
+                  </defs>
+                  {/* Fundo escurecido fora do óvalo */}
+                  <rect width="640" height="480" fill="rgba(0,0,0,0.55)" mask={`url(#oval-modal-mask-${label})`} />
+                  {/* Borda animada do óvalo */}
+                  <ellipse cx="320" cy="235" rx="155" ry="195" fill="none"
+                    stroke={livenessChecks >= 3 ? "#22c55e" : "#38bdf8"}
+                    strokeWidth="3.5"
+                    strokeDasharray={livenessChecks >= 3 ? "none" : "12 7"}
+                  />
+                  {/* Marcadores de canto do óvalo */}
+                  <line x1="320" y1="36" x2="320" y2="60" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                  <line x1="320" y1="410" x2="320" y2="434" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                  <line x1="158" y1="235" x2="182" y2="235" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                  <line x1="458" y1="235" x2="482" y2="235" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                  {/* Texto guia dentro do óvalo */}
+                  {livenessChecks < 3 && (
+                    <text x="320" y="455" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="12" fontFamily="sans-serif">
+                      Posicione o rosto aqui
+                    </text>
+                  )}
+                </svg>
+              </div>
+
+              {/* Badge de status liveness — topo */}
+              <div className="absolute top-3 left-0 right-0 flex justify-center pointer-events-none">
+                <div className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 shadow-lg ${
+                  livenessChecks >= 3
+                    ? "bg-success text-white"
+                    : "bg-black/75 text-white"
+                }`}>
+                  {livenessChecks >= 3
+                    ? <><CheckCircle2 className="w-3.5 h-3.5" /> Pronto para capturar</>
+                    : <><div className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Mova levemente a cabeça ({livenessChecks}/3)</>
+                  }
+                </div>
+              </div>
+
+              {/* Info HD */}
+              <div className="absolute bottom-14 left-3 text-[9px] text-white/40 pointer-events-none select-none">
+                HD 720p+ · Correção automática ativa
               </div>
             </div>
 
-            {/* Resolução info */}
-            <div className="absolute bottom-12 left-3 text-[9px] text-white/50 pointer-events-none">
-              HD · Correção automática de contraste ativa
-            </div>
-
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3">
-              <Button size="sm" variant="outline" onClick={reset} className="bg-black/60 border-white/20 text-white hover:bg-black/80">
-                <X className="w-3.5 h-3.5 mr-1" /> Cancelar
+            {/* Botões de ação */}
+            <div className="flex gap-3 p-4 bg-background/90 border-t border-border/40">
+              <Button variant="outline" size="sm" onClick={closeCameraModal} className="flex-1">
+                <X className="w-3.5 h-3.5 mr-1.5" /> Cancelar
               </Button>
-              <Button size="sm" onClick={captureFromCamera} disabled={livenessChecks < 2}
-                className={livenessChecks >= 3 ? "bg-success hover:bg-success/90" : "bg-primary"}>
-                <ScanFace className="w-3.5 h-3.5 mr-1" /> Capturar
+              <Button
+                size="sm"
+                onClick={captureFromCamera}
+                disabled={livenessChecks < 2}
+                className={`flex-1 ${livenessChecks >= 3 ? "bg-success hover:bg-success/90" : "bg-primary hover:bg-primary/90"}`}
+              >
+                <ScanFace className="w-3.5 h-3.5 mr-1.5" />
+                {livenessChecks >= 3 ? "Capturar Agora" : "Aguardando liveness..."}
               </Button>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">Centralize o rosto no óvalo · Câmera HD com mínimo 720p</p>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── ETAPA 2: REVISÃO (split-screen) ── */}
