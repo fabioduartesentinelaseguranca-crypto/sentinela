@@ -145,7 +145,20 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
         const created = await base44.entities.Biometria_Responsaveis.create(data);
         savedId = created.id;
         toast.success("Responsável cadastrado! Verificando consistência...");
+        // Notificar admins por e-mail (fire-and-forget)
+        base44.functions.invoke('notificarNovoResponsavel', { responsavelId: created.id }).catch(() => {});
       }
+
+      // Atualizar alunos vinculados com foto/embedding do responsável se biometria foi capturada
+      if (biometria && alunosMatch.length > 0) {
+        await Promise.allSettled(alunosMatch.map(a =>
+          base44.entities.Alunos_Biometria.update(a.id, {
+            responsaveis_ids: [...new Set([...(a.responsaveis_ids || []), savedId])],
+            responsaveis_nomes: [...new Set([...(a.responsaveis_nomes || []), form.nome_responsavel])],
+          })
+        ));
+      }
+
       setShowForm(false);
       setEditingId(null);
       setForm(EMPTY_FORM);

@@ -42,6 +42,7 @@ import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
 import BoletinsOcorrenciaList from "@/components/admin/BoletinsOcorrenciaList";
 import CercaVirtualEscolar from "@/pages/CercaVirtualEscolar";
 import CadastroBiometricoEscolar from "@/pages/CadastroBiometricoEscolar";
+import ChecklistBiometria from "@/components/admin/ChecklistBiometria";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -254,6 +255,9 @@ export default function AdminDashboard() {
 
       {/* ── BIOMETRIA ESCOLAR TAB ─────────────────────────── */}
       {activeTab === "biometria_escolar" && <CadastroBiometricoEscolar />}
+
+      {/* ── CHECKLIST BIOMÉTRICO TAB ───────────────────────── */}
+      {activeTab === "checklist_biometria" && <ChecklistBiometria />}
 
       {/* ── BOLETINS DE OCORRÊNCIA TAB ───────────────────── */}
       {activeTab === "boletins" && (

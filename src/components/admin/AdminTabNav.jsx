@@ -64,6 +64,7 @@ const GROUPS = [
       { id: "video", label: "Análise de Vídeo", modulo: "gestao_cameras" },
       { id: "cercas_escolares", label: "🏫 Cercas Virtuais Escolares", modulo: "cidadao_perimetro_infantil" },
       { id: "biometria_escolar", label: "🫱 Biometria Escolar", modulo: "cidadao_perimetro_infantil" },
+      { id: "checklist_biometria", label: "✅ Checklist Vínculos", modulo: "cidadao_perimetro_infantil" },
     ],
   },
   {
