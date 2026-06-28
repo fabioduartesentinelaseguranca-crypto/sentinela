@@ -100,19 +100,19 @@ export default function MotorSegurancaEscolar({
     setModalAberto(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
       });
       streamRef.current = stream;
-      // wait for modal to render before assigning srcObject
+      // Aguarda o modal renderizar e o videoRef estar disponível
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
+          videoRef.current.play().catch(() => {});
         }
-      }, 100);
+      }, 200);
       setStreaming(true);
       setAtivo(true);
-      iniciarLoop();
+      // O loop é iniciado pelo useEffect que observa [analisarFrame, ativo]
     } catch {
       toast.error("Câmera não disponível para monitoramento.");
       setModalAberto(false);
@@ -142,6 +142,8 @@ export default function MotorSegurancaEscolar({
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return null;
+    // Garantir que o vídeo tem dimensões válidas (stream já iniciou)
+    if (!video.videoWidth || video.readyState < 2) return null;
     canvas.width = 320; canvas.height = 240;
     canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
     return new Promise(res => canvas.toBlob(res, "image/jpeg", 0.7));
@@ -180,7 +182,10 @@ export default function MotorSegurancaEscolar({
 
     try {
       const blob = await capturarFrame();
-      if (!blob) return;
+      if (!blob) {
+        // Vídeo ainda não está pronto — aguardar próximo ciclo
+        return;
+      }
 
       // Upload do frame
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
@@ -353,17 +358,13 @@ Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da f
     }
   }, [escola, blacklist, alunosMatriculados, responsaveis, ordensAtivas, loiteringStart, dispararAlerta]);
 
-  const iniciarLoop = () => {
-    intervalRef.current = setInterval(() => {
-      analisarFrame();
-    }, INTERVAL_MS);
-  };
-
-  // Atualiza referência do callback no interval
+  // Inicia/reinicia o loop sempre que o callback de análise ou o estado ativo muda
   useEffect(() => {
     if (!ativo) return;
     clearInterval(intervalRef.current);
-    iniciarLoop();
+    intervalRef.current = setInterval(() => {
+      analisarFrame();
+    }, INTERVAL_MS);
     return () => clearInterval(intervalRef.current);
   }, [analisarFrame, ativo]);
 
