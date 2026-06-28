@@ -124,6 +124,10 @@ export default function BiometriaCapturaFace({
   const [qualidade, setQualidade] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
 
+  // Ref para sempre chamar a versão mais recente do callback do pai
+  const onCaptureRef = useRef(onCapture);
+  useEffect(() => { onCaptureRef.current = onCapture; }, [onCapture]);
+
   const processBlob = async (blob) => {
     setPhase("uploading");
     const localUrl = URL.createObjectURL(blob);
@@ -133,7 +137,7 @@ export default function BiometriaCapturaFace({
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
 
       // Notifica o pai imediatamente com a foto permanente
-      onCapture({ fotoUrl: file_url, embedding: [], qualidade: 75 });
+      onCaptureRef.current({ fotoUrl: file_url, embedding: [], qualidade: 75 });
       setPreviewUrl(file_url);
       setPhase("analyzing");
 
@@ -152,7 +156,7 @@ Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 núm
         }
       }).then(result => {
         setQualidade(result);
-        onCapture({ fotoUrl: file_url, embedding: result.embedding || [], qualidade: result.score_geral || 75 });
+        onCaptureRef.current({ fotoUrl: file_url, embedding: result.embedding || [], qualidade: result.score_geral || 75 });
         setPhase("done");
       }).catch(() => setPhase("done"));
 

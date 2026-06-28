@@ -293,12 +293,13 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
             </button>
           </div>
 
-          {/* Captura biométrica */}
+          {/* Captura biométrica — key garante remontagem limpa ao abrir novo form ou editar */}
           <BiometriaCapturaFace
+            key={editingId || "novo"}
             onCapture={setBiometria}
             onClear={() => setBiometria(null)}
             label="Foto Biométrica do Responsável"
-            initialValue={biometria}
+            initialValue={editingId ? biometria : null}
           />
 
           {/* Dados pessoais */}
