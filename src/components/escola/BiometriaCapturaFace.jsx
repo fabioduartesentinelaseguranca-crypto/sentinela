@@ -61,7 +61,9 @@ export default function BiometriaCapturaFace({ onCapture, onClear, label = "Foto
     const localUrl = URL.createObjectURL(blob);
     setFotoUrl(localUrl);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file: blob });
+      // Converter Blob para File com nome — necessário para multipart/form-data
+      const file = blob instanceof File ? blob : new File([blob], "biometria.jpg", { type: "image/jpeg" });
+      const result = await base44.integrations.Core.UploadFile({ file });
       const url = result?.file_url;
       if (!url) throw new Error("Sem URL");
       setFotoUrl(url);
