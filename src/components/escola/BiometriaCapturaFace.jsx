@@ -123,7 +123,6 @@ export default function BiometriaCapturaFace({
   const livenessRef = useRef(0);
 
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const livenessIntervalRef = useRef(null);
 
@@ -187,12 +186,14 @@ export default function BiometriaCapturaFace({
 
   const startLiveness = () => {
     let prevFrame = null;
+    const livenessCanvas = document.createElement("canvas");
+    livenessCanvas.width = 64;
+    livenessCanvas.height = 48;
+    const ctx = livenessCanvas.getContext("2d");
+
     livenessIntervalRef.current = setInterval(() => {
       const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas) return;
-      const ctx = canvas.getContext("2d");
-      canvas.width = 64; canvas.height = 48;
+      if (!video || video.readyState < 2) return;
       ctx.drawImage(video, 0, 0, 64, 48);
       const frame = ctx.getImageData(0, 0, 64, 48).data;
       if (prevFrame) {
@@ -203,32 +204,33 @@ export default function BiometriaCapturaFace({
           setLivenessChecks(livenessRef.current);
         }
       }
-      prevFrame = frame;
+      prevFrame = new Uint8ClampedArray(frame);
       if (livenessRef.current >= 3) clearInterval(livenessIntervalRef.current);
     }, 500);
   };
 
   const captureFromCamera = () => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video) return;
 
-    // Capturar na resolução real do vídeo
+    // Usar canvas dedicado para captura (não o canvas do liveness)
+    const captureCanvas = document.createElement("canvas");
     const vw = video.videoWidth || 1280;
     const vh = video.videoHeight || 720;
-    canvas.width = vw;
-    canvas.height = vh;
-    canvas.getContext("2d").drawImage(video, 0, 0, vw, vh);
+    captureCanvas.width = vw;
+    captureCanvas.height = vh;
+    captureCanvas.getContext("2d").drawImage(video, 0, 0, vw, vh);
 
     // Aplicar correção de contraste/brilho
-    applyImageEnhancement(canvas);
+    applyImageEnhancement(captureCanvas);
 
-    // Calcular scores locais antes de mandar para IA
-    const blurScore = computeBlurScore(canvas);
-    const lightScore = computeLightingScore(canvas);
+    // Calcular scores locais
+    const blurScore = computeBlurScore(captureCanvas);
+    const lightScore = computeLightingScore(captureCanvas);
     setLocalScores({ blur: blurScore, light: lightScore });
 
-    canvas.toBlob(blob => {
+    captureCanvas.toBlob(blob => {
+      if (!blob) { toast.error("Falha ao capturar imagem. Tente novamente."); return; }
       const url = URL.createObjectURL(blob);
       stopCamera();
       setCameraModalOpen(false);
@@ -338,8 +340,6 @@ Seja rigoroso: fotos sem rosto claro, muito borradas, ou com óculos escuros dev
           </span>
         )}
       </div>
-
-      <canvas ref={canvasRef} className="hidden" />
 
       {/* Stepper */}
       {step > STEP.ESCOLHA && (
