@@ -104,11 +104,6 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
       toast.error("Selecione a escola.");
       return;
     }
-    if (!editingId && !biometria) {
-      toast.error("Capture a foto biométrica do responsável.");
-      return;
-    }
-
     setSaving(true);
 
     const matriculasValidas = (form.matriculas_vinculadas || []).filter(Boolean);

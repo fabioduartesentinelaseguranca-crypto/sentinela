@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,138 @@ function CheckItem({ label, ok, warn = false }) {
   );
 }
 
+// Componente separado para o modal da câmera — monta/desmonta limpo
+function CameraModal({ captureLabel, onCapture, onClose }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  // Iniciar stream quando o modal montar
+  useEffect(() => {
+    let cancelled = false;
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(stream => {
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+        setReady(true);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        toast.error("Câmera não disponível. Use o upload de foto.");
+        onClose();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
+  // Conectar stream ao video element quando ele montar
+  const videoCallbackRef = useCallback((el) => {
+    videoRef.current = el;
+    if (el && streamRef.current) {
+      el.srcObject = streamRef.current;
+      el.play().then(() => setReady(true)).catch(() => {});
+    }
+  }, []);
+
+  const capture = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (!blob) { toast.error("Falha ao capturar. Tente novamente."); return; }
+      onCapture(blob, URL.createObjectURL(blob));
+    }, "image/jpeg", 0.92);
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
+      <div className="relative w-full max-w-xl rounded-2xl overflow-hidden bg-black border border-border/40 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-background/90 border-b border-border/40">
+          <div className="flex items-center gap-2">
+            <ScanFace className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold">Captura Biométrica</span>
+            {captureLabel && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary">{captureLabel}</span>
+            )}
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Vídeo */}
+        <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
+          <video
+            ref={videoCallbackRef}
+            className="w-full h-full object-cover"
+            muted
+            playsInline
+            autoPlay
+          />
+
+          {/* Máscara oval */}
+          <div className="absolute inset-0 pointer-events-none">
+            <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <mask id="cam-oval-mask">
+                  <rect width="640" height="480" fill="white" />
+                  <ellipse cx="320" cy="230" rx="150" ry="190" fill="black" />
+                </mask>
+              </defs>
+              <rect width="640" height="480" fill="rgba(0,0,0,0.55)" mask="url(#cam-oval-mask)" />
+              <ellipse
+                cx="320" cy="230" rx="150" ry="190"
+                fill="none"
+                stroke={ready ? "#22c55e" : "#38bdf8"}
+                strokeWidth="3"
+              />
+            </svg>
+          </div>
+
+          {!ready && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <span className="text-white/70 text-sm">Iniciando câmera...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Rodapé */}
+        <div className="flex gap-3 p-4 bg-background/90 border-t border-border/40">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="flex-1">
+            <X className="w-3.5 h-3.5 mr-1.5" /> Cancelar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={capture}
+            disabled={!ready}
+            className={`flex-1 transition-all ${ready ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+          >
+            <ScanFace className="w-3.5 h-3.5 mr-1.5" />
+            {ready ? "Capturar Foto" : "Aguardando câmera..."}
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function BiometriaCapturaFace({
   onCapture,
   onClear,
@@ -32,94 +164,7 @@ export default function BiometriaCapturaFace({
   const [captured, setCaptured] = useState(null);
   const [qualidade, setQualidade] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [streamReady, setStreamReady] = useState(false);
-
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-
-  // Limpar câmera ao desmontar
-  useEffect(() => {
-    return () => stopStream();
-  }, []);
-
-  const stopStream = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-    setStreamReady(false);
-  };
-
-  // Quando o modal de câmera abre, iniciar stream
-  useEffect(() => {
-    if (!cameraOpen) return;
-    let cancelled = false;
-
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-    }).then(stream => {
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
-      }
-      setStreamReady(true);
-    }).catch(() => {
-      if (!cancelled) {
-        toast.error("Câmera não disponível. Use o upload de foto.");
-        setCameraOpen(false);
-      }
-    });
-
-    return () => { cancelled = true; };
-  }, [cameraOpen]);
-
-  // Atribuir stream quando o elemento video montar (via ref callback)
-  const setVideoRef = (el) => {
-    videoRef.current = el;
-    if (el && streamRef.current) {
-      el.srcObject = streamRef.current;
-      el.play().catch(() => {});
-    }
-  };
-
-  const openCamera = () => {
-    setStreamReady(false);
-    setCameraOpen(true);
-  };
-
-  const closeCamera = () => {
-    stopStream();
-    setCameraOpen(false);
-  };
-
-  const captureFromCamera = () => {
-    const video = videoRef.current;
-    if (!video || !streamReady) {
-      toast.error("Câmera ainda não está pronta.");
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    closeCamera();
-
-    canvas.toBlob(blob => {
-      if (!blob) { toast.error("Falha ao capturar. Tente novamente."); return; }
-      processImage(blob, URL.createObjectURL(blob));
-    }, "image/jpeg", 0.92);
-  };
-
-  const handleUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processImage(file, URL.createObjectURL(file));
-    // Reset input para permitir re-upload do mesmo arquivo
-    e.target.value = "";
-  };
 
   const processImage = async (blob, localUrl) => {
     setCaptured({ blob, url: localUrl });
@@ -158,12 +203,24 @@ export default function BiometriaCapturaFace({
         }
       });
       setQualidade({ ...result, file_url });
-    } catch (err) {
+    } catch {
       toast.error("Erro ao analisar imagem. Tente novamente.");
       reset();
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleCameraCapture = (blob, localUrl) => {
+    setCameraOpen(false);
+    processImage(blob, localUrl);
+  };
+
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processImage(file, URL.createObjectURL(file));
+    e.target.value = "";
   };
 
   const confirmar = () => {
@@ -177,7 +234,6 @@ export default function BiometriaCapturaFace({
   };
 
   const reset = () => {
-    stopStream();
     setCameraOpen(false);
     setCaptured(null);
     setQualidade(null);
@@ -201,7 +257,7 @@ export default function BiometriaCapturaFace({
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={openCamera}
+            onClick={() => setCameraOpen(true)}
             className="flex flex-col items-center gap-2.5 p-5 rounded-xl border-2 border-dashed border-border hover:border-primary/60 hover:bg-primary/5 transition-colors group"
           >
             <Camera className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -221,74 +277,13 @@ export default function BiometriaCapturaFace({
         </div>
       )}
 
-      {/* MODAL CÂMERA */}
-      {cameraOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
-          <div className="relative w-full max-w-xl rounded-2xl overflow-hidden bg-black border border-border/40 shadow-2xl">
-            <div className="flex items-center justify-between px-4 py-3 bg-background/90 border-b border-border/40">
-              <div className="flex items-center gap-2">
-                <ScanFace className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold">Captura Biométrica</span>
-                {captureLabel && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                    {captureLabel}
-                  </span>
-                )}
-              </div>
-              <button type="button" onClick={closeCamera} className="p-1.5 rounded-lg hover:bg-muted">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
-              <video
-                ref={setVideoRef}
-                className="w-full h-full object-cover"
-                muted
-                playsInline
-                autoPlay
-              />
-              {/* Guia oval */}
-              <div className="absolute inset-0 pointer-events-none">
-                <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
-                  <defs>
-                    <mask id="oval-mask">
-                      <rect width="640" height="480" fill="white" />
-                      <ellipse cx="320" cy="230" rx="150" ry="190" fill="black" />
-                    </mask>
-                  </defs>
-                  <rect width="640" height="480" fill="rgba(0,0,0,0.5)" mask="url(#oval-mask)" />
-                  <ellipse cx="320" cy="230" rx="150" ry="190" fill="none"
-                    stroke={streamReady ? "#22c55e" : "#38bdf8"}
-                    strokeWidth="3"
-                  />
-                </svg>
-              </div>
-              {!streamReady && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-white animate-spin" />
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 p-4 bg-background/90 border-t border-border/40">
-              <Button type="button" variant="outline" size="sm" onClick={closeCamera} className="flex-1">
-                <X className="w-3.5 h-3.5 mr-1.5" /> Cancelar
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={captureFromCamera}
-                disabled={!streamReady}
-                className="flex-1"
-              >
-                <ScanFace className="w-3.5 h-3.5 mr-1.5" />
-                {streamReady ? "Capturar Foto" : "Aguardando câmera..."}
-              </Button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* MODAL CÂMERA — componente separado para evitar race condition */}
+      {cameraOpen && (
+        <CameraModal
+          captureLabel={captureLabel}
+          onCapture={handleCameraCapture}
+          onClose={() => setCameraOpen(false)}
+        />
       )}
 
       {/* ETAPA 1: REVISÃO */}
