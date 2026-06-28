@@ -257,7 +257,7 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
         </div>
         <div className="rounded-xl border border-border/60 bg-card p-3 text-center">
           <div className="text-xl font-bold text-success">
-            {responsaveis.filter(r => r.face_embedding?.length > 0).length}
+            {responsaveis.filter(r => r.foto_url || r.face_embedding?.length > 0).length}
           </div>
           <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
             <UserCheck className="w-3 h-3" /> Com Biometria
@@ -290,12 +290,9 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
           <BiometriaCapturaFace
             onCapture={setBiometria}
             onClear={() => setBiometria(null)}
-            alunoId={null}
-            label="Foto Biométrica do Responsável *"
+            label="Foto Biométrica do Responsável"
+            initialValue={biometria}
           />
-          {editingId && !biometria && (
-            <p className="text-xs text-muted-foreground -mt-2">Deixe em branco para manter a foto atual.</p>
-          )}
 
           {/* Dados pessoais */}
           <div>
@@ -422,7 +419,7 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
         <div className="space-y-2">
           {lista.map(r => {
             const isExpanded = expandedId === r.id;
-            const temBio = (r.face_embedding?.length || 0) > 0;
+            const temBio = !!r.foto_url || (r.face_embedding?.length || 0) > 0;
             return (
               <div key={r.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
                 <div className="flex items-center gap-3 p-4">

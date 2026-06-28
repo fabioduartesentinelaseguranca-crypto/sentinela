@@ -2,38 +2,27 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Camera, Upload, RotateCcw, CheckCircle2, Loader2,
-  AlertTriangle, ScanFace, ShieldCheck, X, Glasses
+  Camera, Upload, RotateCcw, Loader2,
+  ScanFace, ShieldCheck, X, Glasses
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-// Componente isolado do modal de câmera — monta/desmonta limpo sem race condition
+// Modal de câmera isolado — monta/desmonta limpo
 function CameraModal({ captureLabel, onCapture, onClose }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [ready, setReady] = useState(false);
 
-  // Conecta stream ao video e marca como pronto
   const attachStream = (video, stream) => {
     video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      video.play().catch(() => {});
-      setReady(true);
-    };
-    // Fallback: se onloadedmetadata não disparar (já tinha metadados)
-    if (video.readyState >= 1) {
-      video.play().catch(() => {});
-      setReady(true);
-    }
+    video.onloadedmetadata = () => { video.play().catch(() => {}); setReady(true); };
+    if (video.readyState >= 1) { video.play().catch(() => {}); setReady(true); }
   };
 
-  // Ref callback: chamado quando o <video> monta no DOM
   const videoCallbackRef = useCallback((el) => {
     videoRef.current = el;
-    if (el && streamRef.current) {
-      attachStream(el, streamRef.current);
-    }
+    if (el && streamRef.current) attachStream(el, streamRef.current);
   }, []);
 
   useEffect(() => {
@@ -43,15 +32,9 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
     }).then(stream => {
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
       streamRef.current = stream;
-      // Se o video já montou, conectar agora; caso contrário o videoCallbackRef vai conectar
-      if (videoRef.current) {
-        attachStream(videoRef.current, stream);
-      }
+      if (videoRef.current) attachStream(videoRef.current, stream);
     }).catch(() => {
-      if (!cancelled) {
-        toast.error("Câmera não disponível. Use o upload de foto.");
-        onClose();
-      }
+      if (!cancelled) { toast.error("Câmera não disponível. Use o upload de foto."); onClose(); }
     });
     return () => {
       cancelled = true;
@@ -80,9 +63,7 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
           <div className="flex items-center gap-2">
             <ScanFace className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold">Captura Biométrica</span>
-            {captureLabel && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary">{captureLabel}</span>
-            )}
+            {captureLabel && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary">{captureLabel}</span>}
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted">
             <X className="w-4 h-4 text-muted-foreground" />
@@ -91,8 +72,6 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
 
         <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
           <video ref={videoCallbackRef} className="w-full h-full object-cover" muted playsInline autoPlay />
-
-          {/* Máscara oval */}
           <div className="absolute inset-0 pointer-events-none">
             <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
               <defs>
@@ -106,7 +85,6 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
                 stroke={ready ? "#22c55e" : "#38bdf8"} strokeWidth="3" />
             </svg>
           </div>
-
           {!ready && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
@@ -120,10 +98,7 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
             <X className="w-3.5 h-3.5 mr-1.5" /> Cancelar
           </Button>
           <Button
-            type="button"
-            size="sm"
-            onClick={capture}
-            disabled={!ready}
+            type="button" size="sm" onClick={capture} disabled={!ready}
             className={`flex-1 ${ready ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
           >
             <ScanFace className="w-3.5 h-3.5 mr-1.5" />
@@ -136,89 +111,79 @@ function CameraModal({ captureLabel, onCapture, onClose }) {
   );
 }
 
+// initialValue: { fotoUrl, embedding, qualidade } — para pré-popular ao editar
 export default function BiometriaCapturaFace({
   onCapture,
   onClear,
   label = "Foto Biométrica",
   captureLabel = null,
+  initialValue = null,
 }) {
-  const [phase, setPhase] = useState("idle"); // idle | camera | preview | uploading | done
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [blobRef, setBlobRef] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [qualidade, setQualidade] = useState(null); // análise opcional em background
+  // Se já tem foto (edição), começa em "done"; senão "idle"
+  const [phase, setPhase] = useState(initialValue?.fotoUrl ? "done" : "idle");
+  const [previewUrl, setPreviewUrl] = useState(initialValue?.fotoUrl || null);
+  const [qualidade, setQualidade] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const blobRef = useRef(null);
+
+  // Quando blob é definido, faz upload + análise
+  const processBlob = async (blob) => {
+    blobRef.current = blob;
+    const localUrl = URL.createObjectURL(blob);
+    setPreviewUrl(localUrl);
+    setPhase("uploading");
+
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
+
+      // Notifica o pai imediatamente com a foto permanente
+      onCapture({ fotoUrl: file_url, embedding: [], qualidade: 75 });
+      setPreviewUrl(file_url); // troca blob URL pela URL permanente
+      setPhase("analyzing");
+
+      // Embedding em background
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Analise esta foto para cadastro biométrico facial.
+Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 números -1 a 1).`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            face_detected: { type: "boolean" },
+            score_geral: { type: "number" },
+            embedding: { type: "array", items: { type: "number" } },
+          }
+        }
+      }).then(result => {
+        setQualidade(result);
+        onCapture({ fotoUrl: file_url, embedding: result.embedding || [], qualidade: result.score_geral || 75 });
+        setPhase("done");
+      }).catch(() => setPhase("done"));
+
+    } catch {
+      toast.error("Erro ao fazer upload. Tente novamente.");
+      setPhase("idle");
+      setPreviewUrl(null);
+    }
+  };
 
   const handleCameraCapture = (blob) => {
-    const url = URL.createObjectURL(blob);
-    setBlobRef(blob);
-    setPreviewUrl(url);
-    setPhase("preview");
+    setShowCamera(false);
+    processBlob(blob);
   };
 
   const handleUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBlobRef(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setPhase("preview");
+    processBlob(file);
     e.target.value = "";
   };
-
-  // Quando entra em preview, faz upload imediato e chama onCapture assim que tiver a URL
-  useEffect(() => {
-    if (phase !== "preview" || !blobRef) return;
-    let cancelled = false;
-
-    const doUpload = async () => {
-      try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: blobRef });
-        if (cancelled) return;
-        // Chama onCapture imediatamente após upload — embedding vazio, será atualizado depois
-        onCapture({ fotoUrl: file_url, embedding: [], qualidade: 75 });
-        setPhase("analyzing");
-
-        // Análise de embedding em background
-        base44.integrations.Core.InvokeLLM({
-          prompt: `Analise esta foto para cadastro biométrico facial. Retorne:
-face_detected: há rosto frontal visível?
-score_geral: qualidade 0-100
-embedding: array de 128 números entre -1 e 1 representando o vetor facial`,
-          file_urls: [file_url],
-          response_json_schema: {
-            type: "object",
-            properties: {
-              face_detected: { type: "boolean" },
-              score_geral: { type: "number" },
-              embedding: { type: "array", items: { type: "number" } },
-            }
-          }
-        }).then(result => {
-          if (cancelled) return;
-          setQualidade(result);
-          // Atualiza onCapture com embedding real
-          onCapture({ fotoUrl: file_url, embedding: result.embedding || [], qualidade: result.score_geral || 75 });
-          setPhase("done");
-        }).catch(() => {
-          if (!cancelled) setPhase("done");
-        });
-      } catch {
-        if (!cancelled) {
-          toast.error("Erro ao fazer upload. Tente novamente.");
-          reset();
-        }
-      }
-    };
-
-    doUpload();
-    return () => { cancelled = true; };
-  }, [phase, blobRef]);
 
   const reset = () => {
     setPhase("idle");
     setPreviewUrl(null);
-    setBlobRef(null);
-    setUploading(false);
     setQualidade(null);
+    blobRef.current = null;
     onClear?.();
   };
 
@@ -233,12 +198,12 @@ embedding: array de 128 números entre -1 e 1 representando o vetor facial`,
         )}
       </div>
 
-      {/* IDLE — escolha câmera ou upload */}
+      {/* IDLE */}
       {phase === "idle" && (
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setPhase("camera")}
+            onClick={() => setShowCamera(true)}
             className="flex flex-col items-center gap-2.5 p-5 rounded-xl border-2 border-dashed border-border hover:border-primary/60 hover:bg-primary/5 transition-colors group"
           >
             <Camera className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -258,43 +223,39 @@ embedding: array de 128 números entre -1 e 1 representando o vetor facial`,
         </div>
       )}
 
-      {/* MODAL CÂMERA */}
-      {phase === "camera" && (
+      {/* MODAL CÂMERA — sempre via portal, não bloqueia o form */}
+      {showCamera && (
         <CameraModal
           captureLabel={captureLabel}
           onCapture={handleCameraCapture}
-          onClose={() => setPhase("idle")}
+          onClose={() => setShowCamera(false)}
         />
       )}
 
-      {/* PREVIEW — foto capturada aguardando upload */}
-      {(phase === "preview" || phase === "uploading") && previewUrl && (
+      {/* UPLOADING */}
+      {phase === "uploading" && previewUrl && (
         <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-          <div className="flex items-center justify-center bg-black/40 p-4 min-h-[160px]">
-            <img src={previewUrl} alt="Foto capturada"
-              className="rounded-xl border border-border/60 object-cover max-h-56 w-auto max-w-full"
-            />
+          <div className="flex items-center justify-center bg-black/40 p-4 min-h-[140px]">
+            <img src={previewUrl} alt="Foto capturada" className="rounded-xl max-h-48 w-auto max-w-full object-cover" />
           </div>
           <div className="flex items-center gap-3 px-4 py-3 border-t border-border/60">
             <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
-            <span className="text-sm text-muted-foreground">Fazendo upload da foto...</span>
+            <span className="text-sm text-muted-foreground">Enviando foto...</span>
           </div>
         </div>
       )}
 
-      {/* ANALYZING — upload concluído, analisando embedding */}
+      {/* ANALYZING */}
       {phase === "analyzing" && previewUrl && (
         <div className="rounded-xl border border-primary/30 bg-card overflow-hidden">
-          <div className="flex items-center justify-center bg-black/40 p-4 min-h-[160px]">
-            <img src={previewUrl} alt="Foto capturada"
-              className="rounded-xl border border-border/60 object-cover max-h-56 w-auto max-w-full"
-            />
+          <div className="flex items-center justify-center bg-black/40 p-4 min-h-[140px]">
+            <img src={previewUrl} alt="Foto capturada" className="rounded-xl max-h-48 w-auto max-w-full object-cover" />
           </div>
           <div className="flex items-center gap-3 px-4 py-3 border-t border-primary/20 bg-primary/5">
             <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
             <div className="flex-1">
               <div className="text-sm font-medium text-primary">Foto salva! Gerando vetor biométrico...</div>
-              <div className="text-xs text-muted-foreground">O responsável já pode ser cadastrado enquanto isso.</div>
+              <div className="text-xs text-muted-foreground">Pode cadastrar o responsável agora.</div>
             </div>
             <Button type="button" variant="ghost" size="sm" onClick={reset}>
               <RotateCcw className="w-3.5 h-3.5" />
@@ -303,7 +264,7 @@ embedding: array de 128 números entre -1 e 1 representando o vetor facial`,
         </div>
       )}
 
-      {/* DONE — biometria completa */}
+      {/* DONE */}
       {phase === "done" && previewUrl && (
         <div className="flex items-center gap-3 p-3 rounded-xl border border-success/40 bg-success/5">
           <img src={previewUrl} alt="Biometria"
