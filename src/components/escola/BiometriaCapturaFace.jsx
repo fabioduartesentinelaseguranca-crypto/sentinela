@@ -119,26 +119,22 @@ export default function BiometriaCapturaFace({
   captureLabel = null,
   initialValue = null,
 }) {
-  // Se já tem foto (edição), começa em "done"; senão "idle"
   const [phase, setPhase] = useState(initialValue?.fotoUrl ? "done" : "idle");
   const [previewUrl, setPreviewUrl] = useState(initialValue?.fotoUrl || null);
   const [qualidade, setQualidade] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
-  const blobRef = useRef(null);
 
-  // Quando blob é definido, faz upload + análise
   const processBlob = async (blob) => {
-    blobRef.current = blob;
+    setPhase("uploading");
     const localUrl = URL.createObjectURL(blob);
     setPreviewUrl(localUrl);
-    setPhase("uploading");
 
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
 
       // Notifica o pai imediatamente com a foto permanente
       onCapture({ fotoUrl: file_url, embedding: [], qualidade: 75 });
-      setPreviewUrl(file_url); // troca blob URL pela URL permanente
+      setPreviewUrl(file_url);
       setPhase("analyzing");
 
       // Embedding em background
@@ -183,7 +179,6 @@ Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 núm
     setPhase("idle");
     setPreviewUrl(null);
     setQualidade(null);
-    blobRef.current = null;
     onClear?.();
   };
 
@@ -198,7 +193,16 @@ Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 núm
         )}
       </div>
 
-      {/* IDLE */}
+      {/* Modal de câmera — sempre disponível independente da fase */}
+      {showCamera && (
+        <CameraModal
+          captureLabel={captureLabel}
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
+      {/* IDLE — seleção de câmera ou upload */}
       {phase === "idle" && (
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -221,15 +225,6 @@ Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 núm
             <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </label>
         </div>
-      )}
-
-      {/* MODAL CÂMERA — sempre via portal, não bloqueia o form */}
-      {showCamera && (
-        <CameraModal
-          captureLabel={captureLabel}
-          onCapture={handleCameraCapture}
-          onClose={() => setShowCamera(false)}
-        />
       )}
 
       {/* UPLOADING */}
@@ -264,27 +259,43 @@ Retorne: face_detected (boolean), score_geral (0-100), embedding (array 128 núm
         </div>
       )}
 
-      {/* DONE */}
+      {/* DONE — mostra foto + botões para recapturar */}
       {phase === "done" && previewUrl && (
-        <div className="flex items-center gap-3 p-3 rounded-xl border border-success/40 bg-success/5">
-          <img src={previewUrl} alt="Biometria"
-            className="w-14 h-16 object-cover rounded-lg border border-success/30 flex-shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 text-success font-semibold text-sm">
-              <ShieldCheck className="w-4 h-4" /> Biometria capturada
-              {captureLabel && <span className="text-xs font-normal text-success/80">({captureLabel})</span>}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-success/40 bg-success/5">
+            <img src={previewUrl} alt="Biometria"
+              className="w-14 h-16 object-cover rounded-lg border border-success/30 flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 text-success font-semibold text-sm">
+                <ShieldCheck className="w-4 h-4" /> Biometria capturada
+                {captureLabel && <span className="text-xs font-normal text-success/80">({captureLabel})</span>}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {qualidade
+                  ? <>Score: <strong>{qualidade.score_geral}/100</strong> · {qualidade.face_detected ? "Rosto detectado ✓" : "⚠ Rosto não detectado"}</>
+                  : "Foto salva com sucesso"
+                }
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {qualidade
-                ? <>Score: <strong>{qualidade.score_geral}/100</strong> · {qualidade.face_detected ? "Rosto detectado ✓" : "⚠ Rosto não detectado"}</>
-                : "Foto salva com sucesso"
-              }
-            </div>
+            <Button type="button" variant="ghost" size="sm" onClick={reset} title="Remover foto">
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={reset}>
-            <RotateCcw className="w-3.5 h-3.5" />
-          </Button>
+          {/* Botões para recapturar sem precisar resetar primeiro */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-border/60 hover:border-primary/60 hover:bg-primary/5 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5" /> Nova captura
+            </button>
+            <label className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-border/60 hover:border-primary/60 hover:bg-primary/5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <Upload className="w-3.5 h-3.5" /> Trocar foto
+              <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            </label>
+          </div>
         </div>
       )}
     </div>
