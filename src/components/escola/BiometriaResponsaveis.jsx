@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,12 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [biometria, setBiometria] = useState(null);
+  const [biometria, setBiometriaState] = useState(null);
+  const biometriaRef = useRef(null);
+  const setBiometria = (val) => {
+    biometriaRef.current = val;
+    setBiometriaState(val);
+  };
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [busca, setBusca] = useState("");
@@ -106,14 +111,16 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
     }
     setSaving(true);
 
+    // Ler do ref para garantir o valor mais recente (evita closure stale)
+    const bioAtual = biometriaRef.current;
+
     const matriculasValidas = (form.matriculas_vinculadas || []).filter(Boolean);
     const alunosMatch = alunos.filter(a =>
       a.id_escola_cerca === form.id_escola_cerca && matriculasValidas.includes(a.matricula)
     );
 
-    // Capturar refs antes de qualquer reset
     const escolaId = form.id_escola_cerca;
-    const embeddingCapturado = biometria?.embedding || [];
+    const embeddingCapturado = bioAtual?.embedding || [];
     const nomeResponsavel = form.nome_responsavel;
 
     const data = {
@@ -128,10 +135,10 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
       cadastrado_por_id: user?.id,
       cadastrado_por_nome: user?.full_name,
       ativo: true,
-      ...(biometria ? {
-        foto_url: biometria.fotoUrl,
-        face_embedding: biometria.embedding,
-        score_qualidade: biometria.qualidade,
+      ...(bioAtual?.fotoUrl ? {
+        foto_url: bioAtual.fotoUrl,
+        face_embedding: bioAtual.embedding || [],
+        score_qualidade: bioAtual.qualidade || 75,
       } : {}),
     };
 
@@ -513,7 +520,7 @@ export default function BiometriaResponsaveis({ escolas = [], alunos = [] }) {
                       </div>
                     </div>
 
-                    {temBio && (
+                    {temBio && (r.face_embedding?.length || 0) > 0 && (
                       <div>
                         <div className="text-xs text-muted-foreground mb-1">Embedding Biométrico</div>
                         <div className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-2 py-1 rounded truncate">
