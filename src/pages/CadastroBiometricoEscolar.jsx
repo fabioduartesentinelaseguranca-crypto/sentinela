@@ -43,18 +43,21 @@ export default function CadastroBiometricoEscolar() {
   const [escolaAcesso, setEscolaAcesso] = useState(null);
   const [blacklist, setBlacklist] = useState([]);
   const [ordensAtivas, setOrdensAtivas] = useState([]);
+  const [responsaveis, setResponsaveis] = useState([]);
 
   const load = async () => {
-    const [a, e, bl, os] = await Promise.all([
+    const [a, e, bl, os, resp] = await Promise.all([
       base44.entities.Alunos_Biometria.list("-created_date", 100),
       base44.entities.Cercas_Virtuais_Escolares.filter({ ativo: true }, "-created_date", 50),
       base44.entities.Blacklist_Biometrica.filter({ ativo: true }, "-created_date", 100),
       base44.entities.Ordens_Servico_Visitantes.filter({ status: "ativo" }, "-created_date", 50),
+      base44.entities.Biometria_Responsaveis.filter({ ativo: true }, "-created_date", 200),
     ]);
     setAlunos(a);
     setEscolas(e);
     setBlacklist(bl);
     setOrdensAtivas(os);
+    setResponsaveis(resp);
     if (e.length > 0 && !escolaAcesso) setEscolaAcesso(e[0]);
     setLoading(false);
   };
@@ -493,6 +496,7 @@ export default function CadastroBiometricoEscolar() {
           <MotorSegurancaEscolar
             escola={escolaAcesso}
             alunosMatriculados={alunos.filter(a => a.id_escola_cerca === escolaAcesso?.id)}
+            responsaveis={responsaveis.filter(r => r.id_escola_cerca === escolaAcesso?.id && r.face_embedding?.length > 0)}
             blacklist={blacklist}
             ordensAtivas={ordensAtivas}
           />

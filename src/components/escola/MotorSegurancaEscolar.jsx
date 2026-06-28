@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import {
   ShieldAlert, ScanFace, Loader2, CheckCircle2, Lock, Clock,
-  AlertTriangle, Video, VideoOff, X, Maximize2
+  AlertTriangle, Video, VideoOff, X, Maximize2, UserCheck, Users, ShieldCheck, ShieldX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { toast } from "sonner";
  * Props:
  *  - escola: { id, nome_escola, horario_inicio, horario_fim }
  *  - alunosMatriculados: array de { face_embedding, ... }
+ *  - responsaveis: array de { face_embedding, nome_responsavel, foto_url, alunos_nomes, parentesco, ... }
  *  - blacklist: array de { face_embedding, nivel_alerta, descricao_risco, id }
  *  - ordensAtivas: array de Ordens_Servico_Visitantes
  */
@@ -58,6 +59,7 @@ const LOITERING_THRESHOLD_MS = 45000; // 45 segundos
 export default function MotorSegurancaEscolar({
   escola,
   alunosMatriculados = [],
+  responsaveis = [],
   blacklist = [],
   ordensAtivas = [],
 }) {
@@ -71,6 +73,8 @@ export default function MotorSegurancaEscolar({
   const [alertasGerados, setAlertasGerados] = useState(0);
   const [bloqueioAtivo, setBloqueioAtivo] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
+  // Resultados de reconhecimento em tempo real
+  const [matchesDetectados, setMatchesDetectados] = useState([]);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -222,12 +226,48 @@ Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da f
       }
 
       if (!resultado.face_detected || resultado.quality_score < 30) {
-        // Sem rosto: reset loitering
+        // Sem rosto: reset loitering e matches
         setLoiteringStart(null);
+        setMatchesDetectados([]);
         return;
       }
 
       const embedding = resultado.embedding || [];
+
+      // ── RECONHECIMENTO: ALUNOS E RESPONSÁVEIS ───────────────
+      const novosMatches = [];
+
+      for (const aluno of alunosMatriculados) {
+        if (!aluno.face_embedding?.length) continue;
+        const sim = cosineSimilarity(embedding, aluno.face_embedding);
+        if (sim >= 65) {
+          novosMatches.push({ tipo: "aluno", nome: aluno.nome, matricula: aluno.matricula, sim, foto: aluno.foto_url });
+          // Também verificar com óculos se existir
+          if (aluno.face_embedding_oculos?.length) {
+            const simOc = cosineSimilarity(embedding, aluno.face_embedding_oculos);
+            if (simOc > sim) novosMatches[novosMatches.length - 1].sim = simOc;
+          }
+        }
+      }
+
+      for (const resp of responsaveis) {
+        if (!resp.face_embedding?.length) continue;
+        const sim = cosineSimilarity(embedding, resp.face_embedding);
+        if (sim >= 65) {
+          novosMatches.push({
+            tipo: "responsavel",
+            nome: resp.nome_responsavel,
+            parentesco: resp.parentesco,
+            alunosNomes: resp.alunos_nomes || [],
+            sim,
+            foto: resp.foto_url,
+          });
+        }
+      }
+
+      // Ordenar por similaridade e manter os melhores 5
+      novosMatches.sort((a, b) => b.sim - a.sim);
+      setMatchesDetectados(novosMatches.slice(0, 5));
 
       // ── REGRA 2: BLACKLIST MATCH ────────────────────────────
       for (const bl of blacklist) {
@@ -311,7 +351,7 @@ Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da f
       analyzingRef.current = false;
       setAnalyzing(false);
     }
-  }, [escola, blacklist, alunosMatriculados, ordensAtivas, loiteringStart, dispararAlerta]);
+  }, [escola, blacklist, alunosMatriculados, responsaveis, ordensAtivas, loiteringStart, dispararAlerta]);
 
   const iniciarLoop = () => {
     intervalRef.current = setInterval(() => {
@@ -461,6 +501,65 @@ Seja criterioso com anti-spoofing: analise textura, reflexo de tela, bordas da f
               {/* Bloqueio overlay */}
               {bloqueioAtivo && (
                 <div className="absolute inset-0 border-4 border-red-500 animate-pulse pointer-events-none rounded-b-2xl" />
+              )}
+            </div>
+
+            {/* Painel de Reconhecimento em Tempo Real */}
+            <div className="bg-card border-t border-border/60 px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <ScanFace className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reconhecimento Facial em Tempo Real</span>
+                {analyzing && <Loader2 className="w-3 h-3 animate-spin text-primary ml-auto" />}
+              </div>
+
+              {matchesDetectados.length === 0 ? (
+                <div className="text-xs text-muted-foreground italic py-1">
+                  {ativo ? "Aguardando rosto na câmera..." : "Motor parado."}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {matchesDetectados.map((m, i) => (
+                    <div key={i} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 ${
+                      m.sim >= 85
+                        ? "bg-success/10 border border-success/30"
+                        : m.sim >= 75
+                        ? "bg-primary/10 border border-primary/20"
+                        : "bg-muted/60 border border-border/40"
+                    }`}>
+                      {m.foto ? (
+                        <img src={m.foto} alt={m.nome} className="w-8 h-9 object-cover rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-8 h-9 rounded bg-muted flex items-center justify-center flex-shrink-0 text-sm font-bold text-muted-foreground">
+                          {m.nome?.[0]}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {m.tipo === "aluno"
+                            ? <Users className="w-3 h-3 text-primary flex-shrink-0" />
+                            : <UserCheck className="w-3 h-3 text-success flex-shrink-0" />
+                          }
+                          <span className="text-xs font-semibold truncate">{m.nome}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {m.tipo === "aluno"
+                            ? `Aluno · Mat. ${m.matricula || "—"}`
+                            : `${m.parentesco || "Responsável"} de: ${m.alunosNomes?.join(", ") || "—"}`
+                          }
+                        </div>
+                      </div>
+                      <div className={`text-xs font-bold flex-shrink-0 ${
+                        m.sim >= 85 ? "text-success" : m.sim >= 75 ? "text-primary" : "text-muted-foreground"
+                      }`}>
+                        {m.sim}%
+                      </div>
+                      {m.sim >= 85
+                        ? <ShieldCheck className="w-4 h-4 text-success flex-shrink-0" />
+                        : <ShieldX className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      }
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
