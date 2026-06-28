@@ -164,27 +164,25 @@ export default function BiometriaCapturaFace({
     e.target.value = "";
   };
 
-  // Quando entra em preview, faz upload+análise em background
+  // Quando entra em preview, faz upload imediato e chama onCapture assim que tiver a URL
   useEffect(() => {
     if (phase !== "preview" || !blobRef) return;
     let cancelled = false;
 
-    const analyzeBackground = async () => {
-      setUploading(true);
+    const doUpload = async () => {
       try {
         const { file_url } = await base44.integrations.Core.UploadFile({ file: blobRef });
         if (cancelled) return;
+        // Chama onCapture imediatamente após upload — embedding vazio, será atualizado depois
+        onCapture({ fotoUrl: file_url, embedding: [], qualidade: 75 });
+        setPhase("analyzing");
 
-        // Confirmar imediatamente com o file_url — embedding gerado em paralelo
-        const baseCapture = { fotoUrl: file_url, embedding: [], qualidade: 75 };
-        
-        // Análise de qualidade + embedding em background
+        // Análise de embedding em background
         base44.integrations.Core.InvokeLLM({
-          prompt: `Analise esta foto para cadastro biométrico facial. Retorne embedding facial e scores de qualidade.
+          prompt: `Analise esta foto para cadastro biométrico facial. Retorne:
 face_detected: há rosto frontal visível?
 score_geral: qualidade 0-100
-embedding: array de 128 números entre -1 e 1 representando o vetor facial
-aprovada: score_geral >= 55 E face_detected`,
+embedding: array de 128 números entre -1 e 1 representando o vetor facial`,
           file_urls: [file_url],
           response_json_schema: {
             type: "object",
@@ -192,32 +190,17 @@ aprovada: score_geral >= 55 E face_detected`,
               face_detected: { type: "boolean" },
               score_geral: { type: "number" },
               embedding: { type: "array", items: { type: "number" } },
-              aprovada: { type: "boolean" }
             }
           }
         }).then(result => {
           if (cancelled) return;
-          const finalCapture = {
-            fotoUrl: file_url,
-            embedding: result.embedding || [],
-            qualidade: result.score_geral || 75,
-          };
           setQualidade(result);
-          onCapture(finalCapture);
+          // Atualiza onCapture com embedding real
+          onCapture({ fotoUrl: file_url, embedding: result.embedding || [], qualidade: result.score_geral || 75 });
           setPhase("done");
         }).catch(() => {
-          // Se análise falhar, confirma sem embedding
-          if (!cancelled) {
-            onCapture(baseCapture);
-            setPhase("done");
-          }
+          if (!cancelled) setPhase("done");
         });
-
-        // Mostra "done" imediatamente com upload concluído
-        if (!cancelled) {
-          setUploading(false);
-          setPhase("analyzing");
-        }
       } catch {
         if (!cancelled) {
           toast.error("Erro ao fazer upload. Tente novamente.");
@@ -226,7 +209,7 @@ aprovada: score_geral >= 55 E face_detected`,
       }
     };
 
-    analyzeBackground();
+    doUpload();
     return () => { cancelled = true; };
   }, [phase, blobRef]);
 
