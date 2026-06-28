@@ -16,6 +16,7 @@ import BlacklistManager from "@/components/escola/BlacklistManager";
 import OrdemServicoVisitante from "@/components/escola/OrdemServicoVisitante";
 import AlertasIntrusaoPanel from "@/components/escola/AlertasIntrusaoPanel";
 import MotorSegurancaEscolar from "@/components/escola/MotorSegurancaEscolar";
+import BiometriaResponsaveis from "@/components/escola/BiometriaResponsaveis";
 
 const TURNO_LABELS = { manha: "Manhã", tarde: "Tarde", noite: "Noite", integral: "Integral" };
 
@@ -213,6 +214,7 @@ export default function CadastroBiometricoEscolar() {
           { id: "motor", label: "Motor de Segurança", icon: ScanFace },
           { id: "alertas", label: "Alertas de Intrusão", icon: Radio },
           { id: "blacklist", label: "Blacklist", icon: ShieldAlert },
+          { id: "responsaveis", label: "Responsáveis", icon: UserCheck },
           { id: "visitantes", label: "Visitantes / OS", icon: ClipboardList },
         ].map(t => {
           const Icon = t.icon;
@@ -502,6 +504,11 @@ export default function CadastroBiometricoEscolar() {
 
       {/* ── TAB: BLACKLIST ── */}
       {activeTab === "blacklist" && <BlacklistManager />}
+
+      {/* ── TAB: RESPONSÁVEIS ── */}
+      {activeTab === "responsaveis" && (
+        <BiometriaResponsaveis escolas={escolas} alunos={alunos} />
+      )}
 
       {/* ── TAB: VISITANTES ── */}
       {activeTab === "visitantes" && <OrdemServicoVisitante escolas={escolas} />}
