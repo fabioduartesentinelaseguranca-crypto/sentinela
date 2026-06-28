@@ -9,56 +9,52 @@ function CameraModal({ onCapture, onClose }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [ready, setReady] = useState(false);
-  const mountedRef = useRef(true);
 
   useEffect(() => {
-    mountedRef.current = true;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-      .then(stream => {
-        if (!mountedRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+    let cancelled = false;
+    let stream = null;
+
+    const start = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-          setReady(true);
-        }
-      })
-      .catch(() => {
-        if (mountedRef.current) {
-          toast.error("Câmera não disponível.");
+        // Pequeno timeout para garantir que o portal já montou o <video> no DOM
+        setTimeout(() => {
+          if (!cancelled && videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        }, 100);
+      } catch {
+        if (!cancelled) {
+          toast.error("Câmera não disponível. Verifique as permissões do navegador.");
           onClose();
         }
-      });
+      }
+    };
+
+    start();
     return () => {
-      mountedRef.current = false;
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      cancelled = true;
+      stream?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     };
   }, []);
 
-  // Quando o video element monta, tenta anexar stream se já disponível
-  const handleVideoRef = (el) => {
-    videoRef.current = el;
-    if (el && streamRef.current && !el.srcObject) {
-      el.srcObject = streamRef.current;
-      el.play().catch(() => {});
-      setReady(true);
-    }
-  };
-
   const capture = () => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) {
-      toast.error("Vídeo não está pronto. Aguarde.");
+    if (!video || video.readyState < 2) {
+      toast.error("Câmera ainda não está pronta.");
       return;
     }
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     canvas.getContext("2d").drawImage(video, 0, 0);
     canvas.toBlob(blob => {
-      if (!blob) { toast.error("Falha ao capturar."); return; }
+      if (!blob) { toast.error("Falha ao capturar imagem."); return; }
       onCapture(blob);
-    }, "image/jpeg", 0.9);
+    }, "image/jpeg", 0.92);
   };
 
   return createPortal(
@@ -76,12 +72,13 @@ function CameraModal({ onCapture, onClose }) {
 
         <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
           <video
-            ref={handleVideoRef}
+            ref={videoRef}
             className="w-full h-full object-cover"
             muted
             playsInline
             autoPlay
             onLoadedMetadata={() => setReady(true)}
+            onCanPlay={() => setReady(true)}
           />
           {!ready && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black">
@@ -105,7 +102,7 @@ function CameraModal({ onCapture, onClose }) {
             className="flex-1 bg-green-600 hover:bg-green-700 text-white"
           >
             <ScanFace className="w-3.5 h-3.5 mr-1" />
-            {ready ? "Capturar Foto" : "Aguardando..."}
+            {ready ? "Capturar Foto" : "Aguardando câmera..."}
           </Button>
         </div>
       </div>
