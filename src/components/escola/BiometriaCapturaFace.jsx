@@ -146,31 +146,30 @@ export default function BiometriaCapturaFace({
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
 
   const startCamera = async () => {
-    setCameraModalOpen(true);
-    // pequeno delay para o modal montar antes de acessar o ref do video
-    setTimeout(async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
-          }
-        });
-        streamRef.current = stream;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+        }
+      });
+      streamRef.current = stream;
+      livenessRef.current = 0;
+      setLivenessChecks(0);
+      setStep(STEP.CAPTURA);
+      setCameraModalOpen(true);
+      // Atribuir stream ao video depois do modal montar
+      setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+          videoRef.current.play().catch(() => {});
         }
-        livenessRef.current = 0;
-        setLivenessChecks(0);
-        setStep(STEP.CAPTURA);
         startLiveness();
-      } catch {
-        setCameraModalOpen(false);
-        toast.error("Câmera não disponível. Use o upload de foto.");
-      }
-    }, 100);
+      }, 80);
+    } catch {
+      toast.error("Câmera não disponível. Use o upload de foto.");
+    }
   };
 
   const closeCameraModal = () => {
@@ -211,29 +210,28 @@ export default function BiometriaCapturaFace({
 
   const captureFromCamera = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || video.readyState < 2) {
+      toast.error("Vídeo não está pronto. Aguarde um momento.");
+      return;
+    }
 
-    // Usar canvas dedicado para captura (não o canvas do liveness)
     const captureCanvas = document.createElement("canvas");
-    const vw = video.videoWidth || 1280;
-    const vh = video.videoHeight || 720;
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
     captureCanvas.width = vw;
     captureCanvas.height = vh;
-    captureCanvas.getContext("2d").drawImage(video, 0, 0, vw, vh);
+    const ctx = captureCanvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, vw, vh);
 
-    // Aplicar correção de contraste/brilho
     applyImageEnhancement(captureCanvas);
 
-    // Calcular scores locais
-    const blurScore = computeBlurScore(captureCanvas);
-    const lightScore = computeLightingScore(captureCanvas);
-    setLocalScores({ blur: blurScore, light: lightScore });
+    // Fechar modal e parar câmera ANTES de processar
+    stopCamera();
+    setCameraModalOpen(false);
 
     captureCanvas.toBlob(blob => {
       if (!blob) { toast.error("Falha ao capturar imagem. Tente novamente."); return; }
       const url = URL.createObjectURL(blob);
-      stopCamera();
-      setCameraModalOpen(false);
       processImage(blob, url);
     }, "image/jpeg", 0.95);
   };
@@ -465,11 +463,11 @@ Seja rigoroso: fotos sem rosto claro, muito borradas, ou com óculos escuros dev
               <Button
                 size="sm"
                 onClick={captureFromCamera}
-                disabled={livenessChecks < 2}
+                disabled={livenessChecks < 1}
                 className={`flex-1 ${livenessChecks >= 3 ? "bg-success hover:bg-success/90" : "bg-primary hover:bg-primary/90"}`}
               >
                 <ScanFace className="w-3.5 h-3.5 mr-1.5" />
-                {livenessChecks >= 3 ? "Capturar Agora" : "Aguardando liveness..."}
+                {livenessChecks >= 3 ? "Capturar Agora" : livenessChecks >= 1 ? "Capturar" : "Aguardando movimento..."}
               </Button>
             </div>
           </div>

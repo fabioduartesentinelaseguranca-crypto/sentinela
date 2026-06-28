@@ -132,6 +132,10 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
       } : {}),
     };
 
+    // Capturar antes do reset de estado (closure)
+    const escolaId = form.id_escola_cerca;
+    const embeddingCapturado = biometria?.embedding || [];
+
     try {
       let savedId = editingId;
       if (editingId) {
@@ -147,12 +151,12 @@ export default function BiometriaResponsaveis({ escolas, alunos }) {
       setForm(EMPTY_FORM);
       setBiometria(null);
       await load();
-      // Rodar checklist automático após salvar
+      // Rodar checklist automático após salvar (usa variáveis capturadas antes do reset)
       if (savedId) {
-        runChecklist(savedId, matriculasValidas, form.id_escola_cerca, biometria?.embedding || []);
+        runChecklist(savedId, matriculasValidas, escolaId, embeddingCapturado);
       }
-    } catch {
-      toast.error("Erro ao salvar. Tente novamente.");
+    } catch (err) {
+      toast.error("Erro ao salvar: " + (err?.message || "Tente novamente."));
     }
     setSaving(false);
   };
