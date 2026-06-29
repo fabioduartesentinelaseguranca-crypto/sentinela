@@ -17,6 +17,7 @@ import OrdemServicoVisitante from "@/components/escola/OrdemServicoVisitante";
 import AlertasIntrusaoPanel from "@/components/escola/AlertasIntrusaoPanel";
 import MotorSegurancaEscolar from "@/components/escola/MotorSegurancaEscolar";
 import BiometriaResponsaveis from "@/components/escola/BiometriaResponsaveis";
+import CameraPortaoEntradaSaida from "@/components/escola/CameraPortaoEntradaSaida";
 
 const TURNO_LABELS = { manha: "Manhã", tarde: "Tarde", noite: "Noite", integral: "Integral" };
 
@@ -540,13 +541,29 @@ export default function CadastroBiometricoEscolar() {
                 </Select>
               </div>
               {escolaAcesso && (
-                <div className="rounded-2xl border border-border/60 bg-card p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <School className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">{escolaAcesso.nome_escola}</span>
-                    <span className="text-xs text-muted-foreground">· {escolaAcesso.horario_inicio}–{escolaAcesso.horario_fim}</span>
+                <div className="space-y-4">
+                  {/* Câmera de Portão — reconhecimento facial automático */}
+                  <div className="rounded-2xl border border-primary/30 bg-card p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <ScanFace className="w-4 h-4 text-primary" />
+                      <span className="font-semibold">Câmera do Portão — Reconhecimento Facial</span>
+                      <span className="text-xs text-muted-foreground">· {escolaAcesso.nome_escola}</span>
+                    </div>
+                    <CameraPortaoEntradaSaida
+                      escola={escolaAcesso}
+                      alunosMatriculados={alunos.filter(a => a.id_escola_cerca === escolaAcesso.id)}
+                    />
                   </div>
-                  <RegistroAcessoManual escolaId={escolaAcesso.id} escolaNome={escolaAcesso.nome_escola} />
+
+                  {/* Registro manual como fallback */}
+                  <div className="rounded-2xl border border-border/60 bg-card p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <School className="w-4 h-4 text-primary" />
+                      <span className="font-semibold">Registro Manual (fallback offline)</span>
+                      <span className="text-xs text-muted-foreground">· {escolaAcesso.horario_inicio}–{escolaAcesso.horario_fim}</span>
+                    </div>
+                    <RegistroAcessoManual escolaId={escolaAcesso.id} escolaNome={escolaAcesso.nome_escola} />
+                  </div>
                 </div>
               )}
             </>
