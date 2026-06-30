@@ -18,6 +18,7 @@ import AlertasIntrusaoPanel from "@/components/escola/AlertasIntrusaoPanel";
 import MotorSegurancaEscolar from "@/components/escola/MotorSegurancaEscolar";
 import BiometriaResponsaveis from "@/components/escola/BiometriaResponsaveis";
 import CameraPortaoEntradaSaida from "@/components/escola/CameraPortaoEntradaSaida";
+import MonitoramentoViasPublicas from "@/components/escola/MonitoramentoViasPublicas";
 
 const TURNO_LABELS = { manha: "Manhã", tarde: "Tarde", noite: "Noite", integral: "Integral" };
 
@@ -45,20 +46,23 @@ export default function CadastroBiometricoEscolar() {
   const [blacklist, setBlacklist] = useState([]);
   const [ordensAtivas, setOrdensAtivas] = useState([]);
   const [responsaveis, setResponsaveis] = useState([]);
+  const [procurados, setProcurados] = useState([]);
 
   const load = async () => {
-    const [a, e, bl, os, resp] = await Promise.all([
+    const [a, e, bl, os, resp, proc] = await Promise.all([
       base44.entities.Alunos_Biometria.list("-created_date", 100),
       base44.entities.Cercas_Virtuais_Escolares.filter({ ativo: true }, "-created_date", 50),
       base44.entities.Blacklist_Biometrica.filter({ ativo: true }, "-created_date", 100),
       base44.entities.Ordens_Servico_Visitantes.filter({ status: "ativo" }, "-created_date", 50),
       base44.entities.Biometria_Responsaveis.filter({ ativo: true }, "-created_date", 200),
+      base44.entities.WantedCriminal.list("-created_date", 200),
     ]);
     setAlunos(a);
     setEscolas(e);
     setBlacklist(bl);
     setOrdensAtivas(os);
     setResponsaveis(resp);
+    setProcurados(proc);
     if (e.length > 0 && !escolaAcesso) setEscolaAcesso(e[0]);
     setLoading(false);
   };
@@ -216,6 +220,7 @@ export default function CadastroBiometricoEscolar() {
           { id: "alunos", label: "Alunos", icon: BookOpen },
           { id: "acesso", label: "Registro de Acesso", icon: LogIn },
           { id: "motor", label: "Motor de Segurança", icon: ScanFace },
+          { id: "vias", label: "Vias Públicas", icon: Shield },
           { id: "alertas", label: "Alertas de Intrusão", icon: Radio },
           { id: "blacklist", label: "Blacklist", icon: ShieldAlert },
           { id: "responsaveis", label: "Responsáveis", icon: UserCheck },
@@ -502,6 +507,11 @@ export default function CadastroBiometricoEscolar() {
             ordensAtivas={ordensAtivas}
           />
         </div>
+      )}
+
+      {/* ── TAB: VIAS PÚBLICAS / PROCURADOS ── */}
+      {activeTab === "vias" && (
+        <MonitoramentoViasPublicas procurados={procurados} />
       )}
 
       {/* ── TAB: ALERTAS ── */}

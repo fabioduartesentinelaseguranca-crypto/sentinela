@@ -14,6 +14,13 @@
       "type": "string",
       "description": "URL da foto ou retrato falado"
     },
+    "face_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Vetor biom\u00e9trico facial (128 dims) \u2014 gerado via IA no cadastro"
+    },
     "description": {
       "type": "string",
       "description": "Caracter\u00edsticas f\u00edsicas e crimes"
@@ -65,9 +72,45 @@
     },
     "notes": {
       "type": "string"
+    },
+    "threshold_alerta": {
+      "type": "number",
+      "default": 80,
+      "description": "Threshold de confian\u00e7a (%) para disparar alerta \u2014 ajust\u00e1vel por perfil de risco"
     }
   },
   "required": [
     "name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
