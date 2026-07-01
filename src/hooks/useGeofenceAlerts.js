@@ -51,13 +51,15 @@ export function useGeofenceAlerts({ enabled = true, onAlert }) {
 
           onAlert?.(info);
 
-          await base44.entities.SystemLog.create({
-            event: "geofence_breach",
-            actor_id: agent.id,
-            actor_name: agent.full_name,
-            details: `Agente "${agent.full_name}" a ${info.distanceM}m da zona "${zone.name}" (limite 500m)`,
-            severity: "warning",
-          });
+          try {
+            await base44.entities.SystemLog.create({
+              event: "geofence_breach",
+              actor_id: agent.id,
+              actor_name: agent.full_name,
+              details: `Agente "${agent.full_name}" a ${info.distanceM}m da zona "${zone.name}" (limite 500m)`,
+              severity: "warning",
+            });
+          } catch { /* log falhou — não interrompe o ciclo de monitoramento */ }
         }
       }
     };
