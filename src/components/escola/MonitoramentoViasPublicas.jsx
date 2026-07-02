@@ -88,47 +88,36 @@ export default function MonitoramentoViasPublicas({ procurados = [] }) {
       const blob = await capturarFrame();
       if (!blob) return;
       setFramePreview(URL.createObjectURL(blob));
+
+      // Upload do frame e envia URL para o backend de matching
       const { file_url } = await base44.integrations.Core.UploadFile({ file: blob });
-      const resultado = await base44.integrations.Core.InvokeLLM({
-        model: "gpt_5_4",
-        prompt: `Você é um sistema de vigilância pública. Analise esta imagem e retorne JSON com:
-- face_detected (boolean): há rosto(s) humano(s) visível(is)?
-- is_real_face (boolean): parece rosto real (não foto/tela)?
-- face_count (integer): quantos rostos
-- quality_score (number 0-100): qualidade para reconhecimento
-- embedding (array de 128 números -1 a 1): vetor facial do rosto principal. Se não houver rosto, 128 zeros.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            face_detected: { type: "boolean" },
-            is_real_face: { type: "boolean" },
-            face_count: { type: "integer" },
-            quality_score: { type: "number" },
-            embedding: { type: "array", items: { type: "number" } }
-          }
-        }
+
+      const resp = await base44.functions.invoke("verificarBiometria", {
+        file_url,
+        threshold,
+        camera_id: cameraId,
+        modo: "procurados",
       });
-      setDebugInfo({ face_detected: resultado.face_detected, face_count: resultado.face_count, quality_score: resultado.quality_score, ts: new Date().toLocaleTimeString() });
-      if (!resultado.face_detected || !resultado.is_real_face || resultado.quality_score < 35) return;
-      const embedding = resultado.embedding || [];
-      for (const p of procurados) {
-        if (p.status !== "wanted" || !p.face_embedding?.length) continue;
-        const limiar = p.threshold_alerta ?? threshold;
-        const sim = cosineSim(embedding, p.face_embedding);
-        if (sim >= limiar) {
-          setMatchCount(n => n + 1);
-          await base44.entities.Alertas_Intrusao_Escolar.create({
-            tipo_alerta: "blacklist_match",
-            nivel: p.danger_level === "extreme" || p.danger_level === "high" ? "vermelho" : "laranja",
-            descricao: `PROCURADO IDENTIFICADO em via pública: ${p.name}${p.alias ? ` (${p.alias})` : ""} — Confiança ${sim}% · Câmera ${cameraId}`,
-            id_escola_cerca: "", nome_escola: `Via Pública · ${localizacao || cameraId}`,
-            foto_captura_url: file_url, similaridade_blacklist: sim,
-            horario_tentativa: new Date().toISOString(), status: "ativo", bloqueio_ativo: false,
-          });
-          setAlertas(prev => [{ id: Date.now(), procurado: p, sim, ts: new Date().toLocaleTimeString(), frame_url: file_url, camId: cameraId, local: localizacao }, ...prev].slice(0, 20));
-          toast.error(`🔴 PROCURADO: ${p.name} · ${sim}% de confiança · ${cameraId}`, { duration: 15000 });
-        }
+      const resultado = resp.data;
+
+      setDebugInfo({
+        face_detected: resultado.face_detected,
+        quality_score: resultado.quality_score ?? 0,
+        ts: new Date().toLocaleTimeString(),
+        match: resultado.match,
+      });
+
+      if (resultado.match && resultado.tipo === "procurado") {
+        setMatchCount(n => n + 1);
+        const procurado = procurados.find(p => p.id === resultado.id) || {
+          name: resultado.nome, alias: resultado.alias, danger_level: resultado.danger_level,
+          crimes: resultado.crimes, photo_url: resultado.foto_url, warrant_number: resultado.warrant_number,
+        };
+        setAlertas(prev => [{
+          id: Date.now(), procurado, sim: resultado.similarity,
+          ts: new Date().toLocaleTimeString(), frame_url: null, camId: cameraId, local: localizacao,
+        }, ...prev].slice(0, 20));
+        toast.error(`🔴 PROCURADO: ${resultado.nome} · ${resultado.similarity}% · ${cameraId}`, { duration: 15000 });
       }
     } catch (err) {
       console.error("Erro monitoramento vias:", err);
@@ -178,48 +167,54 @@ export default function MonitoramentoViasPublicas({ procurados = [] }) {
     setVerFramePreview(URL.createObjectURL(blob));
     setVerCameraOn(false);
     try {
-      const file = blob instanceof File ? blob : new File([blob], "check.jpg", { type: "image/jpeg" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const resultado = await base44.integrations.Core.InvokeLLM({
-        model: "gpt_5_4",
-        prompt: `Analise este rosto/imagem e retorne JSON com:
-- face_detected (boolean): há rosto humano visível?
-- is_real_face (boolean): parece rosto real?
-- quality_score (number 0-100): qualidade para reconhecimento
-- embedding (array de 128 números -1 a 1): vetor facial do rosto principal. Se sem rosto, 128 zeros.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            face_detected: { type: "boolean" },
-            is_real_face: { type: "boolean" },
-            quality_score: { type: "number" },
-            embedding: { type: "array", items: { type: "number" } }
-          }
-        }
+      // Upload do frame e envia URL para o backend de matching
+      const fileObj = blob instanceof File ? blob : new File([blob], "check.jpg", { type: "image/jpeg" });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileObj });
+
+      const resp = await base44.functions.invoke("verificarBiometria", {
+        file_url,
+        threshold,
+        camera_id: "VERIFICACAO_MANUAL",
+        modo: "procurados",
       });
+      const resultado = resp.data;
 
       if (!resultado.face_detected) {
         setVerResultado({ status: "sem_rosto" });
         return;
       }
 
-      const emb = resultado.embedding || [];
-      const matches = [];
-      for (const p of procuradosComBio) {
-        const sim = cosineSim(emb, p.face_embedding);
-        if (sim >= 50) matches.push({ procurado: p, sim });
-      }
-      matches.sort((a, b) => b.sim - a.sim);
-
-      setVerResultado({ status: "ok", quality_score: resultado.quality_score, matches: matches.slice(0, 5), threshold });
-
-      if (matches.length > 0 && matches[0].sim >= threshold) {
-        toast.error(`🔴 MATCH CONFIRMADO: ${matches[0].procurado.name} — ${matches[0].sim}%`);
-      } else if (matches.length > 0) {
-        toast.info(`Similaridade parcial: ${matches[0].procurado.name} — ${matches[0].sim}% (abaixo do threshold)`);
+      if (resultado.match) {
+        // Match confirmado — monta estrutura de exibição
+        const procurado = procurados.find(p => p.id === resultado.id) || {
+          id: resultado.id, name: resultado.nome, alias: resultado.alias,
+          danger_level: resultado.danger_level, crimes: resultado.crimes,
+          photo_url: resultado.foto_url, warrant_number: resultado.warrant_number,
+        };
+        setVerResultado({
+          status: "ok",
+          quality_score: resultado.quality_score,
+          threshold: resultado.threshold,
+          matches: [{ procurado, sim: resultado.similarity }],
+        });
+        toast.error(`🔴 MATCH CONFIRMADO: ${resultado.nome} — ${resultado.similarity}%`);
       } else {
-        toast.success("Nenhum match com procurados encontrado.");
+        // Sem match — calcula similaridades localmente para mostrar candidatos parciais
+        const emb = resultado.embedding || [];
+        const matches = [];
+        if (emb.length >= 32) {
+          for (const p of procuradosComBio) {
+            const sim = cosineSim(emb, p.face_embedding);
+            if (sim >= 50) matches.push({ procurado: p, sim });
+          }
+          matches.sort((a, b) => b.sim - a.sim);
+        }
+        setVerResultado({ status: "ok", quality_score: resultado.quality_score, threshold, matches: matches.slice(0, 5) });
+        if (matches.length > 0) {
+          toast.info(`Similaridade parcial: ${matches[0].procurado.name} — ${matches[0].sim}% (abaixo do threshold)`);
+        } else {
+          toast.success("Nenhum match com procurados encontrado.");
+        }
       }
     } catch (err) {
       toast.error("Erro na verificação: " + (err?.message || "tente novamente"));
