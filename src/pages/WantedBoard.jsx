@@ -63,6 +63,15 @@ export default function WantedBoard() {
 
   const save = async () => {
     if (!form.name) { toast.error("Nome é obrigatório"); return; }
+
+    // Bloqueia salvamento se biometria foi iniciada mas embedding é inválido
+    const emb = biometria?.embedding;
+    const embValido = Array.isArray(emb) && emb.length >= 32 && emb.some(v => Math.abs(v) > 0.001);
+    if (biometria && !embValido) {
+      toast.error("Embedding biométrico inválido. Recapture a foto antes de salvar.");
+      return;
+    }
+
     setLoading(true);
     const data = {
       ...form,

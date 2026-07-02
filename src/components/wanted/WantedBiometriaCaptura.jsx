@@ -65,13 +65,24 @@ export default function WantedBiometriaCaptura({ onCapture, currentPhotoUrl = nu
       });
 
       if (!resultado.face_detected) {
-        toast.warning("Nenhum rosto detectado na imagem. O cadastro será salvo sem biometria.");
-        onCapture({ file_url, embedding: [], quality_score: 0 });
-      } else {
-        toast.success(`Biometria gerada! Qualidade: ${resultado.quality_score}%`);
-        setEmbedding(resultado.embedding);
-        onCapture({ file_url, embedding: resultado.embedding || [], quality_score: resultado.quality_score });
+        toast.error("Nenhum rosto detectado. Envie uma foto com o rosto visível e bem iluminado.");
+        setFotoUrl(null);
+        // Não chama onCapture — embedding inválido não é aceito
+        return;
       }
+
+      // Valida se o embedding tem variância real (não todos zeros)
+      const emb = resultado.embedding || [];
+      const hasVariance = emb.length >= 32 && emb.some(v => Math.abs(v) > 0.001);
+      if (!hasVariance) {
+        toast.error("Biometria inválida (vetor zerado). Tente outra foto com melhor qualidade.");
+        setFotoUrl(null);
+        return;
+      }
+
+      toast.success(`Biometria gerada com sucesso! Qualidade: ${resultado.quality_score}%`);
+      setEmbedding(emb);
+      onCapture({ file_url, embedding: emb, quality_score: resultado.quality_score });
     } catch (err) {
       toast.error("Erro ao processar imagem: " + (err?.message || "tente novamente"));
       setFotoUrl(null);
@@ -160,7 +171,7 @@ export default function WantedBiometriaCaptura({ onCapture, currentPhotoUrl = nu
               </div>
               {embedding?.length > 0 && (
                 <div className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">
-                  [{embedding.slice(0, 6).map(v => v.toFixed(3)).join(", ")} ... ({embedding.length} dims)]
+                  [{embedding.slice(0, 6).map(v => v.toFixed(3)).join(", ")} … ({embedding.length} dims) ✓]
                 </div>
               )}
             </div>
