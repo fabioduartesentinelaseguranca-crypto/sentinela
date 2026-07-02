@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { Search, Plus, Shield, AlertTriangle, CheckCircle2, DollarSign, X, Camera, Edit2, Trash2 } from "lucide-react";
+import { Search, Plus, Shield, AlertTriangle, CheckCircle2, DollarSign, X, Camera, Edit2, Trash2, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import WantedBiometriaCaptura from "@/components/wanted/WantedBiometriaCaptura";
 
 const DANGER_COLOR = {
   low: "border-success/40 bg-success/5 text-success",
@@ -36,6 +37,7 @@ export default function WantedBoard() {
   const [crimesInput, setCrimesInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [biometria, setBiometria] = useState(null); // { file_url, embedding, quality_score }
 
   const load = async () => {
     const data = await base44.entities.WantedCriminal.list("-created_date", 200);
@@ -50,18 +52,26 @@ export default function WantedBoard() {
     return matchSearch && matchStatus;
   });
 
-  const openCreate = () => { setEditing(null); setForm(DEFAULT); setCrimesInput(""); setShowForm(true); };
+  const openCreate = () => { setEditing(null); setForm(DEFAULT); setCrimesInput(""); setBiometria(null); setShowForm(true); };
   const openEdit = (c) => {
     setEditing(c);
     setForm({ ...c });
     setCrimesInput((c.crimes || []).join(", "));
+    setBiometria(c.face_embedding?.length ? { file_url: c.photo_url, embedding: c.face_embedding } : null);
     setShowForm(true);
   };
 
   const save = async () => {
     if (!form.name) { toast.error("Nome é obrigatório"); return; }
     setLoading(true);
-    const data = { ...form, crimes: crimesInput.split(",").map((s) => s.trim()).filter(Boolean), reward: Number(form.reward) || 0, age_approx: Number(form.age_approx) || undefined };
+    const data = {
+      ...form,
+      crimes: crimesInput.split(",").map((s) => s.trim()).filter(Boolean),
+      reward: Number(form.reward) || 0,
+      age_approx: Number(form.age_approx) || undefined,
+      ...(biometria?.file_url ? { photo_url: biometria.file_url } : {}),
+      ...(biometria?.embedding?.length ? { face_embedding: biometria.embedding } : {}),
+    };
     if (editing) {
       await base44.entities.WantedCriminal.update(editing.id, data);
       toast.success("Registro atualizado");
@@ -161,6 +171,11 @@ export default function WantedBoard() {
               <div className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${DANGER_COLOR[c.danger_level]}`}>
                 {DANGER_LABEL[c.danger_level]}
               </div>
+              {c.face_embedding?.length > 0 && (
+                <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 text-success text-[9px] font-bold px-1.5 py-0.5 rounded">
+                  <Fingerprint className="w-2.5 h-2.5" /> BIO
+                </div>
+              )}
             </div>
 
             {/* Info */}
@@ -296,8 +311,12 @@ export default function WantedBoard() {
                 <label className="text-xs text-muted-foreground">Crimes (separados por vírgula)</label>
                 <Input value={crimesInput} onChange={(e) => setCrimesInput(e.target.value)} placeholder="Roubo, Tráfico, Homicídio..." />
               </div>
+              <WantedBiometriaCaptura
+                onCapture={setBiometria}
+                currentPhotoUrl={form.photo_url || null}
+              />
               <div>
-                <label className="text-xs text-muted-foreground">URL da foto / retrato falado</label>
+                <label className="text-xs text-muted-foreground">URL da foto (alternativo — sobreposto pela captura acima)</label>
                 <Input value={form.photo_url} onChange={(e) => setForm(p => ({ ...p, photo_url: e.target.value }))} placeholder="https://..." />
               </div>
               <div className="grid grid-cols-2 gap-3">

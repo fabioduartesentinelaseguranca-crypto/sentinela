@@ -128,6 +128,19 @@ Deno.serve(async (req) => {
       bloqueio_ativo:         nivel === "vermelho",
     });
 
+    // 6. Disparar email para agentes em turno ativo (fire-and-forget)
+    base44.asServiceRole.functions.invoke('alertarAgentesProcurado', {
+      criminal_name:      melhorMatch.name,
+      criminal_alias:     melhorMatch.alias || '',
+      similarity:         melhorSim,
+      camera_id,
+      foto_capturada_url: frame_url,
+      foto_referencia_url: melhorMatch.photo_url || '',
+      danger_level:       melhorMatch.danger_level || 'high',
+      crimes:             melhorMatch.crimes || [],
+      alert_id:           alerta.id,
+    }).catch(() => {}); // não bloquear a resposta se o envio falhar
+
     return Response.json({
       matched:       true,
       criminal_id:   melhorMatch.id,
