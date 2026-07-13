@@ -1,0 +1,93 @@
+{
+  "name": "Students",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome completo do aluno"
+    },
+    "class": {
+      "type": "string",
+      "description": "Turma/classe"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL da foto de refer\u00eancia"
+    },
+    "face_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Vetor biom\u00e9trico facial (128 dims) gerado via IA no cadastro"
+    },
+    "allowed_checkin_time": {
+      "type": "string",
+      "description": "HH:MM hor\u00e1rio permitido de entrada"
+    },
+    "allowed_checkout_time": {
+      "type": "string",
+      "description": "HH:MM hor\u00e1rio permitido de sa\u00edda"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "inside",
+        "outside"
+      ],
+      "default": "outside"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

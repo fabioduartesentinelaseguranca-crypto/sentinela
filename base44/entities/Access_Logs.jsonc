@@ -1,0 +1,91 @@
+{
+  "name": "Access_Logs",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "snapshot_url": {
+      "type": "string",
+      "description": "URL do snapshot/crop do rosto capturado"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "Allowed Student",
+        "Student Evasion Attempt",
+        "Unauthorized Intruder",
+        "Wanted Suspect"
+      ]
+    },
+    "action_taken": {
+      "type": "string"
+    },
+    "person_name": {
+      "type": "string"
+    },
+    "person_id": {
+      "type": "string"
+    },
+    "similarity": {
+      "type": "number"
+    },
+    "camera_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "timestamp",
+    "classification"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "agent"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

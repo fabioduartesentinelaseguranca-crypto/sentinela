@@ -38,6 +38,7 @@ import MasterDashboard from './pages/MasterDashboard';
 import CercaVirtualEscolar from './pages/CercaVirtualEscolar';
 import CadastroBiometricoEscolar from './pages/CadastroBiometricoEscolar';
 import ConviteCliente from './pages/ConviteCliente';
+import CheckpointGuard from './pages/CheckpointGuard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -101,6 +102,7 @@ const AuthenticatedApp = () => {
       <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />
       <Route path="/cercas-escolares" element={<RoleGuard allow={["agent", "admin"]}><CercaVirtualEscolar /></RoleGuard>} />
       <Route path="/biometria-escolar" element={<RoleGuard allow={["agent", "admin"]}><CadastroBiometricoEscolar /></RoleGuard>} />
+      <Route path="/checkpoint-guard" element={<RoleGuard allow={["agent", "admin"]}><CheckpointGuard /></RoleGuard>} />
 
       <Route path="*" element={<PageNotFound />} />
     </Routes>
