@@ -33,6 +33,14 @@
     },
     "camera_id": {
       "type": "string"
+    },
+    "module": {
+      "type": "string",
+      "enum": [
+        "escolar",
+        "procurados"
+      ],
+      "description": "M\u00f3dulo do checkpoint que gerou o log"
     }
   },
   "required": [

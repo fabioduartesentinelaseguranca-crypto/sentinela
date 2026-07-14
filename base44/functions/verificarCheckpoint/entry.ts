@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
           timestamp: new Date().toISOString(), snapshot_url: file_url,
           classification: "Unauthorized Intruder",
           action_taken: "Possível spoofing/tentativa de fraude. Snapshot capturado.",
-          camera_id,
+          camera_id, module,
         });
         return Response.json({ classification: "Unauthorized Intruder", module, face_detected: true, spoofing_detected: true, snapshot_url: file_url });
       }
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     const log = (classification, name, id, sim, action) =>
       base44.asServiceRole.entities.Access_Logs.create({
         timestamp: nowIso, snapshot_url: snapshot, classification, action_taken: action,
-        person_name: name, person_id: id, similarity: sim, camera_id,
+        person_name: name, person_id: id, similarity: sim, camera_id, module,
       });
 
     // ══════════════════════════════════════════════════════════════

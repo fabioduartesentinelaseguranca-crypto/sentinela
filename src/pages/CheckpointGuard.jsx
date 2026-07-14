@@ -27,13 +27,14 @@ export default function CheckpointGuard({ initialModule = null }) {
   const { play } = useAlertSounds();
 
   const loadLogs = useCallback(async () => {
+    if (!module) { setLogs([]); return; }
     try {
-      const recent = await base44.entities.Access_Logs.list("-timestamp", 5);
+      const recent = await base44.entities.Access_Logs.filter({ module }, "-timestamp", 5);
       setLogs(recent);
-      const last50 = await base44.entities.Access_Logs.list("-timestamp", 50);
+      const last50 = await base44.entities.Access_Logs.filter({ module }, "-timestamp", 50);
       setStats((s) => ({ ...s, alerts: last50.filter((l) => l.classification !== "Allowed Student").length }));
     } catch { /* */ }
-  }, []);
+  }, [module]);
 
   const loadDescriptors = useCallback(async () => {
     if (!module) { setLocalDescriptors([]); return; }
