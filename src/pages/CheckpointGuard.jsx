@@ -77,7 +77,7 @@ export default function CheckpointGuard() {
     loadLogs();
   }, [play, loadLogs]);
 
-  const { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, startCamera, stopCamera } = useLocalFaceDetector({
+  const { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, debugInfo, startCamera, stopCamera } = useLocalFaceDetector({
     onRecognition: handleRecognition,
     localDescriptors,
     enabled: tab === "checkpoint",
@@ -122,6 +122,7 @@ export default function CheckpointGuard() {
                 videoRef={videoRef} status={status} detection={detection}
                 facePresent={facePresent} processing={processing}
                 localMatch={localMatch} initProgress={initProgress} errorMsg={errorMsg} engine={engine}
+                debugInfo={debugInfo}
                 onStart={startCamera} onStop={stopCamera}
               />
             </div>

@@ -67,6 +67,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const [initProgress, setInitProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
   const [engine, setEngine] = useState("mediapipe"); // mediapipe | faceapi
+  const [debugInfo, setDebugInfo] = useState({ frames: 0, lastError: null, backend: null });
 
   const onRecognitionRef = useRef(onRecognition);
   onRecognitionRef.current = onRecognition;
@@ -78,6 +79,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const processingRef = useRef(false);
   const cooldownRef = useRef(0);
   const loopRef = useRef(null);
+  const frameCountRef = useRef(0);
   const streamRef = useRef(null);
   const mpDetectorRef = useRef(null);
   const enabledRef = useRef(enabled);
@@ -204,6 +206,10 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
             const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 448, scoreThreshold: 0.25 }));
             if (det) box = det.detection.box;
           }
+          frameCountRef.current++;
+          if (frameCountRef.current % 15 === 0) {
+            setDebugInfo((d) => ({ ...d, frames: d.frames + 15, lastError: null, backend: faceapi.tf.getBackend() }));
+          }
           if (box) {
             const stable = handleBox(box, video);
             if (stable && !processingRef.current && Date.now() >= cooldownRef.current) {
@@ -215,7 +221,10 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
             faceStartRef.current = null;
             lastCenterRef.current = null;
           }
-        } catch (e) { console.warn("[checkpoint] detection frame error:", e?.message || e); }
+        } catch (e) {
+          console.warn("[checkpoint] detection frame error:", e?.message || e);
+          setDebugInfo((d) => ({ ...d, lastError: e?.message || String(e) }));
+        }
       }
       loopRef.current = setTimeout(loop, 1000 / TARGET_FPS);
     };
@@ -290,5 +299,5 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
     if (mpDetectorRef.current) { try { mpDetectorRef.current.close(); } catch {} mpDetectorRef.current = null; }
   }, [stopLoop]);
 
-  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, startCamera, stopCamera };
+  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, debugInfo, startCamera, stopCamera };
 }

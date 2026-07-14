@@ -11,11 +11,24 @@ const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/mode
 let modelsPromise = null;
 export function loadFaceApiModels() {
   if (!modelsPromise) {
-    modelsPromise = Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
+    modelsPromise = (async () => {
+      // Garante que o backend tfjs está pronto antes de carregar/usar os modelos.
+      // WebGL pode falhar em iframes (Base44 preview) — cai para CPU se necessário.
+      try {
+        await faceapi.tf.setBackend("webgl");
+        await faceapi.tf.ready();
+      } catch {
+        try {
+          await faceapi.tf.setBackend("cpu");
+          await faceapi.tf.ready();
+        } catch { /* best effort */ }
+      }
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
+    })();
   }
   return modelsPromise;
 }
