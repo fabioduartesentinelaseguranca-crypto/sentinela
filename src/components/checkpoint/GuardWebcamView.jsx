@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, Camera, CameraOff, Video, ScanFace, Radio, Cpu, RotateCcw } from "lucide-react";
 
-export default function GuardWebcamView({ videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, onStart, onStop }) {
+export default function GuardWebcamView({ videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, onStart, onStop }) {
   const isLive = status === "ready";
   const localMatchLabel = localMatch?.label || (localMatch?.message ? null : null);
 
@@ -48,7 +48,9 @@ export default function GuardWebcamView({ videoRef, status, detection, facePrese
             </div>
             <div className="absolute top-3 right-3 bg-black/70 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
               <Radio className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground font-mono">20 FPS · LOCAL</span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {engine === "mediapipe" ? "20 FPS · MediaPipe" : "face-api · fallback"}
+              </span>
             </div>
             {localMatchLabel && (
               <div className="absolute bottom-3 left-3 bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-semibold">

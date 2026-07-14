@@ -19,7 +19,7 @@ import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 import { base44 } from "@/api/base44Client";
 import { faceapi, loadFaceApiModels, computeDescriptorFromImage } from "@/lib/faceModels";
 
-const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm";
+const MEDIAPIPE_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
 const BLAZEFACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_detector/BlazeFace/float16/1/BlazeFace.tflite";
 const TARGET_FPS = 20;
 const STABILIZE_MS = 1200;
@@ -64,6 +64,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const [localMatch, setLocalMatch] = useState(null);
   const [initProgress, setInitProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [engine, setEngine] = useState("mediapipe"); // mediapipe | faceapi
 
   const onRecognitionRef = useRef(onRecognition);
   onRecognitionRef.current = onRecognition;
@@ -165,33 +166,43 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const startLoop = useCallback(() => {
     stopLoop();
     let running = true;
+    const handleBox = (box, video) => {
+      const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+      const bx = box.x ?? box.originX;
+      const by = box.y ?? box.originY;
+      const cx = (bx + box.width / 2) / vw;
+      const cy = (by + box.height / 2) / vh;
+      setFacePresent(true);
+      setDetection({ x: bx / vw, y: by / vh, w: box.width / vw, h: box.height / vh });
+      const now = Date.now();
+      const last = lastCenterRef.current;
+      if (last) {
+        const mov = Math.hypot(cx - last.cx, cy - last.cy);
+        if (mov >= STABILITY_THRESHOLD) faceStartRef.current = now;
+      } else {
+        faceStartRef.current = now;
+      }
+      lastCenterRef.current = { cx, cy };
+      return faceStartRef.current && (now - faceStartRef.current) >= STABILIZE_MS;
+    };
     const loop = async () => {
       if (!running) return;
       const video = videoRef.current;
-      if (enabledRef.current && video && video.readyState >= 2 && mpDetectorRef.current) {
+      if (enabledRef.current && video && video.readyState >= 2) {
         try {
-          // ── STEP 1: Google MediaPipe (20 FPS) ───────────────────
-          const mpRes = mpDetectorRef.current.detectForVideo(video, performance.now());
-          const dets = mpRes?.detections || [];
-          if (dets.length > 0) {
-            const bb = dets[0].boundingBox;
-            const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-            const cx = (bb.originX + bb.width / 2) / vw;
-            const cy = (bb.originY + bb.height / 2) / vh;
-            setFacePresent(true);
-            setDetection({ x: bb.originX / vw, y: bb.originY / vh, w: bb.width / vw, h: bb.height / vh });
-
-            const now = Date.now();
-            const last = lastCenterRef.current;
-            if (last) {
-              const mov = Math.hypot(cx - last.cx, cy - last.cy);
-              if (mov >= STABILITY_THRESHOLD) faceStartRef.current = now;
-            } else {
-              faceStartRef.current = now;
-            }
-            lastCenterRef.current = { cx, cy };
-
-            const stable = faceStartRef.current && (now - faceStartRef.current) >= STABILIZE_MS;
+          let box = null;
+          if (mpDetectorRef.current) {
+            // ── STEP 1: Google MediaPipe (20 FPS) ───────────────
+            const mpRes = mpDetectorRef.current.detectForVideo(video, performance.now());
+            const d = mpRes?.detections?.[0];
+            if (d) box = d.boundingBox;
+          } else {
+            // ── Fallback: face-api TinyFaceDetector ───────────────
+            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }));
+            if (det) box = det.detection.box;
+          }
+          if (box) {
+            const stable = handleBox(box, video);
             if (stable && !processingRef.current && Date.now() >= cooldownRef.current) {
               await runRecognition(video);
             }
@@ -211,19 +222,31 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const startCamera = useCallback(async () => {
     setStatus("loading_models");
     setInitProgress(5);
+    setErrorMsg(null);
+    mpDetectorRef.current = null;
+    // face-api.js é ESSENCIAL (gera o descriptor). MediaPipe é OPCIONAL (detecção 20 FPS);
+    // se o WASM dele falhar, o pipeline continua usando o próprio detector do face-api.
     try {
-      // Carrega MediaPipe (WASM) e face-api.js em paralelo
-      const mpP = loadMediaPipe().then((d) => { mpDetectorRef.current = d; setInitProgress((p) => Math.max(p, 55)); });
-      const faP = loadFaceApiModels().then(() => { buildMatcher(); setInitProgress((p) => Math.max(p, 75)); });
-      await mpP;
-      await faP;
-      setInitProgress(100);
+      await loadFaceApiModels();
+      buildMatcher();
+      setInitProgress(60);
     } catch (err) {
-      console.error("Model init failed:", err);
-      setErrorMsg(err?.message || "Não foi possível carregar os modelos de IA locais (MediaPipe/face-api). Verifique sua conexão.");
+      console.error("face-api load failed:", err);
+      setErrorMsg(err?.message || "Não foi possível carregar o face-api.js. Verifique sua conexão.");
       setStatus("error");
       return;
     }
+    try {
+      const detector = await loadMediaPipe();
+      mpDetectorRef.current = detector;
+      setEngine("mediapipe");
+      setInitProgress((p) => Math.max(p, 90));
+    } catch (err) {
+      console.warn("MediaPipe indisponível — usando face-api para detecção:", err?.message);
+      mpDetectorRef.current = null; // modo fallback (face-api)
+      setEngine("faceapi");
+    }
+    setInitProgress(100);
     if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMsg("Câmera não disponível. O app precisa rodar em HTTPS para acessar a webcam.");
       setStatus("no_camera");
@@ -264,5 +287,5 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
     if (mpDetectorRef.current) { try { mpDetectorRef.current.close(); } catch {} mpDetectorRef.current = null; }
   }, [stopLoop]);
 
-  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, startCamera, stopCamera };
+  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, engine, startCamera, stopCamera };
 }
