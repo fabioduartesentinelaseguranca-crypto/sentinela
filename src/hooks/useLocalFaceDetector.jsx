@@ -204,7 +204,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
           } else {
             // ── Fallback: face-api TinyFaceDetector ───────────────
             const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 448, scoreThreshold: 0.25 }));
-            if (det) box = det.detection.box;
+            if (det) box = det.box;
           }
           frameCountRef.current++;
           if (frameCountRef.current % 15 === 0) {
