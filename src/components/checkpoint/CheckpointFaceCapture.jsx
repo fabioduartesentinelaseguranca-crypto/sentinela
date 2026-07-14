@@ -1,13 +1,31 @@
 /**
- * CheckpointFaceCapture
- * Componente de captura de foto (webcam/upload) + geração de embedding via IA.
- * Usado para cadastrar Students e Wanted_Persons. Só aceita embedding válido.
+ * CheckpointFaceCapture — captura de foto (webcam/upload) + descriptor
+ * biométrico 128-dim gerado LOCALMENTE via face-api.js (TensorFlow.js).
+ * Os embeddings ficam no mesmo espaço vetorial do matcher local e do
+ * backend, garantindo comparabilidade.
  */
 import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2, ScanFace, ShieldCheck, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
+import { loadFaceApiModels, computeDescriptorFromImage } from "@/lib/faceModels";
+
+function descriptorFromBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = async () => {
+      try {
+        const desc = await computeDescriptorFromImage(img);
+        resolve(desc);
+      } catch (e) { reject(e); }
+      finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
 
 export default function CheckpointFaceCapture({ onCapture, currentPhotoUrl = null }) {
   const [fotoUrl, setFotoUrl] = useState(currentPhotoUrl || null);
@@ -46,36 +64,24 @@ export default function CheckpointFaceCapture({ onCapture, currentPhotoUrl = nul
       setFotoUrl(file_url);
       setUploading(false);
 
+      // Descriptor LOCAL via face-api.js
       setGenerating(true);
-      const resultado = await base44.integrations.Core.InvokeLLM({
-        model: "gpt_5_4",
-        prompt: `Analise esta foto de pessoa e retorne JSON: face_detected (bool), embedding (array de 128 números -1..1, vetor facial), quality_score (0-100). Sem rosto → 128 zeros.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            face_detected: { type: "boolean" },
-            embedding: { type: "array", items: { type: "number" } },
-            quality_score: { type: "number" }
-          }
-        }
-      });
-
-      if (!resultado.face_detected) {
+      await loadFaceApiModels();
+      const desc = await descriptorFromBlob(blob);
+      if (!desc) {
         toast.error("Nenhum rosto detectado. Envie foto com rosto visível e bem iluminado.");
         setFotoUrl(null);
         return;
       }
-      const emb = resultado.embedding || [];
-      const hasVariance = emb.length >= 32 && emb.some((v) => Math.abs(v) > 0.001);
-      if (!hasVariance) {
+      const emb = Array.from(desc);
+      if (!emb.some((v) => Math.abs(v) > 0.001)) {
         toast.error("Biometria inválida (vetor zerado). Tente outra foto.");
         setFotoUrl(null);
         return;
       }
-      toast.success(`Biometria gerada! Qualidade: ${resultado.quality_score}%`);
+      toast.success("Biometria gerada localmente ✓");
       setEmbedding(emb);
-      onCapture({ file_url, embedding: emb, quality_score: resultado.quality_score });
+      onCapture({ file_url, embedding: emb });
     } catch (err) {
       toast.error("Erro ao processar imagem: " + (err?.message || "tente novamente"));
       setFotoUrl(null);
@@ -129,7 +135,7 @@ export default function CheckpointFaceCapture({ onCapture, currentPhotoUrl = nul
           {fotoUrl && <img src={fotoUrl} alt="" className="w-12 h-14 object-cover rounded-lg flex-shrink-0 border border-border" />}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            {uploading ? "Enviando foto..." : "Gerando biometria via IA..."}
+            {uploading ? "Enviando foto..." : "Gerando biometria local (face-api)..."}
           </div>
         </div>
       )}

@@ -15,6 +15,7 @@ export default function CheckpointGuard() {
   const [logs, setLogs] = useState([]);
   const [studentsInside, setStudentsInside] = useState(0);
   const [activeAlerts, setActiveAlerts] = useState(0);
+  const [localDescriptors, setLocalDescriptors] = useState([]);
   const [tab, setTab] = useState("checkpoint");
   const { play } = useAlertSounds();
 
@@ -29,25 +30,39 @@ export default function CheckpointGuard() {
     } catch { /* */ }
   }, []);
 
-  useEffect(() => { loadLogs(); }, [loadLogs]);
-
-  const handleFaceStable = useCallback(async (blob) => {
+  const loadDescriptors = useCallback(async () => {
     try {
-      const file = new File([blob], "checkpoint.jpg", { type: "image/jpeg" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const resp = await base44.functions.invoke("verificarCheckpoint", { file_url, camera_id: "CHECKPOINT-01" });
-      const res = resp.data;
-      if (!res.face_detected) return;
-      setAlert(res);
-      play(res.classification);
-      loadLogs();
-    } catch (err) {
-      console.error("Erro no checkpoint:", err);
-    }
+      const [students, wanted] = await Promise.all([
+        base44.entities.Students.list(),
+        base44.entities.Wanted_Persons.list(),
+      ]);
+      const arr = [];
+      students.forEach((s) => {
+        if (Array.isArray(s.face_embedding) && s.face_embedding.length >= 32) {
+          arr.push({ label: `ALUNO:${s.name}`, descriptor: s.face_embedding });
+        }
+      });
+      wanted.forEach((w) => {
+        if (Array.isArray(w.face_embedding) && w.face_embedding.length >= 32) {
+          arr.push({ label: `PROCURADO:${w.alias}`, descriptor: w.face_embedding });
+        }
+      });
+      setLocalDescriptors(arr);
+    } catch { /* */ }
+  }, []);
+
+  useEffect(() => { loadLogs(); loadDescriptors(); }, [loadLogs, loadDescriptors]);
+
+  const handleRecognition = useCallback((res) => {
+    if (!res?.face_detected) return;
+    setAlert(res);
+    play(res.classification);
+    loadLogs();
   }, [play, loadLogs]);
 
-  const { videoRef, status, detection, facePresent, processing, startCamera, stopCamera } = useLocalFaceDetector({
-    onFaceStable: handleFaceStable,
+  const { videoRef, status, detection, facePresent, processing, localMatch, initProgress, startCamera, stopCamera } = useLocalFaceDetector({
+    onRecognition: handleRecognition,
+    localDescriptors,
     enabled: tab === "checkpoint",
   });
 
@@ -60,7 +75,7 @@ export default function CheckpointGuard() {
           <Shield className="w-7 h-7 text-primary" /> Checkpoint de Segurança
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Reconhecimento facial com pré-processamento local (IA no navegador a 15 FPS). Apenas rostos detectados e estáveis são enviados ao backend — reduzindo custos de nuvem.
+          Pipeline local: Google MediaPipe detecta a 20 FPS; face-api.js extrai o descriptor biométrico e faz match local antes de consultar o servidor — reduzindo custos de nuvem.
         </p>
       </div>
 
@@ -76,6 +91,7 @@ export default function CheckpointGuard() {
               <GuardWebcamView
                 videoRef={videoRef} status={status} detection={detection}
                 facePresent={facePresent} processing={processing}
+                localMatch={localMatch} initProgress={initProgress}
                 onStart={startCamera} onStop={stopCamera}
               />
             </div>
@@ -88,7 +104,7 @@ export default function CheckpointGuard() {
 
         <TabsContent value="manage" className="mt-4">
           <div className="rounded-2xl border border-border/60 bg-card p-5">
-            <CheckpointManagement onChange={loadLogs} />
+            <CheckpointManagement onChange={() => { loadLogs(); loadDescriptors(); }} />
           </div>
         </TabsContent>
       </Tabs>
