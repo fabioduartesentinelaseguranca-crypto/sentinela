@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { GraduationCap, Ban, Trash2, Glasses, Users, Wrench } from "lucide-react";
 import CheckpointFaceCapture from "@/components/checkpoint/CheckpointFaceCapture";
+import { bloquearSeConflito } from "@/lib/biometria";
 import ResponsaveisForm from "@/components/checkpoint/escolar/ResponsaveisForm";
 import VisitantesForm from "@/components/checkpoint/escolar/VisitantesForm";
 
@@ -46,6 +47,10 @@ function AlunosForm({ onSaved }) {
     if (form.usa_oculos && !bioOculos?.embedding?.length) return toast.error("Biometria com óculos é obrigatória (cadastro duplo)");
     setLoading(true);
     try {
+      const embeddings = [bio.embedding, ...(form.usa_oculos && bioOculos?.embedding ? [bioOculos.embedding] : [])];
+      for (const emb of embeddings) {
+        if (await bloquearSeConflito(emb, ["alunos", "blacklist", "procurados"])) { setLoading(false); return; }
+      }
       await base44.entities.Alunos_Biometria.create({
         nome: form.nome, matricula: form.matricula,
         id_escola_cerca: form.id_escola_cerca, nome_escola: escola?.nome_escola || "",
@@ -130,6 +135,7 @@ function BlacklistForm({ onSaved }) {
     if (!bio?.embedding?.length) return toast.error("Biometria facial é obrigatória");
     setLoading(true);
     try {
+      if (await bloquearSeConflito(bio.embedding, ["alunos", "blacklist", "procurados"])) { setLoading(false); return; }
       await base44.entities.Blacklist_Biometrica.create({
         nome_suspeito: form.nome_suspeito, descricao_risco: form.descricao_risco,
         nivel_alerta: form.nivel_alerta, foto_url: bio.file_url, face_embedding: bio.embedding, ativo: true,

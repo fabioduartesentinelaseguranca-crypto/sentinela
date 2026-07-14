@@ -5,6 +5,7 @@ const CLASS_CONFIG = {
   "Student Evasion Attempt": { color: "border-orange-500/40 bg-orange-500/5 text-orange-500", label: "Tentativa de Evasão", dot: "bg-orange-500" },
   "Unauthorized Intruder": { color: "border-yellow-500/40 bg-yellow-500/5 text-yellow-500", label: "Intruso", dot: "bg-yellow-500" },
   "Wanted Suspect": { color: "border-red-500/60 bg-red-500/5 text-red-500", label: "Procurado", dot: "bg-red-500" },
+  "Ambiguous": { color: "border-blue-500/40 bg-blue-500/5 text-blue-500", label: "Revisão Manual", dot: "bg-blue-500" },
 };
 
 export default function AccessLogFeed({ logs }) {

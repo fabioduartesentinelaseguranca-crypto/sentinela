@@ -18,11 +18,15 @@
     },
     "lat": {
       "type": "number",
-      "description": "Latitude"
+      "description": "Latitude (GPS da c\u00e2mera para despacho geolocalizado)"
     },
     "lng": {
       "type": "number",
-      "description": "Longitude"
+      "description": "Longitude (GPS da c\u00e2mera para despacho geolocalizado)"
+    },
+    "zone": {
+      "type": "string",
+      "description": "Zona/setor da c\u00e2mera (ex: Port\u00e3o Principal, Beco dos Fundos)"
     },
     "address": {
       "type": "string",

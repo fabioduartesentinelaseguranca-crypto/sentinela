@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ShieldAlert, Trash2, Plus } from "lucide-react";
 import CheckpointFaceCapture from "@/components/checkpoint/CheckpointFaceCapture";
+import { bloquearSeConflito } from "@/lib/biometria";
 
 const DANGER = [
   { v: "low", l: "Baixo", c: "text-yellow-500" },
@@ -33,6 +34,7 @@ export default function ProcuradosManagement({ onSaved }) {
     if (!bio?.embedding?.length) return toast.error("Biometria facial é obrigatória");
     setLoading(true);
     try {
+      if (await bloquearSeConflito(bio.embedding, ["alunos", "blacklist", "procurados"])) { setLoading(false); return; }
       await base44.entities.WantedCriminal.create({
         name: form.name, alias: form.alias, danger_level: form.danger_level, status: form.status,
         reward: Number(form.reward) || 0, last_seen_location: form.last_seen_location,

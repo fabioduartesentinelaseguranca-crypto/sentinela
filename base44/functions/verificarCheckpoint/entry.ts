@@ -1,12 +1,19 @@
 /**
  * POST verificarCheckpoint
  * Pipeline agnóstico por módulo. Recebe do front-end um descriptor facial
- * 128-dim gerado LOCALMENTE (face-api.js) + snapshot_url + module.
+ * 128-dim gerado LOCALMENTE (face-api.js) + snapshot_url + module + camera_id.
  *
  * module="escolar"   → compara contra Alunos_Biometria (c/ embedding duplo) + Blacklist_Biometrica
  * module="procurados" → compara contra WantedCriminal (status=wanted)
  *
- * Cria Access_Log em todos os casos. Pula GPT-4o Vision quando o descriptor é local.
+ * THRESHOLDS (zero false positives):
+ *   >= 92%  → match confirmado (limpeza/autorização automática ou alerta de procurado)
+ *   70-91%  → "Ambiguous" — Revisão Manual Obrigatória (NENHUMA ação automática)
+ *   < 70%   → sem correspondência (intruso não identificado)
+ *
+ * DESPACHO TÁTICO (despacharAgenteProximo):
+ *   escolar   → "Unauthorized Intruder" (intruso) e "Wanted Suspect" (blacklist) disparam despacho
+ *   procurados → "Wanted Suspect" (procurado confirmado) dispara despacho
  *
  * Payload: { module, embedding: number[128], snapshot_url, camera_id }
  *           OU (fallback) { module, file_url } → extração via GPT-4o Vision.
@@ -22,33 +29,30 @@ function cosineSim(a, b) {
 }
 
 function brasiliaHhMm() {
-  const now = new Date();
-  const b = new Date(now.getTime() - 3 * 60 * 60 * 1000); // Brasília = UTC-3
+  const b = new Date(Date.now() - 3 * 60 * 60 * 1000);
   return b.toISOString().slice(11, 16);
 }
-
 function brasiliaDate() {
-  const now = new Date();
-  const b = new Date(now.getTime() - 3 * 60 * 60 * 1000); // Brasília = UTC-3
+  const b = new Date(Date.now() - 3 * 60 * 60 * 1000);
   return b.toISOString().slice(0, 10);
 }
-
 function toMin(hhmm) {
   if (!hhmm || typeof hhmm !== "string") return null;
   const [hh, mm] = hhmm.split(":").map(Number);
   if (isNaN(hh) || isNaN(mm)) return null;
   return hh * 60 + mm;
 }
-
 function withinSchedule(nowHhMm, entrada, saida, tolMin = 0) {
   const now = toMin(nowHhMm), lo = toMin(entrada), hi = toMin(saida);
   if (now == null || lo == null || hi == null) return true;
   return now >= lo - (tolMin || 0) && now <= hi + (tolMin || 0);
 }
-
 function isEmbeddingValid(arr) {
   return Array.isArray(arr) && arr.length >= 32 && arr.some((v) => Math.abs(v) > 0.001);
 }
+
+const CONFIRMED = 92;   // match confirmado (equiv. distância euclidiana < 0.35)
+const AMBIGUOUS_LO = 70; // >= 70 e < 92 → revisão manual (não despacha, não autoriza)
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -112,17 +116,38 @@ Deno.serve(async (req) => {
 
     const nowIso = new Date().toISOString();
     const nowHhMm = brasiliaHhMm();
+
+    // ── Resolve câmera (GPS para despacho) ───────────────────────
+    let camera = null;
+    if (camera_id && camera_id !== "CHECKPOINT-01") {
+      try { camera = await base44.asServiceRole.entities.Camera.get(camera_id); } catch { /* id livre */ }
+    }
+    const camLat = camera?.lat ?? null;
+    const camLng = camera?.lng ?? null;
+    const camName = camera ? [camera.name, camera.zone].filter(Boolean).join(" · ") : camera_id;
+
     const log = (classification, name, id, sim, action) =>
       base44.asServiceRole.entities.Access_Logs.create({
         timestamp: nowIso, snapshot_url: snapshot, classification, action_taken: action,
         person_name: name, person_id: id, similarity: sim, camera_id, module,
       });
 
+    // Despacha o agente mais próximo (Haversine) via função dedicada.
+    const dispatch = async (event_type, opts = {}) => {
+      try {
+        await base44.functions.invoke("despacharAgenteProximo", {
+          event_type, module, camera_id,
+          camera_name: camName, camera_lat: camLat, camera_lng: camLng,
+          snapshot_url: snapshot, person_name: opts.person_name, similarity: opts.similarity,
+          danger_level: opts.danger_level, crimes: opts.crimes,
+        });
+      } catch (e) { console.warn("dispatch falhou:", e?.message || e); }
+    };
+
     // ══════════════════════════════════════════════════════════════
     // MÓDULO PROCURADOS — base: WantedCriminal
     // ══════════════════════════════════════════════════════════════
     if (module === "procurados") {
-      const WANTED_THRESHOLD = 72;
       const wanted = await base44.asServiceRole.entities.WantedCriminal.filter({ status: "wanted" });
       let wBest = null, wSim = 0;
       for (const w of wanted) {
@@ -130,17 +155,36 @@ Deno.serve(async (req) => {
         const s = cosineSim(embedding, w.face_embedding);
         if (s > wSim) { wSim = s; wBest = w; }
       }
-      if (wBest && wSim >= WANTED_THRESHOLD) {
+
+      if (wBest && wSim >= CONFIRMED) {
         await log("Wanted Suspect", wBest.name || wBest.alias, wBest.id, wSim,
           `ALERTA CRÍTICO. Procurado: ${wBest.name || wBest.alias}. Nível: ${wBest.danger_level}. Recompensa: R$ ${wBest.reward || 0}.`);
+        await dispatch("Wanted Person Identified", {
+          person_name: wBest.name || wBest.alias, similarity: wSim,
+          danger_level: wBest.danger_level, crimes: wBest.crimes,
+        });
         return Response.json({
           classification: "Wanted Suspect", module, face_detected: true, source: "local",
           person_name: wBest.name || wBest.alias, person_id: wBest.id,
-          similarity: wSim, threat_level: wBest.danger_level,
-          danger_level: wBest.danger_level, reward: wBest.reward, crimes: wBest.crimes,
-          notes: wBest.description, snapshot_url: snapshot, quality_score: quality,
+          similarity: wSim, threat_level: wBest.danger_level, danger_level: wBest.danger_level,
+          reward: wBest.reward, crimes: wBest.crimes, notes: wBest.description,
+          snapshot_url: snapshot, quality_score: quality, dispatched: true,
         });
       }
+
+      if (wSim >= AMBIGUOUS_LO) {
+        await log("Ambiguous", wBest?.name || wBest?.alias || null, wBest?.id || null, wSim,
+          `Revisão Manual Obrigatória — possível procurado com similaridade ambígua (${wSim}%). Nenhuma ação automática.`);
+        return Response.json({
+          classification: "Ambiguous", module, face_detected: true, source: "local",
+          person_name: wBest?.name || wBest?.alias, person_id: wBest?.id,
+          similarity: wSim, manual_review: true,
+          message: "Ambiguous - Manual Review Required",
+          snapshot_url: snapshot, quality_score: quality,
+        });
+      }
+
+      // Sem correspondência >= 70 — indivíduo não identificado (sem despacho no contexto justice)
       await log("Unauthorized Intruder", null, null, wSim, "Indivíduo não identificado. Snapshot capturado.");
       return Response.json({
         classification: "Unauthorized Intruder", module, face_detected: true, source: "local",
@@ -152,7 +196,6 @@ Deno.serve(async (req) => {
     // MÓDULO ESCOLAR — base: Blacklist_Biometrica (ameaça) + Alunos_Biometria
     // ══════════════════════════════════════════════════════════════
     // Prioridade 1: Blacklist (ameaça)
-    const BL_THRESHOLD = 70;
     const blacklist = await base44.asServiceRole.entities.Blacklist_Biometrica.filter({ ativo: true });
     let blBest = null, blSim = 0;
     for (const b of blacklist) {
@@ -160,19 +203,33 @@ Deno.serve(async (req) => {
       const s = cosineSim(embedding, b.face_embedding);
       if (s > blSim) { blSim = s; blBest = b; }
     }
-    if (blBest && blSim >= BL_THRESHOLD) {
+
+    if (blSim >= CONFIRMED) {
       await log("Wanted Suspect", blBest.nome_suspeito || "Suspeito", blBest.id, blSim,
         `Match BLACKLIST: ${blBest.descricao_risco}. Nível: ${blBest.nivel_alerta}.`);
+      await dispatch("Wanted Person Identified", {
+        person_name: blBest.nome_suspeito || "Suspeito (blacklist)", similarity: blSim,
+        danger_level: blBest.nivel_alerta,
+      });
       return Response.json({
         classification: "Wanted Suspect", module, face_detected: true, source: "local",
         person_name: blBest.nome_suspeito, person_id: blBest.id,
-        similarity: blSim, threat_level: blBest.nivel_alerta,
-        notes: blBest.descricao_risco, snapshot_url: snapshot, quality_score: quality,
+        similarity: blSim, threat_level: blBest.nivel_alerta, notes: blBest.descricao_risco,
+        snapshot_url: snapshot, quality_score: quality, dispatched: true,
+      });
+    }
+    if (blSim >= AMBIGUOUS_LO) {
+      await log("Ambiguous", blBest?.nome_suspeito || null, blBest?.id || null, blSim,
+        `Revisão Manual Obrigatória — possível match de blacklist ambíguo (${blSim}%). Nenhuma ação automática.`);
+      return Response.json({
+        classification: "Ambiguous", module, face_detected: true, source: "local",
+        person_name: blBest?.nome_suspeito, person_id: blBest?.id,
+        similarity: blSim, manual_review: true, message: "Ambiguous - Manual Review Required",
+        snapshot_url: snapshot, quality_score: quality,
       });
     }
 
     // Prioridade 2: Alunos_Biometria (embedding duplo se usa óculos)
-    const AL_THRESHOLD = 72;
     const alunos = await base44.asServiceRole.entities.Alunos_Biometria.filter({ ativo: true });
     let alBest = null, alSim = 0;
     for (const a of alunos) {
@@ -183,14 +240,11 @@ Deno.serve(async (req) => {
       }
       if (best > alSim) { alSim = best; alBest = a; }
     }
-    if (alBest && alSim >= AL_THRESHOLD) {
+
+    if (alSim >= CONFIRMED) {
       const within = withinSchedule(nowHhMm, alBest.horario_entrada, alBest.horario_saida, alBest.tolerancia_minutos);
       if (within) {
-        // ── Registro de entrada/saída (dedup diário por sequência) ──
-        // Alterna com base no último registro do aluno HOJE:
-        //   sem registros hoje (ou último = saída) → entrada
-        //   último = entrada → saída
-        // Garante 1 entrada + 1 saída por ciclo, sem duplicar durante o dia.
+        // ── Registro de entrada/saída (alterna pela sequência do dia) ──
         const today = brasiliaDate();
         const recent = await base44.asServiceRole.entities.Registros_Acesso_Escolar.filter(
           { id_aluno: alBest.id }, "-data_hora", 30
@@ -199,7 +253,6 @@ Deno.serve(async (req) => {
         const lastEvent = todays.length ? todays[0].tipo_evento : null;
         const evento = lastEvent === "entrada" ? "saida" : "entrada";
 
-        // Alerta de saída antecipada (antes do horário de saída - tolerância)
         let alertaDisparado = false, motivoAlerta = null;
         const nowMin = toMin(nowHhMm);
         const saidaMin = toMin(alBest.horario_saida);
@@ -210,18 +263,10 @@ Deno.serve(async (req) => {
         }
 
         const registro = await base44.asServiceRole.entities.Registros_Acesso_Escolar.create({
-          id_aluno: alBest.id,
-          nome_aluno: alBest.nome,
-          matricula: alBest.matricula,
-          id_escola_cerca: alBest.id_escola_cerca,
-          nome_escola: alBest.nome_escola,
-          tipo_evento: evento,
-          data_hora: nowIso,
-          confianca_score: alSim,
-          metodo: "facial",
-          dentro_horario: true,
-          alerta_disparado: alertaDisparado,
-          motivo_alerta: motivoAlerta,
+          id_aluno: alBest.id, nome_aluno: alBest.nome, matricula: alBest.matricula,
+          id_escola_cerca: alBest.id_escola_cerca, nome_escola: alBest.nome_escola,
+          tipo_evento: evento, data_hora: nowIso, confianca_score: alSim, metodo: "facial",
+          dentro_horario: true, alerta_disparado: alertaDisparado, motivo_alerta: motivoAlerta,
           registrado_por_id: user.id,
         });
 
@@ -230,30 +275,41 @@ Deno.serve(async (req) => {
           `${evtLabel} registrada. Matrícula ${alBest.matricula}. Escola: ${alBest.nome_escola || "—"}.${alertaDisparado ? " ALERTA: " + motivoAlerta : ""}`);
         return Response.json({
           classification: "Allowed Student", module, face_detected: true, source: "local",
-          person_name: alBest.nome, person_id: alBest.id,
-          similarity: alSim, matricula: alBest.matricula,
+          person_name: alBest.nome, person_id: alBest.id, similarity: alSim, matricula: alBest.matricula,
           allowed_checkin_time: alBest.horario_entrada, allowed_checkout_time: alBest.horario_saida,
           access_event: evento, registro_id: registro.id, alerta_disparado: alertaDisparado, motivo_alerta: motivoAlerta,
           snapshot_url: snapshot, quality_score: quality,
         });
       }
+      // Confirmado como aluno MAS fora do horário → evasão (alerta de responsáveis, não despacho tático)
       await log("Student Evasion Attempt", alBest.nome, alBest.id, alSim,
         `Tentativa fora do horário permitido (${alBest.horario_entrada}-${alBest.horario_saida}, tol ${alBest.tolerancia_minutos || 0}min).`);
       return Response.json({
         classification: "Student Evasion Attempt", module, face_detected: true, source: "local",
-        person_name: alBest.nome, person_id: alBest.id,
-        similarity: alSim,
+        person_name: alBest.nome, person_id: alBest.id, similarity: alSim,
         allowed_checkin_time: alBest.horario_entrada, allowed_checkout_time: alBest.horario_saida,
         snapshot_url: snapshot, quality_score: quality,
       });
     }
 
-    // Prioridade 3: Intruso
+    if (alSim >= AMBIGUOUS_LO) {
+      await log("Ambiguous", alBest?.nome || null, alBest?.id || null, alSim,
+        `Revisão Manual Obrigatória — possível aluno com similaridade ambígua (${alSim}%). Sem liberação automática.`);
+      return Response.json({
+        classification: "Ambiguous", module, face_detected: true, source: "local",
+        person_name: alBest?.nome, person_id: alBest?.id, similarity: alSim,
+        manual_review: true, message: "Ambiguous - Manual Review Required",
+        snapshot_url: snapshot, quality_score: quality,
+      });
+    }
+
+    // Prioridade 3: Intruso (não identificado) → DESPACHO no contexto escolar
     const bestSim = Math.max(blSim, alSim);
-    await log("Unauthorized Intruder", null, null, bestSim, "Indivíduo não identificado. Snapshot capturado.");
+    await log("Unauthorized Intruder", null, null, bestSim, "Indivíduo não identificado. Despacho tático acionado.");
+    await dispatch("Intruder Detection", { similarity: bestSim });
     return Response.json({
       classification: "Unauthorized Intruder", module, face_detected: true, source: "local",
-      similarity: bestSim, snapshot_url: snapshot, quality_score: quality,
+      similarity: bestSim, snapshot_url: snapshot, quality_score: quality, dispatched: true,
     });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });

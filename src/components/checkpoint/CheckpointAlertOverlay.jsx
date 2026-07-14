@@ -22,6 +22,12 @@ const ALERT_CONFIG = {
     sub: (a) => `Indivíduo não identificado · melhor similaridade ${a.similarity}%`,
     flash: true, auto: 6000,
   },
+  "Ambiguous": {
+    border: "border-blue-500", text: "text-blue-500", bg: "bg-blue-500/10",
+    title: () => "AMBIGUOUS — MANUAL REVIEW REQUIRED",
+    sub: (a) => `Similaridade ${a.similarity}% (zona de incerteza) — nenhuma ação automática.`,
+    flash: true, auto: 8000,
+  },
   "Allowed Student": {
     border: "border-green-500", text: "text-green-500", bg: "bg-green-500/10",
     title: (a) => `${a.access_event === "saida" ? "Saída Registrada" : "Entrada Registrada"}: ${a.person_name}`,

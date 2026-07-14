@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, Radio, Video } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocalFaceDetector } from "@/hooks/useLocalFaceDetector";
 import { useAlertSounds } from "@/hooks/useAlertSounds";
 import CheckpointModuleSelector from "@/components/checkpoint/CheckpointModuleSelector";
@@ -11,6 +12,7 @@ import CheckpointMetrics from "@/components/checkpoint/CheckpointMetrics";
 import AccessLogFeed from "@/components/checkpoint/AccessLogFeed";
 import CheckpointAlertOverlay from "@/components/checkpoint/CheckpointAlertOverlay";
 import CheckpointManagement from "@/components/checkpoint/CheckpointManagement";
+import AgentesSegurancaManager from "@/components/checkpoint/AgentesSegurancaManager";
 
 const MODULE_INFO = {
   escolar: { title: "Módulo Escolar", subtitle: "Base: Alunos_Biometria + Blacklist_Biometrica" },
@@ -24,6 +26,8 @@ export default function CheckpointGuard({ initialModule = null }) {
   const [stats, setStats] = useState({ primary: 0, alerts: 0 });
   const [localDescriptors, setLocalDescriptors] = useState([]);
   const [tab, setTab] = useState("checkpoint");
+  const [cameras, setCameras] = useState([]);
+  const [cameraId, setCameraId] = useState("CHECKPOINT-01");
   const { play } = useAlertSounds();
 
   const loadLogs = useCallback(async () => {
@@ -70,6 +74,12 @@ export default function CheckpointGuard({ initialModule = null }) {
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
   useEffect(() => { loadDescriptors(); }, [loadDescriptors]);
+  useEffect(() => {
+    if (!module) { setCameras([]); return; }
+    base44.entities.Camera.filter({ active: true })
+      .then(setCameras)
+      .catch(() => setCameras([]));
+  }, [module]);
 
   const handleRecognition = useCallback((res) => {
     if (!res?.face_detected) return;
@@ -83,6 +93,7 @@ export default function CheckpointGuard({ initialModule = null }) {
     localDescriptors,
     enabled: tab === "checkpoint",
     module: module || "escolar",
+    cameraId,
   });
 
   // Ao trocar de módulo: para a câmera e recarrega a base local
@@ -105,9 +116,24 @@ export default function CheckpointGuard({ initialModule = null }) {
             <span className="font-semibold text-foreground">{info.title}</span> — {info.subtitle}. Pipeline local (MediaPipe + face-api) compartilhado.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { stopCamera(); setModule(null); setTab("checkpoint"); }}>
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Trocar módulo
-        </Button>
+        <div className="flex items-center gap-2">
+          {cameras.length > 0 && (
+            <Select value={cameraId} onValueChange={setCameraId}>
+              <SelectTrigger className="w-[200px] h-9">
+                <Video className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                <SelectValue placeholder="Câmera" />
+              </SelectTrigger>
+              <SelectContent>
+                {cameras.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}{c.zone ? ` · ${c.zone}` : ""}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="outline" size="sm" onClick={() => { stopCamera(); setModule(null); setTab("checkpoint"); }}>
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Trocar módulo
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -135,8 +161,13 @@ export default function CheckpointGuard({ initialModule = null }) {
         </TabsContent>
 
         <TabsContent value="manage" className="mt-4">
-          <div className="rounded-2xl border border-border/60 bg-card p-5">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-6">
             <CheckpointManagement module={module} onChange={() => { loadLogs(); loadDescriptors(); }} />
+            <div className="pt-2 border-t border-border/40">
+              <h2 className="text-base font-semibold mb-1 flex items-center gap-2"><Radio className="w-4 h-4 text-primary" /> Agentes de Segurança (Despacho Tático)</h2>
+              <p className="text-xs text-muted-foreground mb-3">Agentes ativos com localização são usados pelo dispatcher (Haversine) para designar o mais próximo da câmera em alertas de intruso/procurado.</p>
+              <AgentesSegurancaManager />
+            </div>
           </div>
         </TabsContent>
       </Tabs>

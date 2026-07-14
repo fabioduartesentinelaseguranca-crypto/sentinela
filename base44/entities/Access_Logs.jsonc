@@ -16,7 +16,8 @@
         "Allowed Student",
         "Student Evasion Attempt",
         "Unauthorized Intruder",
-        "Wanted Suspect"
+        "Wanted Suspect",
+        "Ambiguous"
       ]
     },
     "action_taken": {

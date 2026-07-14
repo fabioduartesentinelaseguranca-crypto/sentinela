@@ -55,10 +55,12 @@ function loadMediaPipe() {
   return mediapipePromise;
 }
 
-export function useLocalFaceDetector({ onRecognition, localDescriptors = [], enabled = true, module = "escolar" }) {
+export function useLocalFaceDetector({ onRecognition, localDescriptors = [], enabled = true, module = "escolar", cameraId = "CHECKPOINT-01" }) {
   const videoRef = useRef(null);
   const moduleRef = useRef(module);
   moduleRef.current = module;
+  const cameraIdRef = useRef(cameraId);
+  cameraIdRef.current = cameraId;
   const [status, setStatus] = useState("idle"); // idle | loading_models | ready | no_camera | error
   const [detection, setDetection] = useState(null);
   const [facePresent, setFacePresent] = useState(false);
@@ -152,7 +154,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
       const resp = await base44.functions.invoke("verificarCheckpoint", {
         embedding: Array.from(descriptor),
         snapshot_url,
-        camera_id: "CHECKPOINT-01",
+        camera_id: cameraIdRef.current,
         module: moduleRef.current,
       });
       const res = resp.data;

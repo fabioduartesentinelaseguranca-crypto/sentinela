@@ -17,11 +17,11 @@
     },
     "lat": {
       "type": "number",
-      "description": "Latitude da base/localiza\u00e7\u00e3o"
+      "description": "Latitude atual do agente (despacho geolocalizado)"
     },
     "lng": {
       "type": "number",
-      "description": "Longitude da base/localiza\u00e7\u00e3o"
+      "description": "Longitude atual do agente (despacho geolocalizado)"
     },
     "status": {
       "type": "string",
@@ -30,11 +30,20 @@
         "em_atendimento",
         "fora_servico"
       ],
-      "default": "disponivel"
+      "default": "disponivel",
+      "description": "disponivel/em_atendimento = ativo; fora_servico = pausa/desativado"
     },
     "veiculo": {
       "type": "string",
       "description": "Viatura ou unidade (ex: PM-4521, SAMU-089)"
+    },
+    "push_token": {
+      "type": "string",
+      "description": "Token push do dispositivo do agente (FCM/APNs) para despacho em tempo real"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone de contato do agente"
     }
   },
   "required": [
