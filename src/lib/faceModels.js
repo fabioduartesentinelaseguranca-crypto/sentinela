@@ -41,8 +41,11 @@ export { faceapi };
  */
 export async function computeDescriptorFromImage(input) {
   await loadFaceApiModels();
+  // inputSize alto (608) garante detecção precisa mesmo de faces pequenas no frame;
+  // scoreThreshold baixo evita perder rostos válidos. Descriptor alinhado de melhor
+  // qualidade = embeddings discriminativos entre pessoas diferentes.
   const result = await faceapi
-    .detectSingleFace(input, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+    .detectSingleFace(input, new faceapi.TinyFaceDetectorOptions({ inputSize: 608, scoreThreshold: 0.3 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
   return result?.descriptor || null;
