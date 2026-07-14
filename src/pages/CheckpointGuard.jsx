@@ -1,20 +1,27 @@
 import { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Shield } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useLocalFaceDetector } from "@/hooks/useLocalFaceDetector";
 import { useAlertSounds } from "@/hooks/useAlertSounds";
+import CheckpointModuleSelector from "@/components/checkpoint/CheckpointModuleSelector";
 import GuardWebcamView from "@/components/checkpoint/GuardWebcamView";
 import CheckpointMetrics from "@/components/checkpoint/CheckpointMetrics";
 import AccessLogFeed from "@/components/checkpoint/AccessLogFeed";
 import CheckpointAlertOverlay from "@/components/checkpoint/CheckpointAlertOverlay";
 import CheckpointManagement from "@/components/checkpoint/CheckpointManagement";
 
+const MODULE_INFO = {
+  escolar: { title: "Módulo Escolar", subtitle: "Base: Alunos_Biometria + Blacklist_Biometrica" },
+  procurados: { title: "Módulo Procurados", subtitle: "Base: WantedCriminal" },
+};
+
 export default function CheckpointGuard() {
+  const [module, setModule] = useState(null);
   const [alert, setAlert] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [studentsInside, setStudentsInside] = useState(0);
-  const [activeAlerts, setActiveAlerts] = useState(0);
+  const [stats, setStats] = useState({ primary: 0, alerts: 0 });
   const [localDescriptors, setLocalDescriptors] = useState([]);
   const [tab, setTab] = useState("checkpoint");
   const { play } = useAlertSounds();
@@ -23,35 +30,45 @@ export default function CheckpointGuard() {
     try {
       const recent = await base44.entities.Access_Logs.list("-timestamp", 5);
       setLogs(recent);
-      const allStudents = await base44.entities.Students.list();
-      setStudentsInside(allStudents.filter((s) => s.status === "inside").length);
       const last50 = await base44.entities.Access_Logs.list("-timestamp", 50);
-      setActiveAlerts(last50.filter((l) => l.classification !== "Allowed Student").length);
+      setStats((s) => ({ ...s, alerts: last50.filter((l) => l.classification !== "Allowed Student").length }));
     } catch { /* */ }
   }, []);
 
   const loadDescriptors = useCallback(async () => {
+    if (!module) { setLocalDescriptors([]); return; }
     try {
-      const [students, wanted] = await Promise.all([
-        base44.entities.Students.list(),
-        base44.entities.Wanted_Persons.list(),
-      ]);
       const arr = [];
-      students.forEach((s) => {
-        if (Array.isArray(s.face_embedding) && s.face_embedding.length >= 32) {
-          arr.push({ label: `ALUNO:${s.name}`, descriptor: s.face_embedding });
-        }
-      });
-      wanted.forEach((w) => {
-        if (Array.isArray(w.face_embedding) && w.face_embedding.length >= 32) {
-          arr.push({ label: `PROCURADO:${w.alias}`, descriptor: w.face_embedding });
-        }
-      });
+      if (module === "escolar") {
+        const [alunos, blacklist] = await Promise.all([
+          base44.entities.Alunos_Biometria.list(),
+          base44.entities.Blacklist_Biometrica.list(),
+        ]);
+        alunos.forEach((a) => {
+          if (Array.isArray(a.face_embedding) && a.face_embedding.length >= 32)
+            arr.push({ label: `ALUNO:${a.nome}`, descriptor: a.face_embedding });
+          if (a.usa_oculos && Array.isArray(a.face_embedding_oculos) && a.face_embedding_oculos.length >= 32)
+            arr.push({ label: `ALUNO:${a.nome} (óculos)`, descriptor: a.face_embedding_oculos });
+        });
+        blacklist.forEach((b) => {
+          if (Array.isArray(b.face_embedding) && b.face_embedding.length >= 32)
+            arr.push({ label: `BLACKLIST:${b.nome_suspeito || "Suspeito"}`, descriptor: b.face_embedding });
+        });
+        setStats((s) => ({ ...s, primary: alunos.length }));
+      } else {
+        const wanted = await base44.entities.WantedCriminal.filter({ status: "wanted" });
+        wanted.forEach((w) => {
+          if (Array.isArray(w.face_embedding) && w.face_embedding.length >= 32)
+            arr.push({ label: `PROCURADO:${w.name || w.alias}`, descriptor: w.face_embedding });
+        });
+        setStats((s) => ({ ...s, primary: wanted.length }));
+      }
       setLocalDescriptors(arr);
     } catch { /* */ }
-  }, []);
+  }, [module]);
 
-  useEffect(() => { loadLogs(); loadDescriptors(); }, [loadLogs, loadDescriptors]);
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+  useEffect(() => { loadDescriptors(); }, [loadDescriptors]);
 
   const handleRecognition = useCallback((res) => {
     if (!res?.face_detected) return;
@@ -64,19 +81,32 @@ export default function CheckpointGuard() {
     onRecognition: handleRecognition,
     localDescriptors,
     enabled: tab === "checkpoint",
+    module: module || "escolar",
   });
+
+  // Ao trocar de módulo: para a câmera e recarrega a base local
+  useEffect(() => { if (module) stopCamera(); /* eslint-disable-next-line */ }, [module]);
+
+  if (!module) return <CheckpointModuleSelector onPick={setModule} />;
+
+  const info = MODULE_INFO[module];
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6 relative">
       <CheckpointAlertOverlay alert={alert} onDismiss={() => setAlert(null)} />
 
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Shield className="w-7 h-7 text-primary" /> Checkpoint de Segurança
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Pipeline local: Google MediaPipe detecta a 20 FPS; face-api.js extrai o descriptor biométrico e faz match local antes de consultar o servidor — reduzindo custos de nuvem.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Shield className="w-7 h-7 text-primary" /> Checkpoint de Segurança
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            <span className="font-semibold text-foreground">{info.title}</span> — {info.subtitle}. Pipeline local (MediaPipe + face-api) compartilhado.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => { stopCamera(); setModule(null); setTab("checkpoint"); }}>
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Trocar módulo
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -96,7 +126,7 @@ export default function CheckpointGuard() {
               />
             </div>
             <div className="space-y-4">
-              <CheckpointMetrics studentsInside={studentsInside} activeAlerts={activeAlerts} processing={processing} />
+              <CheckpointMetrics module={module} primaryCount={stats.primary} activeAlerts={stats.alerts} processing={processing} />
               <AccessLogFeed logs={logs} />
             </div>
           </div>
@@ -104,7 +134,7 @@ export default function CheckpointGuard() {
 
         <TabsContent value="manage" className="mt-4">
           <div className="rounded-2xl border border-border/60 bg-card p-5">
-            <CheckpointManagement onChange={() => { loadLogs(); loadDescriptors(); }} />
+            <CheckpointManagement module={module} onChange={() => { loadLogs(); loadDescriptors(); }} />
           </div>
         </TabsContent>
       </Tabs>
