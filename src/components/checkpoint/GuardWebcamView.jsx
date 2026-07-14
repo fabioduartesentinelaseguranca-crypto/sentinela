@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, CameraOff, Video, ScanFace, Radio, Cpu } from "lucide-react";
+import { Loader2, Camera, CameraOff, Video, ScanFace, Radio, Cpu, RotateCcw } from "lucide-react";
 
-export default function GuardWebcamView({ videoRef, status, detection, facePresent, processing, localMatch, initProgress, onStart, onStop }) {
+export default function GuardWebcamView({ videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, onStart, onStop }) {
   const isLive = status === "ready";
   const localMatchLabel = localMatch?.label || (localMatch?.message ? null : null);
 
@@ -75,9 +75,19 @@ export default function GuardWebcamView({ videoRef, status, detection, facePrese
                 <span className="text-[11px]">Carregando MediaPipe WASM + modelos face-api</span>
               </>
             ) : status === "no_camera" ? (
-              <><CameraOff className="w-12 h-12 text-destructive" /><span className="text-sm text-destructive font-medium">Acesso à câmera negado</span><span className="text-xs">Permita a câmera nas permissões do navegador.</span></>
+              <>
+                <CameraOff className="w-12 h-12 text-destructive" />
+                <span className="text-sm text-destructive font-medium">Câmera não disponível</span>
+                {errorMsg && <span className="text-xs text-center max-w-xs px-4">{errorMsg}</span>}
+                <Button variant="outline" size="sm" onClick={onStart} className="mt-1"><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Tentar novamente</Button>
+              </>
             ) : status === "error" ? (
-              <><CameraOff className="w-12 h-12 text-destructive" /><span className="text-sm text-destructive">Falha ao carregar IA local</span></>
+              <>
+                <CameraOff className="w-12 h-12 text-destructive" />
+                <span className="text-sm text-destructive">Falha ao carregar IA local</span>
+                {errorMsg && <span className="text-xs text-center max-w-xs px-4">{errorMsg}</span>}
+                <Button variant="outline" size="sm" onClick={onStart} className="mt-1"><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Tentar novamente</Button>
+              </>
             ) : (
               <><Camera className="w-12 h-12 opacity-30" /><span className="text-sm">Câmera inativa</span><span className="text-xs">Inicie o monitoramento do checkpoint.</span></>
             )}

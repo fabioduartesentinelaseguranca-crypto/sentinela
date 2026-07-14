@@ -28,16 +28,29 @@ const COOLDOWN_MS = 3000;
 
 let mediapipePromise = null;
 function loadMediaPipe() {
+  if (mediapipePromise && mediapipePromise.__failed) mediapipePromise = null;
   if (!mediapipePromise) {
     mediapipePromise = (async () => {
       const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
-      const detector = await FaceDetector.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: BLAZEFACE_MODEL, delegate: "GPU" },
-        runningMode: "VIDEO",
-        minDetectionConfidence: 0.5,
-      });
+      // CPU é mais confiável em notebooks (GPU/WebGL frequentemente falha no MediaPipe);
+      // tenta GPU e cai para CPU em caso de erro.
+      let detector;
+      try {
+        detector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: BLAZEFACE_MODEL, delegate: "GPU" },
+          runningMode: "VIDEO",
+          minDetectionConfidence: 0.5,
+        });
+      } catch {
+        detector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: BLAZEFACE_MODEL, delegate: "CPU" },
+          runningMode: "VIDEO",
+          minDetectionConfidence: 0.5,
+        });
+      }
       return detector;
     })();
+    mediapipePromise.catch(() => { mediapipePromise.__failed = true; });
   }
   return mediapipePromise;
 }
@@ -50,6 +63,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
   const [processing, setProcessing] = useState(false);
   const [localMatch, setLocalMatch] = useState(null);
   const [initProgress, setInitProgress] = useState(0);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const onRecognitionRef = useRef(onRecognition);
   onRecognitionRef.current = onRecognition;
@@ -206,18 +220,30 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
       setInitProgress(100);
     } catch (err) {
       console.error("Model init failed:", err);
+      setErrorMsg(err?.message || "Não foi possível carregar os modelos de IA locais (MediaPipe/face-api). Verifique sua conexão.");
       setStatus("error");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMsg("Câmera não disponível. O app precisa rodar em HTTPS para acessar a webcam.");
+      setStatus("no_camera");
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
       setStatus("ready");
       startLoop();
-    } catch { setStatus("no_camera"); }
+    } catch (err) {
+      setErrorMsg(err?.name === "NotAllowedError"
+        ? "Permissão de câmera negada. Autorize a webcam nas configurações do navegador."
+        : (err?.message || "Falha ao acessar a webcam."));
+      setStatus("no_camera");
+    }
   }, [startLoop, buildMatcher]);
 
   const stopCamera = useCallback(() => {
@@ -229,6 +255,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
     setDetection(null);
     setFacePresent(false);
     setLocalMatch(null);
+    setErrorMsg(null);
   }, [stopLoop]);
 
   useEffect(() => () => {
@@ -237,5 +264,5 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
     if (mpDetectorRef.current) { try { mpDetectorRef.current.close(); } catch {} mpDetectorRef.current = null; }
   }, [stopLoop]);
 
-  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, startCamera, stopCamera };
+  return { videoRef, status, detection, facePresent, processing, localMatch, initProgress, errorMsg, startCamera, stopCamera };
 }
