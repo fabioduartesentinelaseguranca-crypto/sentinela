@@ -17,8 +17,8 @@ const MODULE_INFO = {
   procurados: { title: "Módulo Procurados", subtitle: "Base: WantedCriminal" },
 };
 
-export default function CheckpointGuard() {
-  const [module, setModule] = useState(null);
+export default function CheckpointGuard({ initialModule = null }) {
+  const [module, setModule] = useState(initialModule);
   const [alert, setAlert] = useState(null);
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({ primary: 0, alerts: 0 });

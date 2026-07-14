@@ -22,7 +22,7 @@ import HeatmapPatrolDashboard from "@/components/admin/HeatmapPatrolDashboard";
 import TeamAchievements from "@/pages/TeamAchievements";
 import StrategicKPIs from "@/components/admin/StrategicKPIs";
 import OperationalHeatmap from "@/components/admin/OperationalHeatmap";
-import WantedBoard from "@/pages/WantedBoard";
+import CheckpointGuard from "@/pages/CheckpointGuard";
 import VideoAnalysisPanel from "@/components/admin/VideoAnalysisPanel";
 import SmartShiftAllocator from "@/components/admin/SmartShiftAllocator";
 import ForensicIntelligence from "@/components/admin/ForensicIntelligence";
@@ -41,7 +41,6 @@ import GuardianManager from "@/components/admin/GuardianManager";
 import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
 import BoletinsOcorrenciaList from "@/components/admin/BoletinsOcorrenciaList";
 import CercaVirtualEscolar from "@/pages/CercaVirtualEscolar";
-import CadastroBiometricoEscolar from "@/pages/CadastroBiometricoEscolar";
 import ChecklistBiometria from "@/components/admin/ChecklistBiometria";
 import AdminTabNav from "@/components/admin/AdminTabNav";
 import { Button } from "@/components/ui/button";
@@ -206,7 +205,7 @@ export default function AdminDashboard() {
       {activeTab === "cameras" && <CameraManager />}
 
       {/* ── WANTED BOARD TAB ──────────────────────────────── */}
-      {activeTab === "wanted" && <WantedBoard />}
+      {activeTab === "wanted" && <CheckpointGuard initialModule="procurados" />}
 
       {/* ── VIDEO ANALYSIS TAB ────────────────────────────── */}
       {activeTab === "video" && <VideoAnalysisPanel />}
@@ -254,7 +253,7 @@ export default function AdminDashboard() {
       {activeTab === "cercas_escolares" && <CercaVirtualEscolar />}
 
       {/* ── BIOMETRIA ESCOLAR TAB ─────────────────────────── */}
-      {activeTab === "biometria_escolar" && <CadastroBiometricoEscolar />}
+      {activeTab === "biometria_escolar" && <CheckpointGuard initialModule="escolar" />}
 
       {/* ── CHECKLIST BIOMÉTRICO TAB ───────────────────────── */}
       {activeTab === "checklist_biometria" && <ChecklistBiometria />}

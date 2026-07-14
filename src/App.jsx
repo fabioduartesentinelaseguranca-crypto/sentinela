@@ -25,7 +25,6 @@ import TrainingCenter from './pages/TrainingCenter';
 import AgentProfile from './pages/AgentProfile';
 import TeamAchievements from './pages/TeamAchievements';
 import PsychologistDashboard from './pages/PsychologistDashboard';
-import WantedBoard from './pages/WantedBoard';
 import AccessDeniedPage from './pages/AccessDenied';
 import RoleGuard from '@/components/shared/RoleGuard';
 import UserManual from './pages/UserManual';
@@ -36,7 +35,6 @@ import CaminheComigo from './pages/CaminheComigo';
 import CaminheComigoViewer from './pages/CaminheComigoViewer';
 import MasterDashboard from './pages/MasterDashboard';
 import CercaVirtualEscolar from './pages/CercaVirtualEscolar';
-import CadastroBiometricoEscolar from './pages/CadastroBiometricoEscolar';
 import ConviteCliente from './pages/ConviteCliente';
 import CheckpointGuard from './pages/CheckpointGuard';
 
@@ -88,7 +86,7 @@ const AuthenticatedApp = () => {
       {/* Admin routes — last so they don't override role-specific routes */}
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<RoleGuard allow={["admin"]}><AdminDashboard /></RoleGuard>} />
-        <Route path="/wanted" element={<RoleGuard allow={["admin"]}><WantedBoard /></RoleGuard>} />
+        <Route path="/wanted" element={<RoleGuard allow={["admin"]}><CheckpointGuard initialModule="procurados" /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
       </Route>
 
@@ -101,7 +99,7 @@ const AuthenticatedApp = () => {
       {/* Central de Despacho — tela full-screen, acesso para agentes e admins */}
       <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />
       <Route path="/cercas-escolares" element={<RoleGuard allow={["agent", "admin"]}><CercaVirtualEscolar /></RoleGuard>} />
-      <Route path="/biometria-escolar" element={<RoleGuard allow={["agent", "admin"]}><CadastroBiometricoEscolar /></RoleGuard>} />
+      <Route path="/biometria-escolar" element={<RoleGuard allow={["agent", "admin"]}><CheckpointGuard initialModule="escolar" /></RoleGuard>} />
       <Route path="/checkpoint-guard" element={<RoleGuard allow={["agent", "admin"]}><CheckpointGuard /></RoleGuard>} />
 
       <Route path="*" element={<PageNotFound />} />
