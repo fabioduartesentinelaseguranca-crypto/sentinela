@@ -24,9 +24,11 @@ const ALERT_CONFIG = {
   },
   "Allowed Student": {
     border: "border-green-500", text: "text-green-500", bg: "bg-green-500/10",
-    title: (a) => `Acesso Liberado: ${a.person_name}`,
-    sub: () => "Aluno autorizado dentro do horário permitido",
-    flash: false, auto: 3000,
+    title: (a) => `${a.access_event === "saida" ? "Saída Registrada" : "Entrada Registrada"}: ${a.person_name}`,
+    sub: (a) => a.alerta_disparado
+      ? `⚠️ ${a.motivo_alerta} · Matrícula ${a.matricula} · ${a.similarity}%`
+      : `Matrícula ${a.matricula} · dentro do horário · ${a.similarity}%`,
+    flash: false, auto: 4000,
   },
 };
 

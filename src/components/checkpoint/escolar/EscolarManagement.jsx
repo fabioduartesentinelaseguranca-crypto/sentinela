@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { GraduationCap, Ban, Trash2, Glasses } from "lucide-react";
+import { GraduationCap, Ban, Trash2, Glasses, Users, Wrench } from "lucide-react";
 import CheckpointFaceCapture from "@/components/checkpoint/CheckpointFaceCapture";
+import ResponsaveisForm from "@/components/checkpoint/escolar/ResponsaveisForm";
+import VisitantesForm from "@/components/checkpoint/escolar/VisitantesForm";
 
 const TURNOS = [
   { v: "manha", l: "Manhã" }, { v: "tarde", l: "Tarde" },
@@ -181,11 +183,15 @@ function BlacklistForm({ onSaved }) {
 export default function EscolarManagement({ onSaved }) {
   return (
     <Tabs defaultValue="alunos">
-      <TabsList className="mb-4">
+      <TabsList className="mb-4 flex flex-wrap">
         <TabsTrigger value="alunos"><GraduationCap className="w-4 h-4 mr-1.5" /> Alunos</TabsTrigger>
+        <TabsTrigger value="responsaveis"><Users className="w-4 h-4 mr-1.5" /> Responsáveis</TabsTrigger>
+        <TabsTrigger value="visitantes"><Wrench className="w-4 h-4 mr-1.5" /> Visitantes/OS</TabsTrigger>
         <TabsTrigger value="blacklist"><Ban className="w-4 h-4 mr-1.5" /> Blacklist</TabsTrigger>
       </TabsList>
       <TabsContent value="alunos"><AlunosForm onSaved={onSaved} /></TabsContent>
+      <TabsContent value="responsaveis"><ResponsaveisForm onSaved={onSaved} /></TabsContent>
+      <TabsContent value="visitantes"><VisitantesForm onSaved={onSaved} /></TabsContent>
       <TabsContent value="blacklist"><BlacklistForm onSaved={onSaved} /></TabsContent>
     </Tabs>
   );

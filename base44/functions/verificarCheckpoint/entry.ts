@@ -27,6 +27,12 @@ function brasiliaHhMm() {
   return b.toISOString().slice(11, 16);
 }
 
+function brasiliaDate() {
+  const now = new Date();
+  const b = new Date(now.getTime() - 3 * 60 * 60 * 1000); // Brasília = UTC-3
+  return b.toISOString().slice(0, 10);
+}
+
 function toMin(hhmm) {
   if (!hhmm || typeof hhmm !== "string") return null;
   const [hh, mm] = hhmm.split(":").map(Number);
@@ -180,13 +186,54 @@ Deno.serve(async (req) => {
     if (alBest && alSim >= AL_THRESHOLD) {
       const within = withinSchedule(nowHhMm, alBest.horario_entrada, alBest.horario_saida, alBest.tolerancia_minutos);
       if (within) {
+        // ── Registro de entrada/saída (dedup diário por sequência) ──
+        // Alterna com base no último registro do aluno HOJE:
+        //   sem registros hoje (ou último = saída) → entrada
+        //   último = entrada → saída
+        // Garante 1 entrada + 1 saída por ciclo, sem duplicar durante o dia.
+        const today = brasiliaDate();
+        const recent = await base44.asServiceRole.entities.Registros_Acesso_Escolar.filter(
+          { id_aluno: alBest.id }, "-data_hora", 30
+        );
+        const todays = recent.filter((r) => (r.data_hora || "").slice(0, 10) === today);
+        const lastEvent = todays.length ? todays[0].tipo_evento : null;
+        const evento = lastEvent === "entrada" ? "saida" : "entrada";
+
+        // Alerta de saída antecipada (antes do horário de saída - tolerância)
+        let alertaDisparado = false, motivoAlerta = null;
+        const nowMin = toMin(nowHhMm);
+        const saidaMin = toMin(alBest.horario_saida);
+        const tol = alBest.tolerancia_minutos || 0;
+        if (evento === "saida" && nowMin != null && saidaMin != null && nowMin < saidaMin - tol) {
+          alertaDisparado = true;
+          motivoAlerta = `Saída antecipada (${nowHhMm} < ${alBest.horario_saida} - ${tol}min)`;
+        }
+
+        const registro = await base44.asServiceRole.entities.Registros_Acesso_Escolar.create({
+          id_aluno: alBest.id,
+          nome_aluno: alBest.nome,
+          matricula: alBest.matricula,
+          id_escola_cerca: alBest.id_escola_cerca,
+          nome_escola: alBest.nome_escola,
+          tipo_evento: evento,
+          data_hora: nowIso,
+          confianca_score: alSim,
+          metodo: "facial",
+          dentro_horario: true,
+          alerta_disparado: alertaDisparado,
+          motivo_alerta: motivoAlerta,
+          registrado_por_id: user.id,
+        });
+
+        const evtLabel = evento === "entrada" ? "Entrada" : "Saída";
         await log("Allowed Student", alBest.nome, alBest.id, alSim,
-          `Aluno autorizado. Matrícula ${alBest.matricula}. Escola: ${alBest.nome_escola || "—"}.`);
+          `${evtLabel} registrada. Matrícula ${alBest.matricula}. Escola: ${alBest.nome_escola || "—"}.${alertaDisparado ? " ALERTA: " + motivoAlerta : ""}`);
         return Response.json({
           classification: "Allowed Student", module, face_detected: true, source: "local",
           person_name: alBest.nome, person_id: alBest.id,
           similarity: alSim, matricula: alBest.matricula,
           allowed_checkin_time: alBest.horario_entrada, allowed_checkout_time: alBest.horario_saida,
+          access_event: evento, registro_id: registro.id, alerta_disparado: alertaDisparado, motivo_alerta: motivoAlerta,
           snapshot_url: snapshot, quality_score: quality,
         });
       }
