@@ -191,7 +191,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
     const loop = async () => {
       if (!running) return;
       const video = videoRef.current;
-      if (enabledRef.current && video && video.readyState >= 2) {
+      if (enabledRef.current && video && video.readyState >= 2 && video.videoWidth > 0) {
         try {
           let box = null;
           if (mpDetectorRef.current) {
@@ -201,7 +201,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
             if (d) box = d.boundingBox;
           } else {
             // ── Fallback: face-api TinyFaceDetector ───────────────
-            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }));
+            const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 448, scoreThreshold: 0.25 }));
             if (det) box = det.detection.box;
           }
           if (box) {
@@ -215,7 +215,7 @@ export function useLocalFaceDetector({ onRecognition, localDescriptors = [], ena
             faceStartRef.current = null;
             lastCenterRef.current = null;
           }
-        } catch { /* ignora erros isolados de frame */ }
+        } catch (e) { console.warn("[checkpoint] detection frame error:", e?.message || e); }
       }
       loopRef.current = setTimeout(loop, 1000 / TARGET_FPS);
     };
