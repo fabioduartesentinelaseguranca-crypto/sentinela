@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import WantedBiometriaCaptura from "@/components/wanted/WantedBiometriaCaptura";
+import CheckpointFaceCapture from "@/components/checkpoint/CheckpointFaceCapture";
 
 const DANGER_COLOR = {
   low: "border-success/40 bg-success/5 text-success",
@@ -320,7 +320,7 @@ export default function WantedBoard() {
                 <label className="text-xs text-muted-foreground">Crimes (separados por vírgula)</label>
                 <Input value={crimesInput} onChange={(e) => setCrimesInput(e.target.value)} placeholder="Roubo, Tráfico, Homicídio..." />
               </div>
-              <WantedBiometriaCaptura
+              <CheckpointFaceCapture
                 onCapture={setBiometria}
                 currentPhotoUrl={form.photo_url || null}
               />
