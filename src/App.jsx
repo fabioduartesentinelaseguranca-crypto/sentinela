@@ -38,6 +38,7 @@ import CercaVirtualEscolar from './pages/CercaVirtualEscolar';
 import ConviteCliente from './pages/ConviteCliente';
 import CheckpointGuard from './pages/CheckpointGuard';
 import TermosUso from './pages/TermosUso';
+import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -119,6 +120,7 @@ function App() {
               <Route path="/caminhe-comigo/:token" element={<CaminheComigoViewer />} />
               <Route path="/convite/:token" element={<ConviteCliente />} />
               <Route path="/termos" element={<TermosUso />} />
+              <Route path="/privacidade" element={<PoliticaPrivacidade />} />
               {/* Master dashboard — completely isolated, no auth provider */}
               <Route path="/master" element={<MasterDashboard />} />
               {/* Authenticated routes */}

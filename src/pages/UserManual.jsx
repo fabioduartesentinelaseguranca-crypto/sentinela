@@ -634,9 +634,15 @@ export default function UserManual() {
 
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/40 space-y-2">
         <div>Sentinela — Plataforma de Segurança Cidadã · Manual v2.0</div>
-        <a href="/termos" className="inline-flex items-center gap-1 text-primary hover:underline">
-          <Scale className="w-3.5 h-3.5" /> Termos e Condições de Uso
-        </a>
+        <div className="flex items-center justify-center gap-4">
+          <a href="/termos" className="inline-flex items-center gap-1 text-primary hover:underline">
+            <Scale className="w-3.5 h-3.5" /> Termos e Condições de Uso
+          </a>
+          <span className="text-border">·</span>
+          <a href="/privacidade" className="inline-flex items-center gap-1 text-primary hover:underline">
+            <Lock className="w-3.5 h-3.5" /> Política de Privacidade
+          </a>
+        </div>
       </div>
     </div>
   );
