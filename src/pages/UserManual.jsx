@@ -4,7 +4,7 @@ import {
   Shield, Users, UserCheck, Brain, ChevronDown, ChevronRight,
   AlertTriangle, MapPin, Radio, BookOpen, Star, Camera,
   Truck, Package, Calendar, FileText, Phone, Eye, Lock,
-  Download, Loader2, CheckCircle2, Search, X
+  Download, Loader2, CheckCircle2, Search, X, Scale
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { jsPDF } from "jspdf";
@@ -632,8 +632,11 @@ export default function UserManual() {
         </div>
       </div>
 
-      <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/40">
-        Sentinela — Plataforma de Segurança Cidadã · Manual v2.0
+      <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/40 space-y-2">
+        <div>Sentinela — Plataforma de Segurança Cidadã · Manual v2.0</div>
+        <a href="/termos" className="inline-flex items-center gap-1 text-primary hover:underline">
+          <Scale className="w-3.5 h-3.5" /> Termos e Condições de Uso
+        </a>
       </div>
     </div>
   );
