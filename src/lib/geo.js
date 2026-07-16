@@ -22,3 +22,27 @@ export function distanceKm(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+
+/**
+ * Filtra agentes (com lat/lng) estritamente dentro de um raio (em metros) da
+ * origem, ordenados do mais próximo para o mais distante (Haversine).
+ * Cada agente retornado recebe `_distancia_m` (distância em metros).
+ */
+export function filtrarAgentesPorRaio(origem, agentes, raioMetros) {
+  const raio = Number(raioMetros);
+  if (
+    !origem ||
+    typeof origem.lat !== "number" ||
+    typeof origem.lng !== "number" ||
+    !Number.isFinite(raio)
+  ) {
+    return [];
+  }
+  return (Array.isArray(agentes) ? agentes : [])
+    .map((a) => ({
+      ...a,
+      _distancia_m: distanceKm(origem, { lat: a.lat, lng: a.lng }) * 1000,
+    }))
+    .filter((a) => a._distancia_m <= raio)
+    .sort((a, b) => a._distancia_m - b._distancia_m);
+}

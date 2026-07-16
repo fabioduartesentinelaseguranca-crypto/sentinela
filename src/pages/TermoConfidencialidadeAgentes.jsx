@@ -1,4 +1,4 @@
-import { Lock, ShieldAlert, FileText, Gavel, ScrollText } from "lucide-react";
+import { Lock, ShieldAlert, FileText, Gavel, ScrollText, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -129,15 +129,41 @@ export default function TermoConfidencialidadeAgentes() {
           </div>
         </section>
 
-        {/* Cláusula 4 — Foro */}
+        {/* Cláusula 4 — Geolocalização Funcional */}
+        <section>
+          <h2 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-chart-2" />
+            Cláusula 4 — Geolocalização Funcional (Rastreamento em Segundo Plano)
+          </h2>
+          <div className="space-y-3 text-muted-foreground">
+            <p className="text-foreground">
+              <strong className="text-foreground">4.1 — Cláusula de Geolocalização Funcional.</strong> O
+              usuário declara-se ciente e concorda de forma expressa que o aplicativo Sentinela coletará,
+              processará e armazenará seus dados de geolocalização (latitude e longitude) em segundo plano
+              (background), inclusive quando o aplicativo estiver fechado, com a finalidade exclusiva de
+              realizar a triagem automatizada e o despacho de ocorrências de urgência baseadas em proximidade
+              geográfica dentro do município de São Bernardo do Campo - SP, em estrita conformidade com o
+              Artigo 7º, Inciso III (execução de políticas públicas) da Lei Geral de Proteção de Dados (LGPD).
+            </p>
+            <p>
+              <strong className="text-foreground">4.2.</strong> Os dados de localização são
+              <strong className="text-foreground"> confidenciais</strong> e destinam-se
+              <strong className="text-foreground"> puramente</strong> aos fins operacionais da central de
+              monitoramento, sendo <strong className="text-foreground">vedada</strong> sua utilização para
+              monitoramento de vida privada do Agente Público.
+            </p>
+          </div>
+        </section>
+
+        {/* Cláusula 5 — Foro */}
         <section>
           <h2 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
             <Gavel className="w-5 h-5 text-primary" />
-            Cláusula 4 — Foro Eleito
+            Cláusula 5 — Foro Eleito
           </h2>
           <div className="bg-primary/10 border border-primary/20 rounded-xl p-5 not-prose">
             <p className="text-foreground">
-              <strong className="text-foreground">4.1.</strong> Fica eleita, com renúncia expressa a qualquer
+              <strong className="text-foreground">5.1.</strong> Fica eleita, com renúncia expressa a qualquer
               outro, por mais privilegiado que seja, a <strong className="text-primary">Comarca de São
               Bernardo do Campo — Estado de São Paulo</strong> como <strong className="text-primary">foro
               exclusivo</strong> para dirimir quaisquer controvérsias oriundas deste Termo e do uso da

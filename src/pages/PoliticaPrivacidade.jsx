@@ -116,6 +116,36 @@ export default function PoliticaPrivacidade() {
           </div>
         </section>
 
+        {/* Cláusula 2-A — Rastreamento em Segundo Plano de Agentes Públicos */}
+        <section>
+          <h2 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-chart-2" />
+            Cláusula 2-A — Rastreamento em Segundo Plano de Agentes Públicos
+          </h2>
+          <div className="space-y-3 text-muted-foreground">
+            <p>
+              <strong className="text-foreground">2-A.1 — Consentimento de Rastreamento.</strong> O Agente
+              Público é expressamente informado de que a Plataforma <strong className="text-foreground">coleta
+              dados de geolocalização em tempo real</strong> (latitude e longitude) <strong className="text-foreground">mesmo
+              quando o aplicativo está fechado ou não está em uso</strong> (execução em segundo plano /
+              background), com a finalidade estrita de triagem e eficiência no atendimento de ocorrências de
+              segurança pública e defesa civil. O aceite do Termo de Responsabilidade e Confidencialidade
+              vinculado a este perfil equivale ao consentimento livre, informado e inequívoco previsto no art.
+              8º da LGPD.
+            </p>
+            <p>
+              <strong className="text-foreground">2-A.2 — Finalidade Exclusiva.</strong> Esses dados de
+              localização são <strong className="text-foreground">confidenciais</strong> e utilizados
+              <strong className="text-foreground"> puramente para fins operacionais da central de
+              monitoramento do município de São Bernardo do Campo - SP</strong>, viabilizando o despacho
+              automatizado baseado em proximidade geográfica. É <strong className="text-foreground">vedado o
+              uso</strong> dos dados de geolocalização para monitoramento de vida privada, controle de
+              jornada com finalidade disciplinar diversa da operação, ou qualquer finalidade que extrapole a
+              execução de políticas públicas de segurança e defesa civil (art. 7º, III, LGPD).
+            </p>
+          </div>
+        </section>
+
         {/* Cláusula 3 — Sigilo e Anonimato */}
         <section>
           <h2 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
