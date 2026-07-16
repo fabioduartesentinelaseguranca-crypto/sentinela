@@ -17,6 +17,7 @@ const GROUPS = [
   {
     label: "🗺️ Inteligência & Mapas",
     tabs: [
+      { id: "live_map", label: "Mapa Tempo Real" },
       { id: "opheatmap", label: "Mapa Operacional", modulo: "gestao_heatmap" },
       { id: "heatmap", label: "Mapa Preditivo", modulo: "gestao_heatmap" },
       { id: "forensic", label: "Inteligência Forense", modulo: "gestao_analise_preditiva" },

@@ -22,6 +22,7 @@ import HeatmapPatrolDashboard from "@/components/admin/HeatmapPatrolDashboard";
 import TeamAchievements from "@/pages/TeamAchievements";
 import StrategicKPIs from "@/components/admin/StrategicKPIs";
 import OperationalHeatmap from "@/components/admin/OperationalHeatmap";
+import OccurrenceLiveMap from "@/components/admin/OccurrenceLiveMap";
 import CheckpointGuard from "@/pages/CheckpointGuard";
 import VideoAnalysisPanel from "@/components/admin/VideoAnalysisPanel";
 import SmartShiftAllocator from "@/components/admin/SmartShiftAllocator";
@@ -134,6 +135,9 @@ export default function AdminDashboard() {
 
       {/* ── KPIs TAB ──────────────────────────────────────── */}
       {activeTab === "kpis" && <StrategicKPIs occurrences={occurrences} />}
+
+      {/* ── LIVE OCCURRENCE MAP TAB ─────────────────────── */}
+      {activeTab === "live_map" && <OccurrenceLiveMap />}
 
       {/* ── OPERATIONAL HEATMAP TAB ───────────────────────── */}
       {activeTab === "opheatmap" && <OperationalHeatmap occurrences={occurrences} />}
