@@ -1,4 +1,5 @@
 import AppLayout from "./AppLayout";
+import AgentConsentGate from "./AgentConsentGate";
 import { Map, MessageSquare, BookOpen, UserCircle, Trophy, HelpCircle, Bell, Radio } from "lucide-react";
 import { useModulos } from "@/lib/useModulos.jsx";
 
@@ -16,5 +17,9 @@ const ALL_NAV = [
 export default function AgentLayout() {
   const { hasModulo } = useModulos();
   const navItems = ALL_NAV.filter(item => !item.modulo || hasModulo(item.modulo));
-  return <AppLayout navItems={navItems} roleLabel="Agente" />;
+  return (
+    <AgentConsentGate>
+      <AppLayout navItems={navItems} roleLabel="Agente" />
+    </AgentConsentGate>
+  );
 }

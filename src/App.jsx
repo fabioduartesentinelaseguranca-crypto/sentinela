@@ -39,6 +39,7 @@ import ConviteCliente from './pages/ConviteCliente';
 import CheckpointGuard from './pages/CheckpointGuard';
 import TermosUso from './pages/TermosUso';
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
+import TermoConfidencialidadeAgentes from './pages/TermoConfidencialidadeAgentes';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -121,6 +122,7 @@ function App() {
               <Route path="/convite/:token" element={<ConviteCliente />} />
               <Route path="/termos" element={<TermosUso />} />
               <Route path="/privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/termo-agentes" element={<TermoConfidencialidadeAgentes />} />
               {/* Master dashboard — completely isolated, no auth provider */}
               <Route path="/master" element={<MasterDashboard />} />
               {/* Authenticated routes */}

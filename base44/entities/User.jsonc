@@ -67,6 +67,34 @@
     "cliente_nome": {
       "type": "string",
       "description": "Nome do munic\u00edpio/cliente (desnormalizado para exibi\u00e7\u00e3o r\u00e1pida)"
+    },
+    "termos_aceitos": {
+      "type": "boolean",
+      "default": false,
+      "description": "Aceite dos Termos e Pol\u00edtica de Privacidade (cidad\u00e3o)"
+    },
+    "termos_aceitos_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora do aceite dos termos pelo cidad\u00e3o"
+    },
+    "termos_versao": {
+      "type": "string",
+      "description": "Vers\u00e3o dos termos aceitos pelo cidad\u00e3o"
+    },
+    "termo_confidencialidade_aceito": {
+      "type": "boolean",
+      "default": false,
+      "description": "Aceite do Termo de Responsabilidade e Confidencialidade (agentes p\u00fablicos)"
+    },
+    "termo_confidencialidade_aceito_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora do aceite do termo de confidencialidade"
+    },
+    "termo_confidencialidade_versao": {
+      "type": "string",
+      "description": "Vers\u00e3o do termo de confidencialidade aceito"
     }
   },
   "required": []
