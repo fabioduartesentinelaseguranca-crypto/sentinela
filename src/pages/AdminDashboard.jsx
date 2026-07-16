@@ -36,6 +36,7 @@ import OperationalEfficiencyReport from "@/components/admin/OperationalEfficienc
 import MonthlyOccurrenceReport from "@/components/admin/MonthlyOccurrenceReport";
 import SystemHealthDashboard from "@/components/admin/SystemHealthDashboard";
 import QaEstressePanel from "@/components/admin/QaEstressePanel";
+import FunctionTestsDashboard from "@/components/admin/FunctionTestsDashboard";
 import TacticalCommandCenter from "@/components/admin/TacticalCommandCenter";
 import GuardianManager from "@/components/admin/GuardianManager";
 import BoletimOcorrenciaPanel from "@/components/admin/BoletimOcorrenciaPanel";
@@ -245,6 +246,9 @@ export default function AdminDashboard() {
 
       {/* ── QA & ESTRESSE TAB ─────────────────────────────── */}
       {activeTab === "qa_estresse" && <QaEstressePanel />}
+
+      {/* ── FUNCTION TESTS TAB ────────────────────────────── */}
+      {activeTab === "function_tests" && <FunctionTestsDashboard />}
 
       {/* ── GUARDIANS TAB ─────────────────────────────────── */}
       {activeTab === "guardians" && <GuardianManager />}

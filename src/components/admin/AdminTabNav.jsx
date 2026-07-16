@@ -87,6 +87,7 @@ const GROUPS = [
     label: "🩺 Saúde do Sistema",
     tabs: [
       { id: "system_health", label: "Checklist E2E" },
+      { id: "function_tests", label: "🧪 Testes de Funções" },
       { id: "qa_estresse", label: "🔥 QA & Estresse" },
     ],
   },
