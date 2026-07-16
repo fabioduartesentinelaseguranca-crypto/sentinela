@@ -1,4 +1,5 @@
 import AppLayout from "./AppLayout";
+import ConsentGate from "./ConsentGate";
 import { Home, Award, HelpCircle, MapPin, Navigation, Shield } from "lucide-react";
 import { useModulos } from "@/lib/useModulos.jsx";
 
@@ -13,5 +14,9 @@ const ALL_NAV = [
 export default function CitizenLayout() {
   const { hasModulo } = useModulos();
   const navItems = ALL_NAV.filter(item => !item.modulo || hasModulo(item.modulo));
-  return <AppLayout navItems={navItems} roleLabel="Cidadão" />;
+  return (
+    <ConsentGate>
+      <AppLayout navItems={navItems} roleLabel="Cidadão" />
+    </ConsentGate>
+  );
 }
