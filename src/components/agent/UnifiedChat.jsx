@@ -168,9 +168,15 @@ export default function UnifiedChat({ occurrenceId = null }) {
           <div key={msg.id} className={`flex ${isMe(msg) ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[80%] ${isMe(msg) ? "items-end" : "items-start"} flex flex-col gap-1`}>
               {!isMe(msg) && (
-                <span className={`text-[10px] font-semibold ${ROLE_COLORS[msg.sender_role] || "text-muted-foreground"}`}>
+                <span className={`text-[10px] font-semibold ${ROLE_COLORS[msg.sender_role] || "text-muted-foreground"} flex items-center gap-1.5`}>
                   {msg.sender_name} · {msg.sender_role}
+                  {msg.occurrence_id && (
+                    <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">Ocorrência</span>
+                  )}
                 </span>
+              )}
+              {isMe(msg) && msg.occurrence_id && (
+                <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium self-end">Ocorrência</span>
               )}
               <div className={`rounded-2xl px-3 py-2 text-sm ${isMe(msg) ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted/40 border border-border/40 rounded-bl-sm"}`}>
                 {msg.msg_type === "location" && msg.location ? (
