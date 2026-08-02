@@ -32,7 +32,7 @@ export default function CitizenOccurrenceChat({ occurrence, open, onOpenChange }
   const send = async () => {
     if (!text.trim()) return;
     await base44.entities.ChatMessage.create({
-      channel: `occ-${occurrence.id}`,
+      channel: "general",
       occurrence_id: occurrence.id,
       sender_id: user.id,
       sender_name: user.full_name,
