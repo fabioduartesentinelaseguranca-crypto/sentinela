@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { getCurrentLocation } from "@/lib/geo";
+import { getCurrentLocation, distanceKm } from "@/lib/geo";
 import { TYPE_META } from "@/lib/occurrenceMeta";
 import StatCard from "@/components/shared/StatCard";
 import ShiftManager from "@/components/agent/ShiftManager";
@@ -34,6 +34,7 @@ import VirtualPatrolMode from "@/components/agent/VirtualPatrolMode";
 import FatigueMonitor from "@/components/agent/FatigueMonitor";
 import ShiftMissions from "@/components/agent/ShiftMissions";
 import UnifiedChat from "@/components/agent/UnifiedChat";
+import ProximityFilterControl from "@/components/agent/ProximityFilterControl";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
@@ -78,6 +79,9 @@ export default function AgentDashboard() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("active"); // active | in_progress | resolved | all
   const [searchQuery, setSearchQuery] = useState("");
+  const [proximityEnabled, setProximityEnabled] = useState(false);
+  const [proximityRadius, setProximityRadius] = useState(5);
+  const [activeShifts, setActiveShifts] = useState([]);
 
   // Must be declared BEFORE usePushNotifications
   const { permissionGranted, askPermission } = useAgentAlerts(true);
@@ -151,13 +155,14 @@ export default function AgentDashboard() {
 
   const load = async () => {
     const safe = (p) => p.catch(() => []);
-    const [occs, allAgents, cams, shifts, fbs, zones] = await Promise.all([
+    const [occs, allAgents, cams, shifts, fbs, zones, allShifts] = await Promise.all([
       safe(base44.entities.Occurrence.list("-created_date", 200)),
       safe(base44.entities.User.filter({ role: "agent" })),
       safe(base44.entities.Camera.list("-created_date", 500)),
       user?.id ? safe(base44.entities.Shift.filter({ agent_id: user.id, status: "active" }, "-created_date", 1)) : Promise.resolve([]),
       safe(base44.entities.CitizenFeedback.list("-created_date", 200)),
       safe(base44.entities.PatrolZone.list("-created_date", 100)),
+      safe(base44.entities.Shift.filter({ status: "active" }, "-created_date", 200)),
     ]);
     setOccurrences(occs);
     setAgents(allAgents);
@@ -165,6 +170,7 @@ export default function AgentDashboard() {
     setActiveShift(shifts[0] || null);
     setFeedbacks(fbs);
     setPatrolZones(zones);
+    setActiveShifts(allShifts);
   };
 
   useEffect(() => {
@@ -213,6 +219,34 @@ export default function AgentDashboard() {
 
   // Sort by urgency score (critical/panic first, then time decay + reporter credibility)
   const filtered = sortByUrgency(rawFiltered, occurrences);
+
+  // Agentes ativos com check-in (turno ativo) e localização disponível
+  const activeAgentIds = new Set(activeShifts.map((s) => s.agent_id));
+  const activeCheckedInAgents = agents.filter(
+    (a) => activeAgentIds.has(a.id) && a.last_location?.lat && a.last_location?.lng
+  );
+
+  // Filtro de proximidade: ocorrências dentro do raio do agente ativo mais próximo (com check-in)
+  let displayOccurrences = filtered;
+  if (proximityEnabled) {
+    if (activeCheckedInAgents.length === 0) {
+      displayOccurrences = [];
+    } else {
+      displayOccurrences = filtered
+        .map((o) => {
+          if (!o.lat || !o.lng) return { o, dist: Infinity };
+          const dist = Math.min(
+            ...activeCheckedInAgents.map((a) =>
+              distanceKm({ lat: a.last_location.lat, lng: a.last_location.lng }, { lat: o.lat, lng: o.lng })
+            )
+          );
+          return { o, dist };
+        })
+        .filter(({ dist }) => dist <= proximityRadius)
+        .sort((a, b) => a.dist - b.dist)
+        .map(({ o }) => o);
+    }
+  }
 
   const assign = async (o) => {
     await base44.entities.Occurrence.update(o.id, { assigned_agent_id: user.id, status: "in_progress" });
@@ -442,11 +476,19 @@ export default function AgentDashboard() {
                 </button>
               )}
             </div>
+            <ProximityFilterControl
+              enabled={proximityEnabled}
+              radius={proximityRadius}
+              onToggle={() => setProximityEnabled(!proximityEnabled)}
+              onRadiusChange={setProximityRadius}
+              count={displayOccurrences.length}
+              activeAgentsCount={activeCheckedInAgents.length}
+            />
           </div>
 
           {showMap && (
             <MapSearchBar
-              occurrences={filtered}
+              occurrences={displayOccurrences}
               cameras={cameras}
               patrolZones={patrolZones}
               userLocation={center}
@@ -456,7 +498,7 @@ export default function AgentDashboard() {
           )}
           {showMap && (
             <LiveMap
-              occurrences={mapFilteredOccs ?? filtered}
+              occurrences={mapFilteredOccs ?? displayOccurrences}
               agents={agents}
               cameras={mapFilteredCams ?? cameras}
               center={center}
@@ -467,12 +509,14 @@ export default function AgentDashboard() {
           )}
 
           <div className="space-y-2">
-            {filtered.length === 0 ? (
+            {displayOccurrences.length === 0 ? (
               <div className="text-sm text-muted-foreground p-6 text-center border border-dashed rounded-xl">
-                Nenhuma ocorrência com este filtro.
+                {proximityEnabled
+                  ? "Nenhuma ocorrência dentro do raio de agentes ativos com check-in."
+                  : "Nenhuma ocorrência com este filtro."}
               </div>
             ) : (
-              filtered.map((o) => {
+              displayOccurrences.map((o) => {
                 const nearbyCams = findNearbyCameras(cameras, o.lat, o.lng);
                 const nearest = (o.priority === "critical" || o.type === "panic") && o.lat
                   ? findNearestUnit({ agents, occurrenceLat: o.lat, occurrenceLng: o.lng })
