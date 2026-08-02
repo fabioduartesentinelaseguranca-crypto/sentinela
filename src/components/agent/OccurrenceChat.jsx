@@ -32,9 +32,11 @@ export default function OccurrenceChat({ occurrence, open, onOpenChange }) {
   const send = async () => {
     if (!text.trim()) return;
     await base44.entities.ChatMessage.create({
+      channel: `occ-${occurrence.id}`,
       occurrence_id: occurrence.id,
       sender_id: user.id,
       sender_name: user.full_name,
+      sender_role: user.role,
       content: text,
     });
     setText("");
