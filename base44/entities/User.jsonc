@@ -13,6 +13,10 @@
       "default": "citizen",
       "description": "Perfil do usu\u00e1rio na plataforma"
     },
+    "phone": {
+      "type": "string",
+      "description": "Telefone de contato do usu\u00e1rio (para checkagem por agentes)"
+    },
     "points": {
       "type": "number",
       "default": 0,

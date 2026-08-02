@@ -17,7 +17,7 @@ const CHANNELS = [
   { id: "alerts", label: "Alertas", icon: AlertTriangle },
 ];
 
-export default function UnifiedChat({ occurrenceId = null }) {
+export default function UnifiedChat({ occurrenceId = null, onOpenOccurrenceDetail }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [channel, setChannel] = useState(occurrenceId ? `occ-${occurrenceId}` : "general");
@@ -171,12 +171,22 @@ export default function UnifiedChat({ occurrenceId = null }) {
                 <span className={`text-[10px] font-semibold ${ROLE_COLORS[msg.sender_role] || "text-muted-foreground"} flex items-center gap-1.5`}>
                   {msg.sender_name} · {msg.sender_role}
                   {msg.occurrence_id && (
-                    <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">Ocorrência</span>
+                    <button
+                      onClick={() => onOpenOccurrenceDetail?.(msg.occurrence_id)}
+                      className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium hover:bg-warning/30 cursor-pointer transition-colors"
+                    >
+                      Ocorrência
+                    </button>
                   )}
                 </span>
               )}
               {isMe(msg) && msg.occurrence_id && (
-                <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium self-end">Ocorrência</span>
+                <button
+                  onClick={() => onOpenOccurrenceDetail?.(msg.occurrence_id)}
+                  className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium self-end hover:bg-warning/30 cursor-pointer transition-colors"
+                >
+                  Ocorrência
+                </button>
               )}
               <div className={`rounded-2xl px-3 py-2 text-sm ${isMe(msg) ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted/40 border border-border/40 rounded-bl-sm"}`}>
                 {msg.msg_type === "location" && msg.location ? (

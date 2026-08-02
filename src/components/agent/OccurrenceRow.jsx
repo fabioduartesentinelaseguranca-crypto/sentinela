@@ -1,10 +1,10 @@
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, CheckCircle2, Play, MapPin, Camera, Volume2 } from "lucide-react";
+import { MessageSquare, CheckCircle2, Play, MapPin, Camera, Volume2, Info } from "lucide-react";
 import { format } from "date-fns";
 import { urgencyLabel } from "@/lib/urgencyScore";
 
-export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, onSelect, currentAgentId }) {
+export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, onSelect, onOpenDetail, currentAgentId }) {
   const tm = TYPE_META[occurrence.type] || TYPE_META.crime;
   const sm = STATUS_META[occurrence.status || "open"];
   const Icon = tm.icon;
@@ -41,7 +41,12 @@ export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onReso
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold">{occurrence.subtype || tm.label}</span>
+          <span
+            className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors"
+            onClick={() => onOpenDetail?.(occurrence)}
+          >
+            {occurrence.subtype || tm.label}
+          </span>
           <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${sm.bg} ${sm.color} font-medium`}>{sm.label}</span>
           {isCritical && (
             <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-emergency text-white font-bold flex items-center gap-1 animate-pulse">
@@ -77,6 +82,9 @@ export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onReso
           )}
           <Button size="sm" variant="ghost" onClick={() => onOpenChat(occurrence)}>
             <MessageSquare className="w-3 h-3 mr-1" /> Chat
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => onOpenDetail?.(occurrence)}>
+            <Info className="w-3 h-3 mr-1" /> Detalhes
           </Button>
           {occurrence.lat && onSelect && (
             <Button size="sm" variant="ghost" onClick={() => onSelect(occurrence)}>

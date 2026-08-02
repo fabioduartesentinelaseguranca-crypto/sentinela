@@ -35,6 +35,7 @@ import FatigueMonitor from "@/components/agent/FatigueMonitor";
 import ShiftMissions from "@/components/agent/ShiftMissions";
 import UnifiedChat from "@/components/agent/UnifiedChat";
 import ProximityFilterControl from "@/components/agent/ProximityFilterControl";
+import OccurrenceDetailDialog from "@/components/agent/OccurrenceDetailDialog";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { useShiftBreadcrumb } from "@/hooks/useShiftBreadcrumb";
@@ -58,6 +59,8 @@ export default function AgentDashboard() {
   const [filter, setFilter] = useState("all");
   const [chatOccurrence, setChatOccurrence] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [detailOcc, setDetailOcc] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [cameras, setCameras] = useState([]);
   const [selectedOccurrence, setSelectedOccurrence] = useState(null);
   const [activeShift, setActiveShift] = useState(null);
@@ -541,6 +544,7 @@ export default function AgentDashboard() {
                       onAssign={assign}
                       onResolve={openResolve}
                       onSelect={() => setSelectedOccurrence(selectedOccurrence?.id === o.id ? null : o)}
+                      onOpenDetail={(occ) => { setDetailOcc(occ); setDetailOpen(true); }}
                     />
                     {selectedOccurrence?.id === o.id && nearbyCams.length > 0 && (
                       <div className="mt-1 ml-2">
@@ -572,7 +576,13 @@ export default function AgentDashboard() {
             occurrences={occurrences}
           />
 
-          <UnifiedChat />
+          <UnifiedChat
+            onOpenOccurrenceDetail={(occId) => {
+              const occ = occurrences.find((o) => o.id === occId);
+              if (occ) { setDetailOcc(occ); setDetailOpen(true); }
+              else { toast.info("Ocorrência não disponível no cache local — recarregue o painel."); }
+            }}
+          />
 
           <OfflineRadio agentId={user?.id} agentName={user?.full_name} />
 
@@ -638,6 +648,12 @@ export default function AgentDashboard() {
         onResolved={() => afterResolved(resolveOcc)}
       />
       <OccurrenceChat occurrence={chatOccurrence} open={chatOpen} onOpenChange={setChatOpen} />
+      <OccurrenceDetailDialog
+        occurrence={detailOcc}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onOpenChat={(occ) => { setChatOccurrence(occ); setChatOpen(true); }}
+      />
       <CameraStreamViewer camera={streamCamera} open={streamOpen} onOpenChange={setStreamOpen} />
       {criticalOcc && (
         <CriticalAlert
