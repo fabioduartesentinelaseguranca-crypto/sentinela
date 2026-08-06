@@ -5,7 +5,7 @@ import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
-  Shield, Car, CloudRain, HeartPulse, Siren, Wrench, BarChart2,
+  Shield,
   TrendingUp, TrendingDown, Users, Clock, ArrowRight, Wifi,
   CheckCircle2, AlertTriangle
 } from "lucide-react";
@@ -58,15 +58,6 @@ const TYPE_ICON_COLOR = {
   panic: "#ef4444",
 };
 
-const NAV_ITEMS = [
-  { id: "crime", label: "Segurança Pública", icon: Shield },
-  { id: "civil_defense", label: "Defesa Civil", icon: CloudRain },
-  { id: "health", label: "Saúde", icon: HeartPulse },
-  { id: "traffic", label: "Trânsito", icon: Car },
-  { id: "services", label: "Serviços", icon: Wrench },
-  { id: "reports", label: "Relatórios", icon: BarChart2 },
-];
-
 // Sparkline component
 function Sparkline({ values = [], color = "#22d3ee", up = true }) {
   if (!values.length) return null;
@@ -86,9 +77,11 @@ function Sparkline({ values = [], color = "#22d3ee", up = true }) {
   );
 }
 
-export default function AdminOverview({ occurrences = [], users = [] }) {
+export default function AdminOverview({ occurrences = [], users = [], onTabChange }) {
   const { user } = useAuth();
-  const [activeNav, setActiveNav] = useState("crime");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -96,21 +89,27 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
     return () => clearInterval(t);
   }, []);
 
-  const openCount = occurrences.filter(o => o.status === "open").length;
+  const filteredOccurrences = occurrences.filter(o => {
+    if (typeFilter !== "all" && o.type !== typeFilter) return false;
+    if (statusFilter !== "all" && o.status !== statusFilter) return false;
+    return true;
+  });
+
+  const openCount = filteredOccurrences.filter(o => o.status === "open").length;
   const agentCount = users.filter(u => u.role === "agent").length;
-  const resolvedCount = occurrences.filter(o => o.status === "resolved").length;
-  const totalCount = occurrences.length || 1;
+  const resolvedCount = filteredOccurrences.filter(o => o.status === "resolved").length;
+  const totalCount = filteredOccurrences.length || 1;
   const securityIndex = Math.round((resolvedCount / totalCount) * 100);
 
   const avgResponseMs = 4.2; // placeholder — real calc would use timestamps
 
   // Filter occurrences with coords for map
-  const mappedOccs = occurrences.filter(o => o.lat && o.lng).slice(0, 30);
+  const mappedOccs = filteredOccurrences.filter(o => o.lat && o.lng).slice(0, 30);
 
   const markerPositions = mappedOccs.map(o => [o.lat, o.lng]);
   const mapCenter = markerPositions.length > 0 ? markerPositions[0] : [-25.4284, -49.2733];
 
-  const recentOccs = occurrences.slice(0, 5);
+  const recentOccs = filteredOccurrences.slice(0, 5);
 
   const sparkData = [3, 5, 4, 8, 6, 9, 7, 10, 8, openCount || 8];
   const agentSpark = [120, 130, 125, 140, 135, 145, 143, 147, agentCount || 147];
@@ -121,39 +120,75 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
     <div className="flex h-[calc(100vh-6rem)] bg-background overflow-hidden rounded-xl border border-border/60">
 
       {/* ── LEFT SIDEBAR ─────────────────────────────────── */}
-      <aside className="w-52 flex-shrink-0 border-r border-border/60 bg-card flex flex-col py-4">
-        {/* Status bar */}
-        <div className="px-4 mb-4 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span className="text-[10px] text-success font-medium uppercase tracking-widest">Online</span>
-        </div>
-
-        <nav className="flex-1 space-y-0.5 px-2">
-          {NAV_ITEMS.map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
-                  activeNav === item.id
-                    ? "bg-primary/15 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="px-3 mt-4 pt-4 border-t border-border/60">
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            Recolher Menu
+      <aside className={`${sidebarCollapsed ? "w-12" : "w-52"} flex-shrink-0 border-r border-border/60 bg-card flex flex-col py-4 transition-all`}>
+        {sidebarCollapsed ? (
+          <button onClick={() => setSidebarCollapsed(false)} className="mx-auto mt-2 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Expandir menu">
+            <ArrowRight className="w-4 h-4" />
           </button>
-        </div>
+        ) : (
+          <>
+            <div className="px-4 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-[10px] text-success font-medium uppercase tracking-widest">Online</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-3">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Tipo de Ocorrência</div>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => setTypeFilter("all")}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all text-left ${typeFilter === "all" ? "bg-primary/15 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  >
+                    Todas
+                  </button>
+                  {Object.entries(TYPE_META).map(([key, meta]) => {
+                    const Icon = meta.icon;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setTypeFilter(key)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all text-left ${typeFilter === key ? "bg-primary/15 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${meta.color}`} />
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Status</div>
+                <div className="space-y-0.5">
+                  {[
+                    { id: "all", label: "Todas" },
+                    { id: "open", label: "Aberta" },
+                    { id: "in_progress", label: "Em Atendimento" },
+                    { id: "resolved", label: "Resolvida" },
+                    { id: "canceled", label: "Cancelada" },
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => setStatusFilter(s.id)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all text-left ${statusFilter === s.id ? "bg-primary/15 text-primary border border-primary/20" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 mt-3 pt-3 border-t border-border/60">
+              <div className="text-[10px] text-muted-foreground mb-1.5">{filteredOccurrences.length} de {occurrences.length} ocorrências</div>
+              <button onClick={() => setSidebarCollapsed(true)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                Recolher Menu
+              </button>
+            </div>
+          </>
+        )}
       </aside>
 
       {/* ── CENTER: MAP ──────────────────────────────────── */}
@@ -166,7 +201,7 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
               <span className="text-success font-medium">SISTEMA ONLINE</span>
             </div>
             <div className="text-muted-foreground">
-              <span className="font-semibold text-foreground">{occurrences.length}</span> câmeras
+              <span className="font-semibold text-foreground">{filteredOccurrences.length}</span> ocorrências
             </div>
             <div className="text-muted-foreground">
               <span className="font-semibold text-foreground">{agentCount}</span> Online
@@ -244,8 +279,10 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
               <AlertTriangle className="w-3.5 h-3.5 text-warning" /> Ocorrências Recentes
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">Todos</span>
-              <button className="text-[10px] text-primary hover:underline flex items-center gap-1">
+              <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                {typeFilter === "all" && statusFilter === "all" ? "Todos" : "Filtrado"}
+              </span>
+              <button onClick={() => onTabChange?.("live_map")} className="text-[10px] text-primary hover:underline flex items-center gap-1">
                 Ver Todas <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -348,7 +385,7 @@ export default function AdminOverview({ occurrences = [], users = [] }) {
           <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Por Categoria</div>
           {Object.entries(TYPE_META).map(([key, meta]) => {
             const count = occurrences.filter(o => o.type === key).length;
-            const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+            const pct = occurrences.length > 0 ? Math.round((count / occurrences.length) * 100) : 0;
             const Icon = meta.icon;
             return (
               <div key={key} className="space-y-0.5">

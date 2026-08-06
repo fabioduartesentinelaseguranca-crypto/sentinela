@@ -130,7 +130,7 @@ export default function AdminDashboard() {
 
       {/* ── OVERVIEW TAB ─────────────────────────────────── */}
       {activeTab === "overview" && (
-        <AdminOverview occurrences={occurrences} users={users} />
+        <AdminOverview occurrences={occurrences} users={users} onTabChange={setActiveTab} />
       )}
 
       {/* ── KPIs TAB ──────────────────────────────────────── */}
