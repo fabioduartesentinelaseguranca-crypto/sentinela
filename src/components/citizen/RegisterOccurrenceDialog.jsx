@@ -3,12 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TYPE_META, SUBTYPES, CIVIL_DEFENSE_GAMIFIED } from "@/lib/occurrenceMeta";
-import { getCurrentLocation } from "@/lib/geo";
-import { Upload, MapPin, Loader2, CheckCircle2, Mic, MicOff, WifiOff } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, Mic, MicOff, WifiOff } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { useOfflineOccurrences } from "@/hooks/useOfflineOccurrences";
@@ -19,7 +18,7 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
   const [type, setType] = useState(defaultType || "crime");
   const [subtype, setSubtype] = useState("");
   const [description, setDescription] = useState("");
-  const [address, setAddress] = useState("");
+  const [location, setLocation] = useState({ lat: null, lng: null, address: "" });
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -28,7 +27,7 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
   const chunksRef = useRef([]);
 
   const reset = () => {
-    setSubtype(""); setDescription(""); setAddress(""); setFiles([]);
+    setSubtype(""); setDescription(""); setLocation({ lat: null, lng: null, address: "" }); setFiles([]);
   };
 
   const startRecording = async () => {
@@ -77,10 +76,6 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
     if (!subtype) return toast.error("Selecione um subtipo");
     setLoading(true);
 
-    // Capture location (best effort — don't block if offline)
-    let location = { lat: null, lng: null };
-    try { location = await getCurrentLocation(); } catch { /* use null coords */ }
-
     // Upload media only if online
     const mediaUrls = [];
     if (navigator.onLine) {
@@ -98,7 +93,7 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
       type,
       subtype,
       description,
-      address,
+      address: location.address,
       lat: location.lat,
       lng: location.lng,
       media_urls: mediaUrls,
@@ -129,7 +124,7 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
             Registrar Ocorrência
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2 flex-wrap">
-            Sua localização será registrada automaticamente.
+            Capture a localização exata via GPS ou marque no mapa.
             {!navigator.onLine && (
               <span className="inline-flex items-center gap-1 text-warning text-xs font-medium">
                 <WifiOff className="w-3 h-3" /> Modo offline — será sincronizado automaticamente
@@ -178,13 +173,7 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
             </Select>
           </div>
 
-          <div>
-            <Label>Endereço de referência</Label>
-            <div className="relative mt-2">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Ex: Rua das Flores, 100" value={address} onChange={(e) => setAddress(e.target.value)} />
-            </div>
-          </div>
+          <LocationPicker value={location} onChange={setLocation} label="Endereço de referência e localização" />
 
           <div>
             <Label>Descrição</Label>

@@ -2,10 +2,10 @@ import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShieldAlert, Paperclip, X, Loader2, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import LocationPicker from "@/components/shared/LocationPicker";
 
 const CATEGORIES = {
   drug_traffic: "Tráfico de Drogas",
@@ -17,7 +17,8 @@ const CATEGORIES = {
 };
 
 export default function AnonymousTipForm() {
-  const [form, setForm] = useState({ description: "", address: "", category: "other", lat: "", lng: "" });
+  const [form, setForm] = useState({ description: "", category: "other" });
+  const [location, setLocation] = useState({ lat: null, lng: null, address: "" });
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,22 +38,15 @@ export default function AnonymousTipForm() {
     setUploading(false);
   };
 
-  const getLocation = () => {
-    navigator.geolocation?.getCurrentPosition((pos) => {
-      setForm((f) => ({ ...f, lat: pos.coords.latitude.toString(), lng: pos.coords.longitude.toString() }));
-      toast.success("Localização capturada");
-    }, () => toast.error("Não foi possível obter localização"));
-  };
-
   const submit = async () => {
     if (!form.description.trim()) { toast.error("Descreva a denúncia"); return; }
     setSaving(true);
     await base44.entities.AnonymousTip.create({
       description: form.description,
-      address: form.address,
+      address: location.address,
       category: form.category,
-      lat: form.lat ? parseFloat(form.lat) : undefined,
-      lng: form.lng ? parseFloat(form.lng) : undefined,
+      lat: location.lat || undefined,
+      lng: location.lng || undefined,
       media_urls: files.map((f) => f.url),
       status: "pending",
     });
@@ -66,7 +60,7 @@ export default function AnonymousTipForm() {
         <CheckCircle2 className="w-12 h-12 text-success" />
         <h3 className="text-lg font-semibold">Denúncia enviada com sucesso</h3>
         <p className="text-sm text-muted-foreground max-w-sm">Sua denúncia anônima foi registrada e será analisada pela central de operações.</p>
-        <Button variant="outline" onClick={() => { setSent(false); setForm({ description: "", address: "", category: "other", lat: "", lng: "" }); setFiles([]); }}>
+        <Button variant="outline" onClick={() => { setSent(false); setForm({ description: "", category: "other" }); setLocation({ lat: null, lng: null, address: "" }); setFiles([]); }}>
           Nova denúncia
         </Button>
       </div>
@@ -95,16 +89,7 @@ export default function AnonymousTipForm() {
         className="min-h-[100px] resize-none"
       />
 
-      <Input
-        placeholder="Endereço ou referência (opcional)"
-        value={form.address}
-        onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-      />
-
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" type="button" onClick={getLocation}>📍 Usar minha localização</Button>
-        {form.lat && <span className="text-xs text-success self-center">✓ Localização capturada</span>}
-      </div>
+      <LocationPicker value={location} onChange={setLocation} label="Endereço e localização (opcional)" />
 
       <div className="flex flex-wrap gap-2">
         {files.map((f, i) => (

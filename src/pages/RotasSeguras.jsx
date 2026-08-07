@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, Navigation, MapPin, Lightbulb, AlertTriangle, Loader2, Search, X, Car, Footprints } from "lucide-react";
 import { toast } from "sonner";
 import L from "leaflet";
+import { fetchRoute } from "@/lib/routing";
 
 const ICON_ORIGEM = L.divIcon({ html: '<div class="w-6 h-6 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center text-white text-[10px] font-bold">A</div>', className: "", iconSize: [24, 24], iconAnchor: [12, 12] });
 const ICON_DESTINO = L.divIcon({ html: '<div class="w-6 h-6 rounded-full bg-emergency border-2 border-white shadow-lg flex items-center justify-center text-white text-[10px] font-bold">B</div>', className: "", iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -47,6 +48,7 @@ export default function RotasSeguras() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [center, setCenter] = useState({ lat: -23.5505, lng: -46.6333 });
+  const [routePoints, setRoutePoints] = useState([]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -98,7 +100,16 @@ export default function RotasSeguras() {
     setLoading(false);
   };
 
-  const clearAll = () => { setOrigem(null); setDestino(null); setResultado(null); };
+  const clearAll = () => { setOrigem(null); setDestino(null); setResultado(null); setRoutePoints([]); };
+
+  useEffect(() => {
+    if (!origem || !destino) { setRoutePoints([]); return; }
+    let cancelled = false;
+    fetchRoute(origem, destino, modo)
+      .then((r) => { if (!cancelled) setRoutePoints(r.points); })
+      .catch(() => { if (!cancelled) setRoutePoints([]); });
+    return () => { cancelled = true; };
+  }, [origem, destino, modo]);
 
   const mapPoints = [origem, destino].filter(Boolean);
 
@@ -183,8 +194,11 @@ export default function RotasSeguras() {
               <MapBounds points={mapPoints} />
               {origem && <Marker position={[origem.lat, origem.lng]} icon={ICON_ORIGEM} />}
               {destino && <Marker position={[destino.lat, destino.lng]} icon={ICON_DESTINO} />}
-              {origem && destino && (
-                <Polyline positions={[[origem.lat, origem.lng], [destino.lat, destino.lng]]} color="hsl(var(--primary))" weight={3} dashArray="8 4" />
+              {origem && destino && routePoints.length > 0 && (
+                <Polyline positions={routePoints} color="hsl(var(--primary))" weight={4} />
+              )}
+              {origem && destino && routePoints.length === 0 && (
+                <Polyline positions={[[origem.lat, origem.lng], [destino.lat, destino.lng]]} color="hsl(var(--primary))" weight={3} dashArray="8 4" opacity={0.5} />
               )}
             </MapContainer>
           </div>

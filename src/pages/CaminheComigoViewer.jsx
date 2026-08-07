@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
 import { Shield, MapPin, Clock, Navigation } from "lucide-react";
@@ -6,6 +6,8 @@ import { useParams } from "react-router-dom";
 import L from "leaflet";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { fetchRoute } from "@/lib/routing";
+import { distanceKm } from "@/lib/geo";
 
 const USER_ICON = L.divIcon({
   html: '<div class="w-8 h-8 rounded-full bg-primary border-[3px] border-white shadow-lg flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-white animate-pulse"></div></div>',
@@ -22,6 +24,8 @@ export default function CaminheComigoViewer() {
   const [userInfo, setUserInfo] = useState(null);
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
+  const [routePoints, setRoutePoints] = useState([]);
+  const lastRoutedRef = useRef(null);
 
   useEffect(() => {
     if (!token) return;
@@ -59,6 +63,19 @@ export default function CaminheComigoViewer() {
       return () => clearInterval(interval);
     })();
   }, [token]);
+
+  useEffect(() => {
+    if (!session?.origem_lat || !location) return;
+    // Throttle: só refaz a rota se o usuário se moveu >100m desde a última
+    if (lastRoutedRef.current && distanceKm(lastRoutedRef.current, location) * 1000 < 100) return;
+    lastRoutedRef.current = location;
+    let cancelled = false;
+    const origem = { lat: session.origem_lat, lng: session.origem_lng };
+    fetchRoute(origem, location, "a_pe")
+      .then((r) => { if (!cancelled) setRoutePoints(r.points); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [session, location]);
 
   if (error) {
     return (
@@ -109,7 +126,10 @@ export default function CaminheComigoViewer() {
           {session.origem_lat && (
             <Marker position={[session.origem_lat, session.origem_lng]} icon={DEST_ICON} />
           )}
-          {session.origem_lat && (
+          {session.origem_lat && routePoints.length > 0 && (
+            <Polyline positions={routePoints} color="hsl(var(--primary))" weight={4} opacity={0.8} />
+          )}
+          {session.origem_lat && routePoints.length === 0 && (
             <Polyline
               positions={[[session.origem_lat, session.origem_lng], [location.lat, location.lng]]}
               color="hsl(var(--primary))" weight={2} dashArray="6 3" opacity={0.5}

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, MapPin, Share2, Smartphone, Loader2, StopCircle, Play, Clock, Navigation, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import L from "leaflet";
+import { fetchRoute, geocodeAddress } from "@/lib/routing";
 
 // Haversine in meters
 function haversineM(a, b) { const R=6371000; const dLat=(b.lat-a.lat)*Math.PI/180; const dLng=(b.lng-a.lng)*Math.PI/180; const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
@@ -15,6 +16,10 @@ function bearing(a,b){ const dLng=(b.lng-a.lng)*Math.PI/180; const y=Math.sin(dL
 const USER_ICON = L.divIcon({
   html: '<div class="w-8 h-8 rounded-full bg-primary border-[3px] border-white shadow-lg flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-white animate-pulse"></div></div>',
   className: "", iconSize: [32, 32], iconAnchor: [16, 16],
+});
+const DEST_ICON = L.divIcon({
+  html: '<div class="w-7 h-7 rounded-full bg-emergency border-2 border-white shadow-lg flex items-center justify-center text-white text-[10px] font-bold">B</div>',
+  className: "", iconSize: [28, 28], iconAnchor: [14, 14],
 });
 
 function generateToken() {
@@ -29,6 +34,8 @@ export default function CaminheComigo() {
   const [destino, setDestino] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [routePoints, setRoutePoints] = useState([]);
+  const [destCoords, setDestCoords] = useState(null);
   const watchId = useRef(null);
   const timerRef = useRef(null);
   const trailRef = useRef([]);        // last 30s of coordinates
@@ -110,6 +117,18 @@ export default function CaminheComigo() {
     setSession(sess);
     setActive(true);
 
+    // Geocodificar destino e traçar rota pelas ruas
+    if (destino.trim()) {
+      try {
+        const dest = await geocodeAddress(destino);
+        setDestCoords(dest);
+        const route = await fetchRoute(loc, dest, "a_pe");
+        setRoutePoints(route.points);
+      } catch {
+        toast.error("Não foi possível traçar a rota para o destino informado");
+      }
+    }
+
     // Start watching position
     const wid = navigator.geolocation.watchPosition(
       (p) => {
@@ -132,6 +151,8 @@ export default function CaminheComigo() {
     if (watchId.current) { navigator.geolocation.clearWatch(watchId.current); watchId.current = null; }
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     setActive(false);
+    setRoutePoints([]);
+    setDestCoords(null);
 
     if (session?.id) {
       await base44.entities.Sessoes_CaminheComigo.update(session.id, {
@@ -230,6 +251,12 @@ export default function CaminheComigo() {
             {location ? (
               <MapContainer center={[location.lat, location.lng]} zoom={16} className="h-full w-full" scrollWheelZoom={true}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {routePoints.length > 0 && (
+                  <Polyline positions={routePoints} color="hsl(var(--primary))" weight={4} opacity={0.7} />
+                )}
+                {destCoords && (
+                  <Marker position={[destCoords.lat, destCoords.lng]} icon={DEST_ICON} />
+                )}
                 <Marker position={[location.lat, location.lng]} icon={USER_ICON} />
               </MapContainer>
             ) : (
