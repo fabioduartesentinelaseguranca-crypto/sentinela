@@ -5,10 +5,10 @@ import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Navigation, MapPin, Lightbulb, AlertTriangle, Loader2, Search, X, Car, Footprints } from "lucide-react";
+import { Shield, Navigation, MapPin, Lightbulb, AlertTriangle, Loader2, Search, X, Car, Footprints, ListOrdered, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import L from "leaflet";
-import { fetchRoute } from "@/lib/routing";
+import { fetchRoute, formatDistance } from "@/lib/routing";
 
 const ICON_ORIGEM = L.divIcon({ html: '<div class="w-6 h-6 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center text-white text-[10px] font-bold">A</div>', className: "", iconSize: [24, 24], iconAnchor: [12, 12] });
 const ICON_DESTINO = L.divIcon({ html: '<div class="w-6 h-6 rounded-full bg-emergency border-2 border-white shadow-lg flex items-center justify-center text-white text-[10px] font-bold">B</div>', className: "", iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -90,13 +90,22 @@ export default function RotasSeguras() {
     setLoading(true);
     setResultado(null);
     try {
-      const res = await base44.functions.invoke("calcularRotaSegura", {
-        origem_lat: origem.lat, origem_lng: origem.lng,
-        destino_lat: destino.lat, destino_lng: destino.lng,
-        modo,
-      });
-      setResultado(res.data);
-    } catch { toast.error("Erro ao calcular rota segura"); }
+      const route = await fetchRoute(origem, destino, modo);
+      setRoutePoints(route.points);
+
+      let safety = null;
+      try {
+        const res = await base44.functions.invoke("calcularRotaSegura", {
+          origem_lat: origem.lat, origem_lng: origem.lng,
+          destino_lat: destino.lat, destino_lng: destino.lng,
+          modo,
+          rota_pontos: route.points,
+        });
+        safety = res;
+      } catch { /* análise de segurança opcional — a rota ainda é exibida */ }
+
+      setResultado({ route, safety });
+    } catch { toast.error("Erro ao calcular rota"); }
     setLoading(false);
   };
 
@@ -220,31 +229,90 @@ export default function RotasSeguras() {
 
           {resultado && (
             <div className="space-y-4 animate-fade-in">
-              {/* Score */}
+              {/* Distância / duração / trechos */}
+              <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-center justify-around text-center">
+                <div>
+                  <div className="text-2xl font-bold text-primary">{resultado.route.distanceKm.toFixed(1)}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">km</div>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <div className="text-2xl font-bold text-primary">{resultado.route.durationMin}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">min</div>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <div className="text-2xl font-bold text-primary">{resultado.route.steps.length}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">trechos</div>
+                </div>
+              </div>
+
+              {/* Nível de segurança */}
               <div className="rounded-2xl border border-border/60 bg-card p-5 text-center">
-                <div className="text-4xl font-bold text-primary">{resultado.score_seguranca}</div>
-                <div className="text-sm text-muted-foreground">Score de Segurança /100</div>
+                <div className="text-4xl font-bold text-primary">{resultado.safety?.score_seguranca ?? "—"}%</div>
+                <div className="text-sm text-muted-foreground">Nível de Segurança da Rota</div>
                 <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: `${resultado.score_seguranca}%`,
-                      background: resultado.score_seguranca >= 70 ? "hsl(var(--success))" : resultado.score_seguranca >= 40 ? "hsl(var(--warning))" : "hsl(var(--emergency))",
+                      width: `${resultado.safety?.score_seguranca ?? 0}%`,
+                      background: (resultado.safety?.score_seguranca ?? 0) >= 70 ? "hsl(var(--success))" : (resultado.safety?.score_seguranca ?? 0) >= 40 ? "hsl(var(--warning))" : "hsl(var(--emergency))",
                     }}
                   />
                 </div>
               </div>
 
+              {/* Sem ocorrências OU tipo de risco predominante */}
+              {resultado.safety?.sem_ocorrencias ? (
+                <div className="rounded-2xl border border-success/40 bg-success/5 p-4 flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-semibold text-success">Nenhuma ocorrência registrada no caminho</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Esta rota não possui registros de crimes ou acidentes nos últimos 90 dias.</div>
+                  </div>
+                </div>
+              ) : (
+                resultado.safety?.tipo_risco_label && (
+                  <div className="rounded-2xl border border-warning/40 bg-warning/5 p-4">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-warning" />
+                      <span className="text-sm font-semibold">Tipo de risco predominante: {resultado.safety.tipo_risco_label}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {resultado.safety.total_ocorrencias_corredor} ocorrência(s) registrada(s) ao longo do caminho nos últimos 90 dias.
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Instruções trecho a trecho */}
+              <div className="rounded-2xl border border-border/60 bg-card p-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <ListOrdered className="w-4 h-4 text-primary" /> Instruções da Rota
+                </h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin pr-1">
+                  {resultado.route.steps.map((s, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5">{i + 1}</div>
+                      <div className="flex-1">
+                        <span className="text-foreground">{s.instruction}</span>
+                        {s.distanceM > 0 && <span className="text-xs text-muted-foreground ml-1">· caminhe {formatDistance(s.distanceM)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Análise IA */}
-              {resultado.analise_ia && (
+              {resultado.safety?.analise_ia && (
                 <div className="rounded-2xl border border-border/60 bg-card p-4">
-                  <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${NIVEL_CORES[resultado.analise_ia.nivel_risco] || NIVEL_CORES.moderado}`}>
-                    Risco {resultado.analise_ia.nivel_risco}
+                  <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${NIVEL_CORES[resultado.safety.analise_ia.nivel_risco] || NIVEL_CORES.moderado}`}>
+                    Risco {resultado.safety.analise_ia.nivel_risco}
                   </span>
-                  <p className="text-sm mt-2">{resultado.analise_ia.resumo}</p>
-                  {resultado.analise_ia.recomendacoes?.length > 0 && (
+                  <p className="text-sm mt-2">{resultado.safety.analise_ia.resumo}</p>
+                  {resultado.safety.analise_ia.recomendacoes?.length > 0 && (
                     <ul className="mt-2 space-y-1">
-                      {resultado.analise_ia.recomendacoes.map((r, i) => (
+                      {resultado.safety.analise_ia.recomendacoes.map((r, i) => (
                         <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                           <Shield className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
                           {r}
@@ -252,13 +320,13 @@ export default function RotasSeguras() {
                       ))}
                     </ul>
                   )}
-                  {resultado.analise_ia.rota_alternativa_sugerida && (
+                  {resultado.safety.analise_ia.rota_alternativa_sugerida && (
                     <p className="text-xs text-warning mt-2 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" /> Considere uma rota alternativa — esta via apresenta riscos acima da média.
                     </p>
                   )}
-                  {resultado.analise_ia.horario_recomendado && (
-                    <p className="text-xs text-muted-foreground mt-1">🕐 Horário mais seguro: {resultado.analise_ia.horario_recomendado}</p>
+                  {resultado.safety.analise_ia.horario_recomendado && (
+                    <p className="text-xs text-muted-foreground mt-1">🕐 Horário mais seguro: {resultado.safety.analise_ia.horario_recomendado}</p>
                   )}
                 </div>
               )}
@@ -270,35 +338,34 @@ export default function RotasSeguras() {
                 </h4>
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="p-2 rounded-lg bg-muted/50">
-                    <div className="font-bold text-success">{resultado.iluminacao?.funcionando || 0}</div>
+                    <div className="font-bold text-success">{resultado.safety?.iluminacao?.funcionando || 0}</div>
                     <div className="text-muted-foreground">Funcionando</div>
                   </div>
                   <div className="p-2 rounded-lg bg-muted/50">
-                    <div className="font-bold text-destructive">{resultado.iluminacao?.com_defeito || 0}</div>
+                    <div className="font-bold text-destructive">{resultado.safety?.iluminacao?.com_defeito || 0}</div>
                     <div className="text-muted-foreground">Com Defeito</div>
                   </div>
                   <div className="p-2 rounded-lg bg-muted/50">
-                    <div className="font-bold text-primary">{resultado.iluminacao?.taxa || 0}%</div>
+                    <div className="font-bold text-primary">{resultado.safety?.iluminacao?.taxa || 0}%</div>
                     <div className="text-muted-foreground">Taxa</div>
                   </div>
                 </div>
               </div>
 
-              {/* Ocorrências */}
-              <div className="rounded-2xl border border-border/60 bg-card p-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive" /> Ocorrências no Corredor
-                </h4>
-                <div className="text-xs text-muted-foreground mb-2">
-                  {resultado.total_ocorrencias_corredor} ocorrência(s) nos últimos 90 dias
+              {/* Ocorrências por tipo ao longo do caminho */}
+              {resultado.safety?.total_ocorrencias_corredor > 0 && (
+                <div className="rounded-2xl border border-border/60 bg-card p-4">
+                  <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-destructive" /> Ocorrências ao Longo do Caminho
+                  </h4>
+                  {resultado.safety.ocorrencias_por_tipo && Object.entries(resultado.safety.ocorrencias_por_tipo).map(([tipo, count]) => (
+                    <div key={tipo} className="flex justify-between text-xs py-1 border-b border-border/30 last:border-0">
+                      <span className="capitalize">{tipo}</span>
+                      <span className="font-mono">{count}</span>
+                    </div>
+                  ))}
                 </div>
-                {resultado.ocorrencias_por_tipo && Object.entries(resultado.ocorrencias_por_tipo).map(([tipo, count]) => (
-                  <div key={tipo} className="flex justify-between text-xs py-1 border-b border-border/30 last:border-0">
-                    <span className="capitalize">{tipo}</span>
-                    <span className="font-mono">{count}</span>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
           )}
 
