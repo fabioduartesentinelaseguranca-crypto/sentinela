@@ -4,6 +4,7 @@ import { Siren, Mic, Video, Loader2, CheckCircle2 } from "lucide-react";
 import { getCurrentLocation } from "@/lib/geo";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
+import { brasiliaNowISO } from "@/lib/deviceTime";
 
 export default function PanicButton({ contacts = [] }) {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ export default function PanicButton({ contacts = [] }) {
       reporter_id: user?.id,
       priority: "critical",
       status: "open",
+      data_hora_dispositivo: brasiliaNowISO(),
     });
 
     // Notifica contatos via e-mail (simulando SMS/WhatsApp)

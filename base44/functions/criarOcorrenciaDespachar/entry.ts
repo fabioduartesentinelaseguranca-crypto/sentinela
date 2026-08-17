@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Corpo JSON inválido" }, { status: 400 });
     }
 
-    const { lat, lng, type, subtype, description, address, priority } = body;
+    const { lat, lng, type, subtype, description, address, priority, data_hora_dispositivo } = body;
 
     const latNum = Number(lat);
     const lngNum = Number(lng);
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1) Salvar a ocorrência
+    // 1) Salvar a ocorrência (horário do dispositivo em Brasília, se informado)
     const ocorrencia = await base44.entities.Occurrence.create({
       type,
       subtype,
@@ -150,6 +150,7 @@ Deno.serve(async (req) => {
       priority: priority || "medium",
       status: "open",
       reporter_id: user.id,
+      data_hora_dispositivo: data_hora_dispositivo || undefined,
     });
 
     // 2) Consulta geoespacial: agentes disponíveis em raio de 2km

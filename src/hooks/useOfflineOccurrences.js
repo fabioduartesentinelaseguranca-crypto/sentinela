@@ -6,6 +6,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { brasiliaNowISO } from "@/lib/deviceTime";
 
 const STORAGE_KEY = "sentinela_offline_occurrences";
 
@@ -62,18 +63,22 @@ export function useOfflineOccurrences() {
     toast.warning("Sem conexão — ocorrência salva offline. Será enviada automaticamente.");
   }, []);
 
-  // Submit: try online first, fallback to offline queue
+  // Submit: try online first, fallback to offline queue.
+  // Captura o horário do dispositivo (Brasília) no momento do envio — preservado
+  // mesmo quando a ocorrência fica offline e é sincronizada depois.
   const submitOccurrence = useCallback(async (occData) => {
+    const data = { ...occData };
+    if (!data.data_hora_dispositivo) data.data_hora_dispositivo = brasiliaNowISO();
     if (!navigator.onLine) {
-      queueOffline(occData);
+      queueOffline(data);
       return { offline: true };
     }
     try {
-      const result = await base44.entities.Occurrence.create(occData);
+      const result = await base44.entities.Occurrence.create(data);
       return { offline: false, result };
     } catch (err) {
       // Network error — queue offline
-      queueOffline(occData);
+      queueOffline(data);
       return { offline: true };
     }
   }, [queueOffline]);

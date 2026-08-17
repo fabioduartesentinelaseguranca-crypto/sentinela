@@ -72,6 +72,11 @@
       "type": "number",
       "default": 0,
       "description": "Pontos concedidos ao cidad\u00e3o quando resolvida"
+    },
+    "data_hora_dispositivo": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora do dispositivo no momento da ocorr\u00eancia, em hor\u00e1rio oficial de Bras\u00edlia (ISO com offset -03:00). Refer\u00eancia can\u00f4nica de tempo do registro."
     }
   },
   "required": [

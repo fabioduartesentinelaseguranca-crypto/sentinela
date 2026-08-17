@@ -7,6 +7,7 @@ import {
   Phone, MessageSquare, Navigation, MapPin, User, Mail, ShieldAlert, Calendar, Loader2, Info,
 } from "lucide-react";
 import { format } from "date-fns";
+import { occurrenceTime } from "@/lib/deviceTime";
 
 export default function OccurrenceDetailDialog({ occurrence, open, onClose, onOpenChat }) {
   const [reporter, setReporter] = useState(null);
@@ -56,7 +57,7 @@ export default function OccurrenceDetailDialog({ occurrence, open, onClose, onOp
               Prioridade: {occurrence.priority || "medium"}
             </span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> {format(new Date(occurrence.created_date), "dd/MM/yyyy HH:mm")}
+              <Calendar className="w-3 h-3" /> {format(occurrenceTime(occurrence), "dd/MM/yyyy HH:mm")}
             </span>
           </div>
 
