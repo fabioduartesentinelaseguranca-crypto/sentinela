@@ -152,12 +152,12 @@ export default function RotasSeguras() {
             </div>
 
             <Select value={modo} onValueChange={setModo}>
-              <SelectTrigger className="w-28 h-9 text-sm">
+              <SelectTrigger className="w-[140px] h-9 text-sm shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="a_pe"><Footprints className="w-3.5 h-3.5 inline mr-1" /> A pé</SelectItem>
-                <SelectItem value="carro"><Car className="w-3.5 h-3.5 inline mr-1" /> Carro</SelectItem>
+                <SelectItem value="a_pe"><span className="inline-flex items-center gap-1.5"><Footprints className="w-3.5 h-3.5 shrink-0" /><span>A pé</span></span></SelectItem>
+                <SelectItem value="carro"><span className="inline-flex items-center gap-1.5"><Car className="w-3.5 h-3.5 shrink-0" /><span>Carro</span></span></SelectItem>
               </SelectContent>
             </Select>
 
@@ -230,19 +230,17 @@ export default function RotasSeguras() {
           {resultado && (
             <div className="space-y-4 animate-fade-in">
               {/* Distância / duração / trechos */}
-              <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-center justify-around text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary">{resultado.route.distanceKm.toFixed(1)}</div>
+              <div className="rounded-2xl border border-border/60 bg-card p-4 grid grid-cols-3 divide-x divide-border text-center">
+                <div className="px-2">
+                  <div className="text-xl sm:text-2xl font-bold text-primary truncate">{resultado.route.distanceKm.toFixed(1)}</div>
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider">km</div>
                 </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-primary">{resultado.route.durationMin}</div>
+                <div className="px-2">
+                  <div className="text-xl sm:text-2xl font-bold text-primary truncate">{resultado.route.durationMin}</div>
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider">min</div>
                 </div>
-                <div className="w-px h-8 bg-border" />
-                <div>
-                  <div className="text-2xl font-bold text-primary">{resultado.route.steps.length}</div>
+                <div className="px-2">
+                  <div className="text-xl sm:text-2xl font-bold text-primary truncate">{resultado.route.steps.length}</div>
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider">trechos</div>
                 </div>
               </div>
@@ -274,9 +272,9 @@ export default function RotasSeguras() {
               ) : (
                 resultado.safety?.tipo_risco_label && (
                   <div className="rounded-2xl border border-warning/40 bg-warning/5 p-4">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-warning" />
-                      <span className="text-sm font-semibold">Tipo de risco predominante: {resultado.safety.tipo_risco_label}</span>
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-semibold leading-snug min-w-0">Tipo de risco predominante: {resultado.safety.tipo_risco_label}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {resultado.safety.total_ocorrencias_corredor} ocorrência(s) registrada(s) ao longo do caminho nos últimos 90 dias.
