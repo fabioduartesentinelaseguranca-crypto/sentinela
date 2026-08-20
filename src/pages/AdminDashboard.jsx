@@ -12,7 +12,7 @@ import VehicleManager from "@/components/admin/VehicleManager";
 import ManagerDashboard from "@/components/admin/ManagerDashboard";
 import TrainingManager from "@/components/admin/TrainingManager";
 import InventoryManager from "@/components/admin/InventoryManager";
-import AgentLeaderboard from "@/components/admin/AgentLeaderboard";
+import RankingPanel from "@/components/shared/RankingPanel";
 import MaintenanceManager from "@/components/admin/MaintenanceManager";
 import GeofenceAlertBanner from "@/components/admin/GeofenceAlertBanner";
 import TipModerationPanel from "@/components/admin/TipModerationPanel";
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
       {activeTab === "maintenance" && <MaintenanceManager />}
 
       {/* ── RANKING TAB ───────────────────────────────────── */}
-      {activeTab === "ranking" && <AgentLeaderboard agents={agents} occurrences={occurrences} />}
+      {activeTab === "ranking" && <RankingPanel />}
 
       {/* ── TIPS MODERATION TAB ───────────────────────────── */}
       {activeTab === "tips" && <TipModerationPanel />}

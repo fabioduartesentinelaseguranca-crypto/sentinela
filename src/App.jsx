@@ -65,7 +65,6 @@ const AuthenticatedApp = () => {
       {/* Citizen routes — role: citizen */}
       <Route element={<CitizenLayout />}>
         <Route path="/citizen" element={<RoleGuard allow={["citizen"]}><CitizenDashboard /></RoleGuard>} />
-        <Route path="/ranking" element={<RoleGuard allow={["citizen"]}><Ranking /></RoleGuard>} />
         <Route path="/rotas-seguras" element={<RoleGuard allow={["citizen"]}><RotasSeguras /></RoleGuard>} />
         <Route path="/caminhe-comigo" element={<RoleGuard allow={["citizen"]}><CaminheComigo /></RoleGuard>} />
         <Route path="/notifications" element={<NotificationPreferences />} />
@@ -98,6 +97,9 @@ const AuthenticatedApp = () => {
 
       {/* Disguised mode — no layout, no role restriction */}
       <Route path="/disguise" element={<DisguisedMode />} />
+
+      {/* Ranking — acessível a cidadãos, agentes e admins (conteúdo adapta ao papel) */}
+      <Route path="/ranking" element={<RoleGuard allow={["citizen", "agent", "admin"]}><Ranking /></RoleGuard>} />
 
       {/* Central de Despacho — tela full-screen, acesso para agentes e admins */}
       <Route path="/central" element={<RoleGuard allow={["agent", "admin"]}><CentralDespacho /></RoleGuard>} />

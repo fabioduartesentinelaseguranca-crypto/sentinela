@@ -1,6 +1,6 @@
 import AppLayout from "./AppLayout";
 import AgentConsentGate from "./AgentConsentGate";
-import { Map, MessageSquare, BookOpen, UserCircle, Trophy, HelpCircle, Bell, Radio } from "lucide-react";
+import { Map, MessageSquare, BookOpen, UserCircle, Trophy, Medal, HelpCircle, Bell, Radio } from "lucide-react";
 import { useModulos } from "@/lib/useModulos.jsx";
 
 const ALL_NAV = [
@@ -10,6 +10,7 @@ const ALL_NAV = [
   { to: "/training", label: "Capacitação", icon: BookOpen, modulo: "agente_treinamento" },
   { to: "/profile", label: "Meu Perfil", icon: UserCircle, modulo: null },
   { to: "/achievements", label: "Conquistas", icon: Trophy, modulo: null },
+  { to: "/ranking", label: "Ranking", icon: Medal, modulo: null },
   { to: "/notifications", label: "Notificações", icon: Bell, modulo: null },
   { to: "/manual", label: "Manual", icon: HelpCircle, modulo: null },
 ];
