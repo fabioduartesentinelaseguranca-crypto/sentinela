@@ -10,18 +10,36 @@ function diffMin(a, b) {
   return Math.round(ms / 60000);
 }
 
+const NON_CITIZEN_ROLES = ['agent', 'admin', 'psychologist'];
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Busca todos os dados com service role (bypassa RLS). Cada fetch tem
+    // fallback individual para que uma falha não zere todo o ranking.
     const [allUsers, logs, occs, feedbacks] = await Promise.all([
-      base44.asServiceRole.entities.User.list('-created_date', 500),
-      base44.asServiceRole.entities.PointsLog.list('-created_date', 1000),
-      base44.asServiceRole.entities.Occurrence.list('-created_date', 500),
-      base44.asServiceRole.entities.CitizenFeedback.list('-created_date', 500),
+      base44.asServiceRole.entities.User.list('-created_date', 500).catch(() => []),
+      base44.asServiceRole.entities.PointsLog.list('-created_date', 1000).catch(() => []),
+      base44.asServiceRole.entities.Occurrence.list('-created_date', 500).catch(() => []),
+      base44.asServiceRole.entities.CitizenFeedback.list('-created_date', 500).catch(() => []),
     ]);
+
+    // Mapas de nome e role construídos a partir de User.list E PointsLog
+    // (PointsLog.user_name garante nomes mesmo se User.list for restrito)
+    const nameMap = {};
+    const roleMap = {};
+    allUsers.forEach((u) => {
+      if (u.id) {
+        if (u.full_name) nameMap[u.id] = u.full_name;
+        roleMap[u.id] = u.role;
+      }
+    });
+    logs.forEach((l) => {
+      if (l.user_id && l.user_name && !nameMap[l.user_id]) nameMap[l.user_id] = l.user_name;
+    });
 
     // === Ranking de cidadãos ===
     const pointsMap = {};
@@ -38,15 +56,27 @@ Deno.serve(async (req) => {
       if (!pointsMap[u.id] && (u.points || 0) > 0) pointsMap[u.id] = u.points;
     });
 
-    const citizenRanked = allUsers
-      .filter((u) => (u.role === 'citizen' || !u.role) && (pointsMap[u.id] || 0) > 0)
-      .map((u) => {
-        const logPts = logs.filter((l) => l.user_id === u.id).reduce((a, l) => a + (l.points || 0), 0);
-        const myOccs = occs.filter((o) => o.reporter_id === u.id);
+    // Candidatos a cidadão: todo user_id com pontos (de PointsLog/Occurrence/User.points)
+    const citizenIds = new Set(Object.keys(pointsMap));
+    allUsers.forEach((u) => {
+      if (!NON_CITIZEN_ROLES.includes(u.role) && (pointsMap[u.id] || 0) > 0) citizenIds.add(u.id);
+    });
+
+    // Apenas IDs de usuários reais (presentes em User.list ou PointsLog) —
+    // evita entradas fantasmas como reporter_id "system"
+    const knownUserIds = new Set([...allUsers.map((u) => u.id), ...logs.map((l) => l.user_id)]);
+
+    const citizenRanked = [...citizenIds]
+      .filter((id) => knownUserIds.has(id))
+      .filter((id) => !NON_CITIZEN_ROLES.includes(roleMap[id]))
+      .filter((id) => (pointsMap[id] || 0) > 0)
+      .map((id) => {
+        const logPts = logs.filter((l) => l.user_id === id).reduce((a, l) => a + (l.points || 0), 0);
+        const myOccs = occs.filter((o) => o.reporter_id === id);
         return {
-          id: u.id,
-          full_name: u.full_name,
-          computedPoints: pointsMap[u.id] || 0,
+          id,
+          full_name: nameMap[id] || 'Cidadão',
+          computedPoints: pointsMap[id] || 0,
           occTotal: myOccs.length,
           occResolved: myOccs.filter((o) => o.status === 'resolved').length,
           bonusPts: logPts,
@@ -55,9 +85,12 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.computedPoints - a.computedPoints);
 
     // === Ranking de agentes ===
-    const agents = allUsers.filter((u) => u.role === 'agent');
-    const agentRanked = agents.map((agent) => {
-      const assigned = occs.filter((o) => o.assigned_agent_id === agent.id);
+    const agentIds = new Set(allUsers.filter((u) => u.role === 'agent').map((u) => u.id));
+    // Inclui também users com role 'agent' conhecidos via roleMap
+    Object.keys(roleMap).forEach((id) => { if (roleMap[id] === 'agent') agentIds.add(id); });
+
+    const agentRanked = [...agentIds].map((id) => {
+      const assigned = occs.filter((o) => o.assigned_agent_id === id);
       const inProgress = assigned.filter((o) => o.status === 'in_progress');
       const resolved = assigned.filter((o) => o.status === 'resolved');
       const times = resolved
@@ -65,14 +98,14 @@ Deno.serve(async (req) => {
         .map((o) => diffMin(o.updated_date, o.created_date))
         .filter((t) => t > 0 && t < 600);
       const avgTime = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
-      const agentFbs = feedbacks.filter((f) => f.agent_id === agent.id);
+      const agentFbs = feedbacks.filter((f) => f.agent_id === id);
       const avgRating = agentFbs.length ? agentFbs.reduce((a, b) => a + (b.rating || 0), 0) / agentFbs.length : 0;
       const positiveFbs = agentFbs.filter((f) => f.rating >= 4).length;
       const baseScore = calcAgentScore(resolved.length, avgTime, positiveFbs, avgRating);
       const score = baseScore + inProgress.length * 3;
       return {
-        id: agent.id,
-        full_name: agent.full_name,
+        id,
+        full_name: nameMap[id] || 'Agente',
         assignedCount: assigned.length,
         resolvedCount: resolved.length,
         inProgressCount: inProgress.length,
@@ -84,10 +117,9 @@ Deno.serve(async (req) => {
     }).sort((a, b) => b.score - a.score);
 
     const role = user.role || 'citizen';
-    const isCitizenRole = !['agent', 'admin', 'psychologist'].includes(role);
+    const isCitizenRole = !NON_CITIZEN_ROLES.includes(role);
 
-    // Cidadão (qualquer perfil que não seja agente/admin/psicólogo) vê apenas
-    // sua própria pontuação e posição
+    // Cidadão vê apenas sua própria pontuação e posição
     if (isCitizenRole) {
       const idx = citizenRanked.findIndex((c) => c.id === user.id);
       const myEntry = idx >= 0
