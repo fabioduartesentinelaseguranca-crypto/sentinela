@@ -1,6 +1,5 @@
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatBrasilia } from "@/lib/deviceTime";
 import { MapPin, MessageSquare } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
 import { FileText } from "lucide-react";
@@ -35,7 +34,7 @@ export default function OccurrenceList({ items, onOpenChat }) {
                   )}
                   <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
                     {o.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{o.address}</span>}
-                    <span className="font-mono">{format(new Date(o.created_date), "dd/MM HH:mm", { locale: ptBR })}</span>
+                    <span className="font-mono">{formatBrasilia(o, "dd/MM HH:mm")}</span>
                   </div>
                 </div>
               </div>

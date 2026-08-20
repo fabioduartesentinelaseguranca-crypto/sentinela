@@ -75,6 +75,33 @@ export function toBrasiliaISO(iso) {
 }
 
 /**
+ * Formata o horário de uma ocorrência no fuso oficial de Brasília
+ * (America/Sao_Paulo) SEM depender do fuso do dispositivo/navegador.
+ * Garante exibição consistente em qualquer dispositivo.
+ */
+export function formatBrasilia(occ, pattern = "dd/MM/yyyy HH:mm") {
+  const d = occurrenceTime(occ);
+  if (!d || isNaN(d.getTime())) return "—";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (t) => parts.find((p) => p.type === t)?.value || "00";
+  let h = get("hour");
+  if (h === "24") h = "00";
+  const dd = get("day"), mm = get("month"), yyyy = get("year"), mi = get("minute"), s = get("second");
+  switch (pattern) {
+    case "dd/MM HH:mm": return `${dd}/${mm} ${h}:${mi}`;
+    case "dd/MM/yyyy HH:mm": return `${dd}/${mm}/${yyyy} ${h}:${mi}`;
+    case "dd/MM yyyy HH:mm": return `${dd}/${mm} ${yyyy} ${h}:${mi}`;
+    case "dd/MM/yyyy HH:mm:ss": return `${dd}/${mm}/${yyyy} ${h}:${mi}:${s}`;
+    default: return `${dd}/${mm}/${yyyy} ${h}:${mi}`;
+  }
+}
+
+/**
  * Retorna o Date correto do horário de uma ocorrência.
  * Prioriza data_hora_dispositivo (Brasília). Fallback: created_date em UTC
  * (sem sufixo) é interpretado como UTC para evitar deslocamento de fuso.

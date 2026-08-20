@@ -30,9 +30,10 @@ export default function Ranking() {
 
   useEffect(() => { load(); }, []);
 
-  const role = user?.role || "citizen";
-  const isCitizen = role === "citizen";
-  const isAgentOrAdmin = role === "agent" || role === "admin";
+  // Usa o role retornado pela função (mais confiável que o role local,
+  // que pode estar indefinido em contas antigas)
+  const isCitizen = data?.role === "citizen";
+  const isAgentOrAdmin = data?.role === "agent" || data?.role === "admin";
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">

@@ -6,8 +6,7 @@ import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import {
   Phone, MessageSquare, Navigation, MapPin, User, Mail, ShieldAlert, Calendar, Loader2, Info,
 } from "lucide-react";
-import { format } from "date-fns";
-import { occurrenceTime } from "@/lib/deviceTime";
+import { formatBrasilia } from "@/lib/deviceTime";
 
 export default function OccurrenceDetailDialog({ occurrence, open, onClose, onOpenChat }) {
   const [reporter, setReporter] = useState(null);
@@ -57,7 +56,7 @@ export default function OccurrenceDetailDialog({ occurrence, open, onClose, onOp
               Prioridade: {occurrence.priority || "medium"}
             </span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> {format(occurrenceTime(occurrence), "dd/MM/yyyy HH:mm")}
+              <Calendar className="w-3 h-3" /> {formatBrasilia(occurrence, "dd/MM/yyyy HH:mm")}
             </span>
           </div>
 
@@ -97,16 +96,27 @@ export default function OccurrenceDetailDialog({ occurrence, open, onClose, onOp
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-1">Mídias anexadas</p>
               <div className="grid grid-cols-3 gap-2">
-                {occurrence.media_urls.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
-                    <img
-                      src={url}
-                      alt={`mídia ${i + 1}`}
-                      className="w-full h-20 object-cover rounded-lg border border-border/40"
-                      onError={(e) => { e.target.style.display = "none"; }}
-                    />
-                  </a>
-                ))}
+                {occurrence.media_urls.map((url, i) => {
+                  const isVideo = /\.(mp4|webm|mov|avi|m4v|ogg)(\?|$)/i.test(url);
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block relative">
+                      {isVideo ? (
+                        <video
+                          src={url}
+                          className="w-full h-20 object-cover rounded-lg border border-border/40 bg-black"
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={url}
+                          alt={`mídia ${i + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border border-border/40"
+                          onError={(e) => { e.target.style.display = "none"; }}
+                        />
+                      )}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}

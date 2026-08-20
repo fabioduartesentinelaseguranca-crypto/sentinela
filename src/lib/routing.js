@@ -46,36 +46,42 @@ export function formatDistance(m) {
  * @returns {Promise<{points: number[][], steps: Array, distanceKm: number, durationMin: number}>}
  */
 export async function fetchRoute(origem, destino, modo = "a_pe") {
-  const profiles = modo === "carro" ? ["driving"] : ["foot", "driving"];
-  let lastErr;
-  for (const profile of profiles) {
-    try {
-      const url = `${OSRM_BASE}/${profile}/${origem.lng},${origem.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&steps=true`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data.routes || data.routes.length === 0) throw new Error("Sem rota");
-      const route = data.routes[0];
-      const coords = route.geometry.coordinates; // [lng, lat]
-      const steps = (route.legs?.[0]?.steps || []).map((s) => ({
-        instruction: maneuverToText(s),
-        distanceM: s.distance || 0,
-        durationS: s.duration || 0,
-        name: s.name || "",
-        maneuverType: s.maneuver?.type || "",
-        modifier: s.maneuver?.modifier || "",
-      }));
-      return {
-        points: coords.map(([lng, lat]) => [lat, lng]),
-        steps,
-        distanceKm: (route.distance || 0) / 1000,
-        durationMin: Math.round((route.duration || 0) / 60),
-      };
-    } catch (e) {
-      lastErr = e;
-    }
+  // O servidor OSRM público (router.project-osrm.org) suporta apenas o perfil
+  // "driving". Usamos a geometria da rota viária para ambos os modos, mas
+  // calculamos o tempo de deslocamento conforme o modo:
+  //   - carro: tempo estimado pelo OSRM (trânsito típico)
+  //   - a pé: estimativa a 5 km/h (caminhada)
+  // Assim o percurso e o tempo diferem corretamente entre os modos.
+  const profile = "driving";
+  const url = `${OSRM_BASE}/${profile}/${origem.lng},${origem.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&steps=true`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data.routes || data.routes.length === 0) throw new Error("Sem rota");
+  const route = data.routes[0];
+  const coords = route.geometry.coordinates; // [lng, lat]
+  const steps = (route.legs?.[0]?.steps || []).map((s) => ({
+    instruction: maneuverToText(s),
+    distanceM: s.distance || 0,
+    durationS: s.distance || 0,
+    name: s.name || "",
+    maneuverType: s.maneuver?.type || "",
+    modifier: s.maneuver?.modifier || "",
+  }));
+  const distanceKm = (route.distance || 0) / 1000;
+  let durationMin;
+  if (modo === "carro") {
+    durationMin = Math.round((route.duration || 0) / 60);
+  } else {
+    // a pé: estimar tempo de caminhada a 5 km/h
+    durationMin = Math.max(1, Math.round((distanceKm / 5) * 60));
   }
-  throw lastErr || new Error("Falha ao calcular rota");
+  return {
+    points: coords.map(([lng, lat]) => [lat, lng]),
+    steps,
+    distanceKm,
+    durationMin,
+  };
 }
 
 export async function reverseGeocode(lat, lng) {

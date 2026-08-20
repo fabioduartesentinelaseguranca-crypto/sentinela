@@ -1,9 +1,8 @@
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, CheckCircle2, Play, MapPin, Camera, Volume2, Info } from "lucide-react";
-import { format } from "date-fns";
 import { urgencyLabel } from "@/lib/urgencyScore";
-import { occurrenceTime } from "@/lib/deviceTime";
+import { formatBrasilia } from "@/lib/deviceTime";
 
 export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onResolve, onSelect, onOpenDetail, currentAgentId }) {
   const tm = TYPE_META[occurrence.type] || TYPE_META.crime;
@@ -68,7 +67,7 @@ export default function OccurrenceRow({ occurrence, onOpenChat, onAssign, onReso
         )}
         <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
           {occurrence.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{occurrence.address}</span>}
-          <span className="font-mono">{format(occurrenceTime(occurrence), "dd/MM HH:mm")}</span>
+          <span className="font-mono">{formatBrasilia(occurrence, "dd/MM HH:mm")}</span>
         </div>
         <div className="flex items-center gap-2 mt-3">
           {occurrence.status === "open" && (

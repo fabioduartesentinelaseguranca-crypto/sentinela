@@ -83,7 +83,9 @@ export default function RegisterOccurrenceDialog({ open, onOpenChange, defaultTy
         try {
           const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
           mediaUrls.push(file_url);
-        } catch { /* skip file upload if fails */ }
+        } catch {
+          toast.error(`Falha ao enviar arquivo: ${f.name}`);
+        }
       }
     }
 

@@ -84,9 +84,11 @@ Deno.serve(async (req) => {
     }).sort((a, b) => b.score - a.score);
 
     const role = user.role || 'citizen';
+    const isCitizenRole = !['agent', 'admin', 'psychologist'].includes(role);
 
-    // Cidadão vê apenas sua própria pontuação e posição
-    if (role === 'citizen') {
+    // Cidadão (qualquer perfil que não seja agente/admin/psicólogo) vê apenas
+    // sua própria pontuação e posição
+    if (isCitizenRole) {
       const idx = citizenRanked.findIndex((c) => c.id === user.id);
       const myEntry = idx >= 0
         ? { ...citizenRanked[idx], position: idx + 1, total: citizenRanked.length }
