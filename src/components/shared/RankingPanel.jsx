@@ -20,7 +20,7 @@ export default function RankingPanel() {
     setError(null);
     try {
       const res = await base44.functions.invoke("obterRanking");
-      setData(res);
+      setData(res.data ?? res);
     } catch (e) {
       setError(e?.message || "Erro ao carregar ranking");
     } finally {
