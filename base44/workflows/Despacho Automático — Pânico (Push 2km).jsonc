@@ -1,0 +1,37 @@
+{
+  "name": "Despacho Autom\u00e1tico \u2014 P\u00e2nico (Push 2km)",
+  "description": "Dispara push FCM autom\u00e1tico para agentes dispon\u00edveis em raio de 2km sempre que uma ocorr\u00eancia de p\u00e2nico \u00e9 criada.",
+  "trigger": {
+    "condition": "${ (.trigger.data.type == \"panic\") }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Occurrence"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "despacho_autom_tico_p_nico_push_2km",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "despacharPanicProximo",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "despacharPanicProximo"
+  }
+}

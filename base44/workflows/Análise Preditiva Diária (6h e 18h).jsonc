@@ -1,0 +1,44 @@
+{
+  "name": "An\u00e1lise Preditiva Di\u00e1ria (6h e 18h)",
+  "description": "Duas vezes ao dia (6h e 18h hor\u00e1rio de Bras\u00edlia = 9h e 21h UTC), analisa as ocorr\u00eancias finalizadas dos \u00faltimos 30 dias e gera relat\u00f3rios de intelig\u00eancia preditiva com mapas de calor.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9,21 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "an_lise_preditiva_di_ria_6h_e_18h",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "gerarAnalisePreditiva",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "gerarAnalisePreditiva"
+  }
+}

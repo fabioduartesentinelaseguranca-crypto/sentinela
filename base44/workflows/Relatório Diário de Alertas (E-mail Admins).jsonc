@@ -1,0 +1,44 @@
+{
+  "name": "Relat\u00f3rio Di\u00e1rio de Alertas (E-mail Admins)",
+  "description": "Compila as ocorr\u00eancias e alertas cr\u00edticos do dia e envia um resumo por e-mail para todos os administradores.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 1 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "relat_rio_di_rio_de_alertas_e_mail_admins",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "gerarRelatorioDiarioAlertas",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "gerarRelatorioDiarioAlertas"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "Triagem Autom\u00e1tica de Ocorr\u00eancias",
+  "description": "Quando uma nova ocorr\u00eancia for criada, dispara a triagem autom\u00e1tica via IA: classifica tipo, prioridade, detecta trotes e anexa perfil m\u00e9dico se for emerg\u00eancia de sa\u00fade.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Occurrence"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "triagem_autom_tica_de_ocorr_ncias",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "triagemOcorrencia",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "triagemOcorrencia"
+  }
+}
