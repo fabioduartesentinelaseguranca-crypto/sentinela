@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import L from "leaflet";
 import {
   Shield,
@@ -240,7 +241,7 @@ export default function AdminOverview({ occurrences = [], users = [], onTabChang
             zoomControl={false}
           >
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url={CARTO_DARK_TILE_URL}
               attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             />
             <FitBounds positions={markerPositions} />

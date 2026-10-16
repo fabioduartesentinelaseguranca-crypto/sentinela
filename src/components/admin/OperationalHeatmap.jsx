@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, LayerGroup } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { subDays, parseISO, format } from "date-fns";
@@ -141,7 +142,7 @@ export default function OperationalHeatmap({ occurrences = [] }) {
         <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }}
           key={center.join(",")}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            url={CARTO_DARK_TILE_URL}
             attribution='&copy; CartoDB'
           />
           <LayerGroup>

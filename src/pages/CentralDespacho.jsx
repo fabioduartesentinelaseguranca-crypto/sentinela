@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import L from "leaflet";
 import { Siren, Clock, MapPin, Phone, Shield, Crosshair, PhoneCall, Flag, ChevronRight, AlertTriangle, Radio, Zap, Navigation, Volume2, FileText, Car, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -442,7 +443,7 @@ export default function CentralDespacho() {
             >
               <TileLayer
                 attribution=""
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url={CARTO_DARK_TILE_URL}
               />
               {selected && <MapUpdater alerta={selected} />}
             </MapContainer>

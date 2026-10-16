@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import { TYPE_META, STATUS_META } from "@/lib/occurrenceMeta";
 import { Radio, Filter, MapPin, Loader2 } from "lucide-react";
@@ -131,7 +132,7 @@ export default function OccurrenceLiveMap() {
           <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }} key={center.join(",")}>
             <Recenter center={center} />
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url={CARTO_DARK_TILE_URL}
               attribution='&copy; CartoDB'
             />
             {filtered.map((o) => {

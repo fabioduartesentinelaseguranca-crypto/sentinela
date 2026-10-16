@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, Polyline, CircleMarker, Popup } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import { format, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -212,7 +213,7 @@ export default function PatrolHistoryViewer({ agentId, agentName, shifts = [] })
               <div className="rounded-2xl overflow-hidden border border-border/60" style={{ height: 340 }}>
                 <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
                   <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url={CARTO_DARK_TILE_URL}
                     attribution='&copy; CartoDB'
                   />
                   {polyline.length > 1 && (

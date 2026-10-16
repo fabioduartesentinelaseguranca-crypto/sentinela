@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import { ShieldAlert, CheckCircle2, XCircle, Eye, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ export default function TipModerationPanel() {
           ) : (
             <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }}>
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url={CARTO_DARK_TILE_URL}
                 attribution="&copy; CartoDB"
               />
               {approvedTips.map((t) => {

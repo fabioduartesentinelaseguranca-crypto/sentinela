@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapContainer, TileLayer, CircleMarker, Popup, Polyline } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import { Brain, RefreshCw, Flame, MapPin, Route, AlertTriangle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -189,7 +190,7 @@ Gere 4 rotas de patrulha recomendadas com base nos padrões de criminalidade. Se
             ) : (
               <MapContainer center={mapCenter} zoom={12} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  url={CARTO_DARK_TILE_URL}
                   attribution='&copy; CartoDB'
                 />
                 {heatPoints.map((pt, i) => (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaflet";
+import { CARTO_DARK_TILE_URL } from "@/lib/mapConfig";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { TYPE_META } from "@/lib/occurrenceMeta";
@@ -45,7 +46,7 @@ export default function LiveMap({ occurrences = [], agents = [], cameras = [], h
       <MapContainer center={[center.lat, center.lng]} zoom={13} style={{ height: "100%", width: "100%" }}>
         <TileLayer
           attribution='&copy; OpenStreetMap'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={CARTO_DARK_TILE_URL}
         />
         {occurrences.filter((o) => o.lat && o.lng).map((o) => (
           <CircleMarker
